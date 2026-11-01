@@ -1,0 +1,272 @@
+/* Contract Atlas — Explorer view, plus the shared right panel.
+   Colours come from the shared tokens in app/globals.css; everything is scoped under .atlas. */
+.atlas {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.atlas button {
+  cursor: pointer;
+}
+.atlas .body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.atlas .stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--canvas);
+}
+
+/* right panel: a column of floating cards on the dot-grid canvas (no tray) */
+.atlas aside {
+  overflow: auto;
+  padding: 0 12px 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.atlas aside > * {
+  flex: none;
+}
+/* small close tile (also used by the Lab run card) */
+.atlas .x {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 7px;
+  background: var(--raised);
+  color: var(--muted);
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.atlas .x:hover {
+  background: var(--hover);
+  color: var(--fg);
+}
+/* code-meaning glyph: square marker with a monochrome stroke icon */
+.atlas .picon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--inset);
+  color: var(--muted);
+}
+.atlas .picon svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.atlas .picon.vulns {
+  color: var(--red);
+}
+/* recognised protocol: its logo replaces the square */
+.atlas .plogo {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 1.5px var(--canvas),
+    0 0 0 2.5px var(--border-strong);
+}
+.atlas .plogo {
+  display: inline-block;
+  background: center / contain no-repeat;
+}
+.atlas .plogo.lg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Explorer: contract card → layer card → fan of piece cards, on the dot-grid canvas */
+.atlas .explorer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.atlas .explorer svg {
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-outfit);
+}
+.atlas .ex-title {
+  fill: var(--fg);
+  font-size: 14px;
+  font-weight: 500;
+}
+.atlas .ex-card {
+  fill: url(#g-card);
+  stroke: var(--border);
+  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.45));
+}
+.atlas .ex-inset {
+  fill: url(#g-inner);
+  stroke: var(--border);
+}
+.atlas .ex-k {
+  fill: var(--muted);
+  font-size: 13px;
+}
+.atlas .ex-wire {
+  fill: none;
+  stroke: var(--wire);
+  stroke-width: 1;
+  transition: stroke 0.15s;
+}
+.atlas .ex-wire.on {
+  stroke: var(--wire-on);
+}
+.atlas .ex-v,
+.atlas .ex-num,
+.atlas .ex-code {
+  font-family: var(--font-geist-mono);
+  font-size: 12px;
+}
+.atlas .ex-v {
+  fill: var(--fg);
+}
+.atlas .ex-port {
+  fill: var(--port);
+  stroke: var(--card-bot);
+  stroke-width: 2;
+}
+.atlas .ex-hub {
+  cursor: pointer;
+  outline: none;
+}
+.atlas .ex-row {
+  fill: transparent;
+  transition: fill 0.15s;
+}
+.atlas .ex-hub:hover .ex-row,
+.atlas .ex-hub:focus-visible .ex-row {
+  fill: var(--raised);
+}
+.atlas .ex-hub.on .ex-row {
+  fill: var(--hover);
+}
+.atlas .ex-hub.on .ex-port {
+  fill: var(--wire-on);
+}
+.atlas .ex-lbl {
+  fill: var(--body);
+  font-size: 13px;
+}
+.atlas .ex-hub.on .ex-lbl {
+  fill: var(--fg);
+}
+.atlas .ex-num {
+  fill: var(--muted);
+}
+.atlas .ex-hub.on .ex-num {
+  fill: var(--fg);
+}
+.atlas .ex-num.bad,
+.atlas .ex-hub.on .ex-num.bad {
+  fill: var(--red);
+}
+.atlas .ex-fan {
+  fill: none;
+  stroke: var(--wire);
+  stroke-width: 1;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: ex-draw 0.7s ease-out forwards;
+}
+.atlas .ex-fan.on {
+  stroke: var(--wire-on);
+}
+.atlas .ex-leaf {
+  cursor: pointer;
+  outline: none;
+  opacity: 0;
+  animation: ex-in 0.35s ease-out forwards;
+}
+.atlas .ex-leafbox {
+  fill: url(#g-card);
+  stroke: var(--border);
+  transition:
+    fill 0.15s,
+    stroke 0.15s;
+}
+.atlas .ex-leaf:hover .ex-leafbox,
+.atlas .ex-leaf:focus-visible .ex-leafbox {
+  stroke: var(--border-strong);
+}
+.atlas .ex-leaf.on .ex-leafbox {
+  stroke: rgba(255, 255, 255, 0.22);
+  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.45));
+}
+.atlas .ex-dot {
+  stroke: var(--card-bot);
+  stroke-width: 2;
+}
+.atlas .ex-name {
+  fill: var(--body);
+  font-size: 13px;
+  transition: fill 0.15s;
+}
+.atlas .ex-leaf:hover .ex-name,
+.atlas .ex-leaf:focus-visible .ex-name,
+.atlas .ex-leaf.on .ex-name {
+  fill: var(--fg);
+}
+.atlas .ex-code {
+  fill: var(--dim);
+  font-size: 11.5px;
+}
+.atlas .ex-caller {
+  fill: var(--dim);
+  font-size: 12.5px;
+}
+@keyframes ex-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes ex-in {
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .atlas .ex-fan,
+  .atlas .ex-leaf {
+    animation: none;
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* quick search (/ or ⌘K) */
+.atlas .qsearch {
+  width: min(560px, calc(100vw - 32px));
+  margin: 12vh auto auto;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: linear-gradient(180deg, var(--card-top), var(--card-bot));
+  color: var(--fg);
+  box-shadow: var(--shadow-float);
+}
+.atlas .qsearch::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+}

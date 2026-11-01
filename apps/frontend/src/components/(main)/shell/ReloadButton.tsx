@@ -1,0 +1,36 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { PH, PhIcon } from "@/components/ui";
+import { useRun } from "@/features/run";
+
+/**
+ * Re-reads dort-data.json after a fresh `node dort-export.mjs`: on the server (a local Dort),
+ * or from the project through the bridge (the hosted one). Same capsule as
+ * the header's controls (header.css .hdr-pill), full width, the arrow turning while it reloads.
+ */
+export function ReloadButton() {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const { bridge, reloadBridge } = useRun();
+  return (
+    <button
+      type="button"
+      onClick={() => (bridge ? reloadBridge() : start(() => router.refresh()))}
+      className="hdr-pill lit has-kbd min-w-0 flex-1 justify-start"
+      title="Re-read dort-data.json  ⌘R"
+    >
+      <PhIcon
+        d={PH.reload}
+        className={`size-[15px] ${pending ? "animate-spin motion-reduce:animate-none" : ""}`}
+      />
+      <span className="truncate">
+        {pending ? "Reloading…" : "Reload trace"}
+      </span>
+      <kbd className="ml-auto flex-none rounded-full border border-white/[.08] bg-black/30 px-1.5 py-0.5 font-mono text-[11px] text-dim">
+        ⌘R
+      </kbd>
+    </button>
+  );
+}

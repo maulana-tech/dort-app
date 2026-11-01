@@ -1,0 +1,210 @@
+/* The header's controls as one family (Get started, the data capsule, Connect AI).
+   T1 pin/21462535723045239: graphite pills raised off the canvas, icon + label, a glowing status
+   dot. T2 pin/21462535723041624: every control the same capsule (height, fill, radius), a small
+   action living inside it. T3 pin/47217496093253558: a joined pair split by a hairline. */
+.hdr-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #252528, #19191c);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.09),
+    inset 0 0 0 1px rgb(255 255 255 / 0.07),
+    0 6px 16px -6px rgb(0 0 0 / 0.6);
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  outline: none;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    transform 0.15s;
+}
+button.hdr-pill:hover,
+a.hdr-pill:hover,
+.hdr-pill > button:hover {
+  color: var(--fg);
+}
+button.hdr-pill:hover,
+a.hdr-pill:hover {
+  background: linear-gradient(180deg, #2c2c30, #1e1e21);
+}
+button.hdr-pill:active,
+a.hdr-pill:active {
+  transform: scale(0.97);
+}
+button.hdr-pill:focus-visible,
+a.hdr-pill:focus-visible,
+.hdr-pill > button:focus-visible {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.09),
+    0 0 0 2px rgb(255 255 255 / 0.25);
+}
+/* T3: a capsule split in two, the right part its own button */
+.hdr-pill.split {
+  padding: 0;
+  gap: 0;
+}
+.hdr-pill.split > * {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  padding: 0 14px;
+}
+.hdr-pill.split > button {
+  padding: 0 14px 0 12px;
+  border-radius: 0 9999px 9999px 0;
+  box-shadow: inset 1px 0 0 rgb(255 255 255 / 0.08);
+  outline: none;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.hdr-pill.split > button:hover {
+  background: rgb(255 255 255 / 0.05);
+}
+/* the one call to action of the row: a lit gradient ring (Connect AI before it is connected) */
+.hdr-pill.lit {
+  background:
+    linear-gradient(180deg, #2a2a2e, #1b1b1e) padding-box,
+    linear-gradient(
+      135deg,
+      rgb(255 255 255 / 0.45),
+      rgb(255 255 255 / 0.06) 45%,
+      rgb(255 255 255 / 0.3)
+    )
+    border-box;
+  border: 1px solid transparent;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    0 6px 18px -6px rgb(0 0 0 / 0.7),
+    0 0 18px -6px rgb(255 255 255 / 0.18);
+  color: var(--fg);
+}
+/* T1: the status dot glows in its own colour */
+.hdr-dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+}
+/* smaller capsule for in-panel toolbars (TraceToolbar); a pressed toggle reads lit */
+.hdr-pill.sm {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 12.5px;
+  gap: 6px;
+}
+.hdr-pill.split.sm > * {
+  padding: 0 11px;
+  gap: 6px;
+}
+.hdr-pill[aria-pressed="true"],
+.hdr-pill.split > button[aria-pressed="true"] {
+  color: var(--fg);
+}
+.hdr-pill[aria-pressed="false"] {
+  color: var(--dim);
+}
+.hdr-pill.split > button[aria-pressed="false"] {
+  color: var(--dim);
+}
+.hdr-pill.split > button.mid {
+  border-radius: 0;
+}
+/* a key, as the keyboard legend and fields show it */
+.kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: rgb(0 0 0 / 0.35);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.09);
+  font: 11px / 1 var(--font-geist-mono);
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hdr-pill,
+  .hdr-pill.split > button {
+    transition: none;
+  }
+}
+/* Start test (Trace sidebar): the lit capsule in green, the one control that runs something.
+   Same capsule as the row above (T1/T2), its ring and glow in the pass colour. */
+.hdr-pill.go,
+button.hdr-pill.go:hover {
+  border: 1px solid transparent;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    0 6px 18px -6px rgb(0 0 0 / 0.7),
+    0 0 18px -6px rgb(74 222 128 / 0.35);
+  color: var(--fg);
+}
+.hdr-pill.go {
+  background:
+    linear-gradient(180deg, #1f2922, #161b17) padding-box,
+    linear-gradient(
+      135deg,
+      rgb(74 222 128 / 0.6),
+      rgb(74 222 128 / 0.08) 45%,
+      rgb(74 222 128 / 0.4)
+    )
+    border-box;
+}
+button.hdr-pill.go:hover {
+  background:
+    linear-gradient(180deg, #24302a, #1a201b) padding-box,
+    linear-gradient(
+      135deg,
+      rgb(74 222 128 / 0.8),
+      rgb(74 222 128 / 0.12) 45%,
+      rgb(74 222 128 / 0.55)
+    )
+    border-box;
+}
+.hdr-pill.go.split > button {
+  box-shadow: inset 1px 0 0 rgb(74 222 128 / 0.2);
+}
+/* a split capsule whose left half is a button too (Start test | where it runs) */
+.hdr-pill.split > button.lead {
+  flex: 1;
+  min-width: 0;
+  padding: 0 12px 0 14px;
+  border-radius: 9999px 0 0 9999px;
+  box-shadow: none;
+}
+/* its Stop, while a run goes: the fail colour, as the one thing that ends something */
+.hdr-pill.go.split > button.stop {
+  color: var(--red);
+  box-shadow: inset 1px 0 0 rgb(74 222 128 / 0.2);
+}
+.hdr-pill.go.split > button.stop:hover {
+  color: #fca5a5;
+  background: rgb(248 113 113 / 0.1);
+}
+/* a capsule that ends something (the log's Stop): the fail colour */
+.hdr-pill.danger,
+button.hdr-pill.danger:hover {
+  color: var(--red);
+}
+/* a capsule that cannot act now (Test all while a run goes) */
+button.hdr-pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+/* a capsule ending in a key (Reload trace ⌘R): the key sits as far in from the end as from the
+   top and bottom, with the label given the rest */
+.hdr-pill.has-kbd {
+  gap: 7px;
+  padding: 0 7px 0 12px;
+}

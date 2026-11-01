@@ -1,0 +1,563 @@
+/* Landing-only motion. Ambient CSS loops (beam, draw-ins, typing) plus the layouts the GSAP scroll stages need. */
+.lp-beam {
+  background: radial-gradient(
+    50% 100% at 50% 0%,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.05) 45%,
+    transparent 100%
+  );
+  filter: blur(18px);
+  animation: lp-drift 14s ease-in-out infinite alternate;
+}
+.lp-beam-core {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.5),
+    rgba(255, 255, 255, 0.06) 70%,
+    transparent
+  );
+  filter: blur(6px);
+  animation: lp-drift 14s ease-in-out infinite alternate;
+}
+@keyframes lp-drift {
+  from {
+    transform: translateX(-18px);
+    opacity: 0.75;
+  }
+  to {
+    transform: translateX(18px);
+    opacity: 1;
+  }
+}
+
+.lp-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: lp-draw 1.6s cubic-bezier(0.65, 0, 0.35, 1) 0.3s forwards;
+}
+@keyframes lp-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.lp-fade {
+  animation: lp-fade 0.6s ease-out 1.2s backwards;
+}
+/* fades and reveals hold only their start (backwards fill), never their end: a finished animation
+   with a forwards fill stays active and keeps its own compositor layer for the life of the page */
+@keyframes lp-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* hero headline: words rise out of a blur, one after another (--i = word index) */
+.lp-word {
+  display: inline-block;
+  /* held at opacity 0 by the class itself (forwards fill), not by the animation: that keeps the
+     words out of LCP, so the static subline stays the LCP element */
+  opacity: 0;
+  filter: blur(10px);
+  transform: translateY(14px);
+  animation: lp-word 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+  animation-delay: calc(0.08s * var(--i, 0));
+}
+@keyframes lp-word {
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+/* starburst breathes */
+.lp-breathe {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lp-breathe 5s ease-in-out infinite;
+}
+@keyframes lp-breathe {
+  50% {
+    transform: scale(0.88) rotate(22.5deg);
+    opacity: 0.7;
+  }
+}
+/* terminal lines in the hero type themselves in (--n = characters, --d = start delay) */
+.lp-type {
+  display: block;
+  width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  animation: lp-type calc(var(--n) * 0.025s) steps(var(--n)) forwards;
+  animation-delay: var(--d);
+}
+@keyframes lp-type {
+  to {
+    width: calc(var(--n) * 1ch);
+  }
+}
+.lp-caret {
+  animation: lp-caret 1s steps(1) infinite;
+}
+@keyframes lp-caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* tab progress (R8 hero switcher) */
+.lp-progress {
+  transform-origin: 0 50%;
+  animation: lp-progress var(--t) linear forwards;
+}
+@keyframes lp-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-beam,
+  .lp-beam-core,
+  .lp-draw,
+  .lp-fade,
+  .lp-word,
+  .lp-breathe,
+  .lp-progress,
+  .lp-caret {
+    animation: none;
+    stroke-dashoffset: 0;
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+  .lp-type {
+    animation: none;
+    width: auto;
+  }
+  .lp-packet {
+    display: none;
+  }
+}
+
+/* a section off screen (motion.tsx sets data-off) holds its loops (the tab progress restarts with
+   its dwell timer when the tabs come back, ProductTabs) */
+[data-off] * {
+  animation-play-state: paused;
+}
+
+/* Ask demo: thin scrollbar for long answers */
+.lp-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+.lp-fadein {
+  animation: lp-fade 0.5s ease-out backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-fadein {
+    animation: none;
+  }
+}
+
+/* Genie: one continuous background. A fixed graphite backdrop whose tone and soft glow drift with
+   the scroll (motion.tsx writes --lp-bg / --lp-glow / --lp-gx / --lp-gy); sections stay transparent. */
+.lp-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      60% 50% at var(--lp-gx, 50%) var(--lp-gy, 0%),
+      rgb(200 205 220 / calc(var(--lp-glow, 0.09) * 1)),
+      transparent 70%
+    ),
+    var(--lp-bg, #000);
+}
+
+/* Genie's clouds, in graphite: a perspective grid rising in a haze. Both ends fade, so it never
+   draws an edge where it is clipped. */
+.lp-haze {
+  position: absolute;
+  inset-inline: 0;
+  height: 110vh;
+  pointer-events: none;
+  overflow: hidden;
+  perspective: 520px;
+  perspective-origin: 50% 0%;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 22%,
+    #000 78%,
+    transparent
+  );
+}
+.lp-haze-grid {
+  position: absolute;
+  inset: 18% -60% -60%;
+  transform: rotateX(64deg);
+  transform-origin: 50% 0%;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: linear-gradient(to bottom, transparent, #000 35%);
+}
+.lp-haze-mist {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      55% 32% at 50% 52%,
+      rgba(205, 210, 222, 0.13),
+      transparent 70%
+    ),
+    radial-gradient(
+      30% 22% at 18% 62%,
+      rgba(255, 255, 255, 0.06),
+      transparent 70%
+    ),
+    radial-gradient(
+      30% 22% at 82% 58%,
+      rgba(255, 255, 255, 0.06),
+      transparent 70%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 30%,
+      var(--lp-bg, #000) 62%,
+      transparent
+    );
+  filter: blur(24px);
+}
+
+/* without motion the haze would only sit on top of the content: drop it */
+@media (prefers-reduced-motion: reduce) {
+  .lp-haze {
+    display: none;
+  }
+}
+
+/* Scroll stages. Static (phones, reduced motion): plain flow. Staged: one pinned screen each. */
+.lp-sg {
+  padding: 96px 16px 64px;
+}
+.lp-sg-marks {
+  margin: 40px auto 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px 28px;
+}
+.lp-sg-product {
+  margin: 56px auto 0;
+  max-width: 1180px;
+}
+.lp-shot {
+  perspective: 1800px;
+  transform-style: preserve-3d;
+}
+.lp-square {
+  display: none;
+}
+.lp-run {
+  padding: 96px 0 64px;
+}
+.lp-run-graph {
+  margin: 48px auto 0;
+  max-width: 1000px;
+  padding-inline: 16px;
+}
+.lp-wheel {
+  padding: 96px 16px;
+}
+.lp-wheel-ring {
+  margin: 48px auto 0;
+  max-width: 1080px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+.lp-wheel-read {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lp-sg {
+    position: relative;
+    height: 100vh;
+    padding: 0;
+  }
+  .lp-sg-head {
+    position: absolute;
+    inset-inline: 0;
+    top: 15vh;
+  }
+  .lp-sg-marks {
+    position: absolute;
+    inset-inline: 0;
+    top: 50%;
+    margin: 0;
+    flex-wrap: nowrap;
+    gap: 36px;
+    translate: 0 -30%;
+  }
+  .lp-sg-product {
+    position: absolute;
+    inset: 4vh 32px 4vh;
+    margin: 0 auto;
+    pointer-events: none;
+  }
+  .lp-sg-product [role="tablist"] {
+    pointer-events: auto;
+  }
+  .lp-sg-product .lp-shot {
+    flex: 1;
+    height: auto;
+    min-height: 0;
+  }
+  .lp-square {
+    display: block;
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 56px;
+    height: 56px;
+    border: 1.5px solid rgba(255, 255, 255, 0.55);
+    border-radius: 14px;
+    box-shadow: 0 0 40px -6px rgba(255, 255, 255, 0.25);
+    pointer-events: none;
+  }
+
+  .lp-run {
+    position: relative;
+    height: 100vh;
+    padding: 0;
+    display: grid;
+    place-items: center;
+  }
+  .lp-run > * {
+    grid-area: 1 / 1;
+  }
+  /* the column is the screen's width, never the graph's: the graph measures it to fit itself */
+  .lp-run {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lp-run-graph {
+    margin: 0;
+    width: 100%;
+  }
+
+  .lp-wheel {
+    position: relative;
+    height: 100vh;
+    padding: 0;
+    /* clip-path, not overflow: hidden: same clip, but an overflow clip makes Chrome count the pin
+       switching to position: fixed as a full-screen layout shift (CLS 1.0 at each end of the pin) */
+    clip-path: inset(0);
+  }
+  .lp-wheel-head {
+    position: absolute;
+    inset-inline: 0;
+    top: 11vh;
+  }
+  .lp-wheel-ring {
+    --r: 1150px;
+    position: absolute;
+    left: 50%;
+    top: calc(52vh + var(--r));
+    width: 0;
+    height: 0;
+    margin: 0;
+    display: block;
+  }
+  .lp-wheel-card {
+    position: absolute;
+    left: -140px;
+    top: -95px;
+    width: 280px;
+    height: 190px;
+    transform: rotate(var(--a)) translateY(calc(-1 * var(--r)));
+  }
+  .lp-wheel-what {
+    display: none;
+  }
+  .lp-wheel-read {
+    display: block;
+    position: absolute;
+    inset-inline: 0;
+    top: calc(52vh + 150px);
+  }
+}
+/* the same stages on a phone: tighter insets, a smaller wheel so a card and a half fit across */
+@media (max-width: 767.98px) and (prefers-reduced-motion: no-preference) {
+  .lp-sg-head {
+    top: 12vh;
+  }
+  .lp-sg-product {
+    inset: 3vh 12px 3vh;
+  }
+  .lp-wheel-head {
+    top: 10vh;
+  }
+  .lp-wheel-ring {
+    --r: 760px;
+    top: calc(54vh + var(--r));
+  }
+  .lp-wheel-card {
+    left: -112px;
+    top: -82px;
+    width: 224px;
+    height: 164px;
+  }
+  .lp-wheel-read {
+    top: calc(54vh + 112px);
+  }
+  .lp-wheel-read p + p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 5;
+    overflow: hidden;
+    font-size: 14px;
+  }
+}
+/* touch screens read a card by tapping it */
+.lp-wheel-hint-touch {
+  display: none;
+}
+@media (hover: none) {
+  .lp-wheel-hint-touch {
+    display: inline;
+  }
+  .lp-wheel-hint-hover {
+    display: none;
+  }
+}
+
+/* Tools row marks (seventh pass). P1 pin/120823202500504610 ("Insights that actually tell you
+   something"): monochrome objects lit from above inside a dark rounded shell, a faint halo around
+   them. One 96px shell for every mark, the art in a 40px box so the three read the same size. */
+.lp-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  background:
+    radial-gradient(
+      70% 60% at 50% 18%,
+      rgba(255, 255, 255, 0.11),
+      transparent 70%
+    ),
+    linear-gradient(180deg, var(--card-top), var(--card-bot));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    inset 0 -12px 26px rgba(0, 0, 0, 0.4),
+    0 22px 44px -14px rgba(0, 0, 0, 0.8);
+  transition:
+    border-color 0.3s,
+    color 0.3s,
+    box-shadow 0.3s,
+    transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.lp-mark::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  pointer-events: none;
+}
+.lp-mark > * {
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.22));
+}
+/* the Foundry avatar is black art on an opaque white disc: invert it, then screen it so the
+   (now black) disc drops out and only the white art stays on the graphite */
+.lp-mark > img {
+  filter: invert(1) drop-shadow(0 0 10px rgba(255, 255, 255, 0.22));
+  mix-blend-mode: screen;
+}
+a:hover > .lp-mark {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-3px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -12px 26px rgba(0, 0, 0, 0.4),
+    0 0 40px -8px rgba(255, 255, 255, 0.22),
+    0 22px 44px -14px rgba(0, 0, 0, 0.8);
+}
+
+/* How Dort works (seventh pass): the pinned three-column stage only where it fits and motion is
+   on; everywhere else the static list. Before GSAP runs, only the first note / widget shows. */
+.lp-how-stage {
+  display: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lp-how-stage {
+    display: block;
+    height: 100vh;
+  }
+  .lp-how-static {
+    display: none;
+  }
+  .lp-how-note:not(:first-child),
+  .lp-how-widget:not(:first-child) {
+    visibility: hidden;
+    opacity: 0;
+  }
+}
+
+/* FAQ open / close (Closing.tsx Faq): the <details> body eases between 0 and its own height and
+   the answer fades and drops in. CSS only (::details-content + interpolate-size); where those are
+   missing the body simply opens at once */
+.lp-faq {
+  interpolate-size: allow-keywords;
+}
+.lp-faq details::details-content {
+  block-size: 0;
+  overflow: hidden;
+  transition:
+    block-size 0.4s cubic-bezier(0.2, 0.7, 0.2, 1),
+    content-visibility 0.4s allow-discrete;
+}
+.lp-faq details[open]::details-content {
+  block-size: auto;
+}
+.lp-faq details > p {
+  transition:
+    opacity 0.35s ease,
+    translate 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.lp-faq details:not([open]) > p {
+  opacity: 0;
+  translate: 0 -8px;
+}
+@starting-style {
+  .lp-faq details[open] > p {
+    opacity: 0;
+    translate: 0 -8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-faq details::details-content,
+  .lp-faq details > p {
+    transition: none;
+  }
+}
+
+/* FAQ filter (Closing.tsx Faq, F1): the category radios hide the other questions, no JS */
+.lp-faq:has(input[value="setup"]:checked) details:not([data-cat="setup"]),
+.lp-faq:has(input[value="findings"]:checked) details:not([data-cat="findings"]),
+.lp-faq:has(input[value="privacy"]:checked) details:not([data-cat="privacy"]) {
+  display: none;
+}

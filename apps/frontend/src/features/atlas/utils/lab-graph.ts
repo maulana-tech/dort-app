@@ -1,0 +1,495 @@
+import type { Piece, Risk } from "../types";
+import { pctLabel, pieceCoverage } from "./coverage.ts";
+import type { IconKey } from "./icons.ts";
+import { type PlayModel, paramsOf } from "./playground.ts";
+import { protocolOf } from "./protocols.ts";
+import { word } from "./step-lines.ts";
+
+/**
+ * Lab node graph: cards with typed ports, wires between them. Pure logic only
+ * (port typing, wire validation, socket positions, the read-only contract graph and its layout);
+ * components/(main)/atlas/lab draws it.
+ */
+
+export type PortType =
+  | "actor"
+  | "amount"
+  | "slot"
+  | "event"
+  | "bool"
+  | "revert"
+  | "flow";
+/**
+ * Port dot colour — the only colour on a card, used semantically (DESIGN.md): blue = address /
+ * external, yellow = amount, green = pass / bool check, red = revert. State, events and execution
+ * order stay monochrome; the card's icon + label says what it is.
+ */
+export const PORT_COLOR: Record<PortType, string> = {
+  actor: "var(--blue)",
+  amount: "var(--yellow)",
+  slot: "var(--port)",
+  event: "var(--port)",
+  bool: "var(--green)",
+  revert: "var(--red)",
+  flow: "var(--dim)",
+};
+export type Port = { id: string; label: string; type: PortType };
+
+export type NodeKind =
+  | "entry"
+  | "slot"
+  | "ext"
+  | "event"
+  | "actor"
+  | "const"
+  | "call"
+  | "expect"
+  | "assert"
+  | "snapshot";
+/** Monochrome icon + label per card kind (inner header row); kinds are never told apart by colour. */
+export const KIND_META: Record<NodeKind, { label: string; icon: IconKey }> = {
+  entry: { label: "Function", icon: "in" },
+  call: { label: "Call", icon: "in" },
+  slot: { label: "Storage slot", icon: "cylinder" },
+  snapshot: { label: "Snapshot", icon: "grid" },
+  ext: { label: "External contract", icon: "plug" },
+  event: { label: "Event", icon: "antenna" },
+  actor: { label: "Actor", icon: "user" },
+  const: { label: "Amount", icon: "coin" },
+  expect: { label: "Expect revert", icon: "warn" },
+  assert: { label: "Assert", icon: "check" },
+};
+
+export type Badge = {
+  label: string;
+  tone: "bad" | "ok" | "warn" | "dim";
+  title?: string;
+};
+export type GNode = {
+  id: string;
+  kind: NodeKind;
+  title: string;
+  x: number;
+  y: number;
+  w: number;
+  inputs: Port[];
+  outputs: Port[];
+  /** execution-order ("then") ports on the title bar */
+  flow?: boolean;
+  /** inline value widgets, drawn above the port rows */
+  widgets?: number;
+  /** plain text rows under the ports */
+  rows?: string[];
+  /** atlas piece this card stands for (selection sync) */
+  piece?: string;
+  logo?: string;
+  badges?: Badge[];
+};
+export type End = { node: string; port: string };
+export type Wire = { from: End; to: End };
+
+/*
+ * Card geometry (lab.css must match): title row above the card, 10px gap, outer card with an 8px
+ * inset, inner card with 16px padding holding the kind row, widgets (36px control + 8px), 32px port
+ * rows and 24px text rows. Port dots (7px) sit just inside the inner padding, 12px before their label.
+ */
+export const TITLE = 22;
+const TITLE_GAP = 10;
+const OUTER = 8;
+const PAD = 16;
+const KIND_ROW = 22;
+export const HEADER = TITLE + TITLE_GAP + OUTER + PAD + KIND_ROW;
+export const ROW = 32;
+export const TEXT_ROW = 24;
+export const WIDGET = 44;
+const FOOT = PAD + OUTER;
+/** distance from the card edge to a port dot's centre */
+export const PORT_X = OUTER + PAD + 3.5;
+export const THEN: Port = { id: "then", label: "then", type: "flow" };
+
+export const nodeHeight = (n: GNode) =>
+  HEADER +
+  (n.widgets ?? 0) * WIDGET +
+  Math.max(n.inputs.length, n.outputs.length) * ROW +
+  (n.rows?.length ?? 0) * TEXT_ROW +
+  FOOT;
+
+/** Canvas position of a socket: inputs inside the left edge, outputs inside the right, `then` on the title row. */
+export function portPos(n: GNode, port: string, side: "in" | "out") {
+  if (port === "then")
+    return { x: side === "in" ? n.x : n.x + n.w, y: n.y + TITLE / 2 };
+  const x = side === "in" ? n.x + PORT_X : n.x + n.w - PORT_X;
+  const i = (side === "in" ? n.inputs : n.outputs).findIndex(
+    (p) => p.id === port,
+  );
+  return {
+    x,
+    y:
+      n.y + HEADER + (n.widgets ?? 0) * WIDGET + Math.max(0, i) * ROW + ROW / 2,
+  };
+}
+
+export function portOf(n: GNode, port: string, side: "in" | "out") {
+  if (port === "then") return n.flow ? THEN : null;
+  return (side === "in" ? n.inputs : n.outputs).find((p) => p.id === port);
+}
+
+/** Smooth horizontal cubic bezier between two sockets. */
+export function wirePath(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+) {
+  const dx = Math.max(40, Math.abs(b.x - a.x) / 2);
+  return `M${a.x},${a.y} C${a.x + dx},${a.y} ${b.x - dx},${b.y} ${b.x},${b.y}`;
+}
+
+/**
+ * Why `from` (an output) cannot be wired to `to` (an input), or null when it can: same card,
+ * port types differ, or an execution-order loop.
+ */
+export function wireError(
+  nodes: GNode[],
+  wires: Wire[],
+  w: Wire,
+): string | null {
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  const a = byId.get(w.from.node);
+  const b = byId.get(w.to.node);
+  const pa = a && portOf(a, w.from.port, "out");
+  const pb = b && portOf(b, w.to.port, "in");
+  if (!pa || !pb) return "no such port";
+  if (a === b) return "same card";
+  if (pa.type !== pb.type) return `${pa.type} › ${pb.type}`;
+  // a wire a→b closes a loop when b already reaches a (data and then wires both order cards)
+  const next = (id: string) =>
+    wires.filter((x) => x.from.node === id).map((x) => x.to.node);
+  const seen = new Set<string>();
+  const stack = [b.id];
+  while (stack.length) {
+    const id = stack.pop() as string;
+    if (id === a.id) return "loop";
+    if (seen.has(id)) continue;
+    seen.add(id);
+    stack.push(...next(id));
+  }
+  return null;
+}
+
+/** Adds `w`, replacing whatever was wired into the same input. */
+export const connect = (wires: Wire[], w: Wire): Wire[] => [
+  ...wires.filter((x) => x.to.node !== w.to.node || x.to.port !== w.to.port),
+  w,
+];
+
+// ---- solidity signatures ------------------------------------------------------
+
+/** Port type of a solidity type: (u)int › amount, bool › bool, address / contract › actor. */
+export function portType(sol: string): PortType {
+  if (/^u?int\d*$/.test(sol)) return "amount";
+  if (sol === "bool") return "bool";
+  return "actor";
+}
+
+const declOf = (
+  m: Pick<PlayModel, "byId" | "lines" | "lineOf">,
+  id: string,
+) => {
+  const p = m.byId[id];
+  return p ? (m.lines[m.lineOf(p)] ?? "") : "";
+};
+export const argsOf = (
+  m: Pick<PlayModel, "byId" | "lines" | "lineOf">,
+  fn: string,
+) => paramsOf(declOf(m, fn));
+export const returnsOf = (
+  m: Pick<PlayModel, "byId" | "lines" | "lineOf">,
+  fn: string,
+) => paramsOf(/returns\s*(\([^)]*\))/.exec(declOf(m, fn))?.[1] ?? "");
+
+export type Revert = {
+  /** "!owner", or a custom error "NotOwner()" */
+  reason: string;
+  /** "msg.sender == owner" */
+  cond: string;
+  line: number;
+  /** modifier holding the check, null when inline */
+  via: string | null;
+};
+
+const bodyOf = (m: Pick<PlayModel, "lineOf">, p: Piece) =>
+  Array.from({ length: p.n ?? 1 }, (_, i) => m.lineOf(p) + i);
+
+/** Every require / custom-error revert an entry point can hit: its modifiers first, then its body. */
+export function revertsOf(
+  m: Pick<PlayModel, "byId" | "pieces" | "lines" | "lineOf">,
+  fn: string,
+): Revert[] {
+  const p = m.byId[fn];
+  if (!p) return [];
+  const decl = declOf(m, fn);
+  const scan = (q: Piece, via: string | null): Revert[] =>
+    bodyOf(m, q).flatMap((i) => {
+      const l = m.lines[i] ?? "";
+      const req = /require\s*\((.*),\s*"([^"]*)"\s*\)\s*;/.exec(l);
+      if (req) return [{ reason: req[2], cond: req[1].trim(), line: i, via }];
+      const err = /if\s*\((.*)\)\s*revert\s+(\w+)\s*\(/.exec(l);
+      if (err)
+        return [{ reason: `${err[2]}()`, cond: `!(${err[1]})`, line: i, via }];
+      return [];
+    });
+  const mods = m.pieces.flatMap((q) => {
+    const mod = q.sys === "access" && /^modifier\s+(\w+)/.exec(q.find);
+    return mod && word(mod[1]).test(decl) ? scan(q, mod[1]) : [];
+  });
+  return [...mods, ...scan(p, null)];
+}
+
+// ---- contract graph -----------------------------------------------------------
+
+const RANK: Record<Risk, number> = { high: 3, med: 2, low: 1, info: 0 };
+const SEV = { high: "H", med: "M", low: "L", info: "I" } as const;
+export const slotName = (p: Piece) =>
+  (p.name.split("· ").pop() ?? p.name).replace("[]", "").trim();
+const uniq = <T>(xs: T[]) => [...new Set(xs)];
+
+/** Findings badge for a card: count and worst severity of the findings on that piece. */
+export function findingBadge(
+  m: Pick<PlayModel, "findings" | "lesion">,
+  id: string,
+): Badge | null {
+  const fs = m.findings.filter(
+    (f) => m.lesion[f.id] === id || (f.links ?? []).includes(id),
+  );
+  if (!fs.length) return null;
+  const worst = fs.reduce((a, b) =>
+    RANK[b.risk ?? "low"] > RANK[a.risk ?? "low"] ? b : a,
+  );
+  const r = worst.risk ?? "low";
+  return {
+    label: `▲${fs.length} ${SEV[r]}`,
+    tone: r === "high" || r === "med" ? "bad" : "warn",
+    title: fs.map((f) => f.name).join("\n"),
+  };
+}
+
+/**
+ * Ports of an entry function card: caller + typed args in; returns, slots written (`w:<slot>`),
+ * external calls (`c:<call>`), events (`e:<event>`) and revert reasons (`r:<reason>`) out.
+ */
+export function entryPorts(m: PlayModel, fn: string) {
+  const touched = (k: string) =>
+    uniq((m.seq[fn] ?? []).filter(([s]) => s === k).map(([, t]) => t));
+  const inputs: Port[] = [
+    {
+      id: "caller",
+      label: `caller · ${m.byId[fn]?.caller ?? "anyone"}`,
+      type: "actor",
+    },
+    ...argsOf(m, fn).map((a, i) => ({
+      id: `a${i}`,
+      label: `${a.name} : ${a.type}`,
+      type: portType(a.type),
+    })),
+  ];
+  const outputs: Port[] = [
+    ...returnsOf(m, fn).map((a, i) => ({
+      id: `ret${i}`,
+      label: a.name || a.type,
+      type: portType(a.type),
+    })),
+    ...touched("w").map((t) => ({
+      id: `w:${t}`,
+      label: slotName(m.byId[t]),
+      type: "slot" as const,
+    })),
+    ...touched("c").map((t) => ({
+      id: `c:${t}`,
+      label: m.byId[t]?.member ?? m.byId[t]?.name ?? t,
+      type: "actor" as const,
+    })),
+    ...touched("e").map((t) => ({
+      id: `e:${t}`,
+      label: m.byId[t]?.name ?? t,
+      type: "event" as const,
+    })),
+    ...uniq(revertsOf(m, fn).map((r) => r.reason)).map((r) => ({
+      id: `r:${r}`,
+      label: r,
+      type: "revert" as const,
+    })),
+  ];
+  return { inputs, outputs };
+}
+
+/** card widths and column x: 240px between columns so wires curve gently instead of bunching */
+const W = { entry: 360, target: 270 } as const;
+const COL_GAP = 240;
+export const COL = {
+  entry: 0,
+  slot: W.entry + COL_GAP,
+  side: W.entry + COL_GAP + W.target + COL_GAP,
+} as const;
+/** vertical gap from the bottom of one card to the title row of the next */
+export const GAP = 44;
+
+/**
+ * Read-only contract graph: one card per entry function (caller + typed args in; returns, slots
+ * written, external calls, events and revert reasons out), cards for storage slots, external
+ * contracts and events, wired from `model.seq`. Laid out in three columns, targets ordered by
+ * the mean position of the functions that touch them so wires cross less.
+ */
+export function contractGraph(m: PlayModel): { nodes: GNode[]; wires: Wire[] } {
+  const wires: Wire[] = [];
+  const nodes: GNode[] = [];
+
+  let y = 0;
+  for (const fn of m.entry) {
+    const p = m.byId[fn];
+    if (!p) continue;
+    const { inputs, outputs } = entryPorts(m, fn);
+    const badges: Badge[] = [];
+    const fb = findingBadge(m, fn);
+    if (fb) badges.push(fb);
+    const cov = m.coverage ? pieceCoverage(m as never, fn) : null;
+    if (cov)
+      badges.push({
+        label: pctLabel(cov.pct),
+        tone:
+          cov.state === "covered"
+            ? "ok"
+            : cov.state === "untested"
+              ? "bad"
+              : "dim",
+        title: `Tests cover lines ${cov.lines.hit}/${cov.lines.found}, branches ${cov.branches.hit}/${cov.branches.found}`,
+      });
+    const node: GNode = {
+      id: fn,
+      kind: "entry",
+      title: p.name.replace("()", ""),
+      x: COL.entry,
+      y,
+      w: W.entry,
+      inputs,
+      outputs,
+      piece: fn,
+      badges,
+    };
+    nodes.push(node);
+    y += nodeHeight(node) + GAP;
+    for (const o of outputs) {
+      const [k, t] = o.id.split(":");
+      const to =
+        k === "c" ? m.callTarget[t] : k === "w" || k === "e" ? t : null;
+      if (to)
+        wires.push({
+          from: { node: fn, port: o.id },
+          to: { node: to, port: "in" },
+        });
+    }
+  }
+
+  // a target sits level with the first port wired into it (its first use, in reading order), so
+  // that wire runs flat and the column fills from the top instead of piling up or sinking
+  const entryById = new Map(nodes.map((n) => [n.id, n]));
+  const mean = (id: string) =>
+    Math.min(
+      ...wires
+        .filter((w) => w.to.node === id)
+        .map((w) => {
+          const from = entryById.get(w.from.node);
+          return from ? portPos(from, w.from.port, "out").y : 0;
+        }),
+    );
+  const touching = (op: string, id: string) =>
+    m.entry.filter((fn) =>
+      (m.seq[fn] ?? []).some(([k, t]) => k === op && t === id),
+    );
+  const target = (p: Piece): GNode | null => {
+    const fb = findingBadge(m, p.id);
+    const base = {
+      id: p.id,
+      piece: p.id,
+      badges: fb ? [fb] : [],
+      outputs: [],
+      w: W.target,
+      x: 0,
+      y: 0,
+    };
+    const name = (id: string) => (m.byId[id]?.name ?? id).replace("()", "");
+    if (p.sys === "storage") {
+      const r = touching("r", p.id).map(name);
+      const w = touching("w", p.id).map(name);
+      return {
+        ...base,
+        kind: "slot",
+        title: `${slotName(p)}${p.mapping ? "[ ]" : ""}`,
+        // the wires in are the writers; the rows name them, so the card reads on its own
+        inputs: [{ id: "in", label: `slot ${p.slot ?? "?"}`, type: "slot" }],
+        rows: [
+          w.length
+            ? `written by ${w.join(", ")}`
+            : "never written after deploy",
+          ...(r.length ? [`read by ${r.join(", ")}`] : []),
+        ],
+      };
+    }
+    if (p.sys === "deps") {
+      const members = uniq(
+        Object.entries(m.callTarget)
+          .filter(([, d]) => d === p.id)
+          // the function called on it; older exports have no `member`, so take it from the
+          // call's name (oracle.getSpotPrice, msg.sender.call{value})
+          .map(([c]) => {
+            const call = m.byId[c];
+            return (
+              call?.member ??
+              call?.name.split(".").pop()?.replace(/\{.*$/, "") ??
+              c
+            );
+          }),
+      );
+      return {
+        ...base,
+        kind: "ext",
+        title: p.name,
+        inputs: [{ id: "in", label: "called", type: "actor" }],
+        rows: members.map((x) => `· ${x}()`),
+        logo: protocolOf(p)?.logo,
+      };
+    }
+    if (p.sys === "events")
+      return {
+        ...base,
+        kind: "event",
+        title: p.name,
+        inputs: [{ id: "in", label: "emitted", type: "event" }],
+        rows: paramsOf(m.lines[m.lineOf(p)] ?? "").map(
+          (a) => `${a.name} : ${a.type}`,
+        ),
+      };
+    return null;
+  };
+  const column = (sys: Piece["sys"][], x: number) => {
+    const ns = m.pieces
+      .filter((p) => sys.includes(p.sys))
+      .map(target)
+      .filter((n): n is GNode => !!n)
+      .map((n) => ({ n, want: mean(n.id) }))
+      .sort((a, b) => a.want - b.want);
+    // top to bottom: each card as close to where it wants to be as the card above allows;
+    // unwired cards (read-only config, unused events) close the column
+    let cy = 0;
+    for (const { n, want } of ns) {
+      n.x = x;
+      const inY = portPos({ ...n, y: 0 }, "in", "in").y;
+      n.y = Number.isFinite(want) ? Math.max(cy, Math.round(want - inY)) : cy;
+      cy = n.y + nodeHeight(n) + GAP;
+    }
+    return ns.map(({ n }) => n);
+  };
+  nodes.push(
+    ...column(["storage"], COL.slot),
+    ...column(["deps", "events"], COL.side),
+  );
+  return { nodes, wires };
+}

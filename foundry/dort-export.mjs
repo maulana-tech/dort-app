@@ -1,0 +1,327 @@
+#!/usr/bin/env node
+// Dort exporter: runs `forge test`, decodes the call traces with the project's own ABIs,
+// attributes every frame to the exact source lines it executed (via `forge test --debug --dump`
+// step data + solc source maps), and writes dort-data.json for the Dort Workbench. The `atlas`
+// section (contract map for /atlas) comes from dort-atlas.mjs; set DORT_ATLAS=<Contract> to pick.
+// Slither / Aderyn JSON reports are merged into its findings by dort-findings.mjs.
+//
+//   node dort-export.mjs                 # all tests
+//   node dort-export.mjs --mt test_deposit
+//   node dort-export.mjs --slither=out/slither.json --aderyn=report.json   # default: reports/*.json
+//
+// Coverage (atlas.coverage) comes from dort-coverage.mjs. No dependencies; needs `forge` on PATH.
+import { execFile, execFileSync } from 'node:child_process';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { availableParallelism, tmpdir } from 'node:os';
+import { basename, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { buildAtlas } from './dort-atlas.mjs';
+import { forkKeys, latestBlock, resolveChain } from './dort-chains.mjs';
+import { loadReports, mergeFindings, reportFiles } from './dort-findings.mjs';
+import { buildCoverage } from './dort-coverage.mjs';
+import { decodeParams, fmtWord, innermost, keccak256, lineIndex, mergeRun, parseSourceMap, pcToIc, revertReason, sig } from './dort-lib.mjs';
+
+const ROOT = process.cwd();
+// --chain <key>: run on a fork of that testnet (dort-chains.mjs); --forks all|a,b: add a run per
+// chain after the local one. Both are Dort's own flags, never passed to forge.
+const argv = process.argv.slice(2);
+const flag = name => {
+  const i = argv.findIndex(a => a === `--${name}` || a.startsWith(`--${name}=`));
+  if (i < 0) return null;
+  const v = argv[i].includes('=') ? argv[i].split('=')[1] : argv[i + 1];
+  argv.splice(i, argv[i].includes('=') ? 1 : 2);
+  return v;
+};
+const chainKey = flag('chain'), forksArg = flag('forks');
+const extra = argv.filter(a => !/^--(slither|aderyn)=/.test(a));
+const OUT_FILE = process.env.DORT_OUT || join(ROOT, 'dort-data.json');
+const TRACE_ONLY = !!process.env.DORT_TRACE_ONLY;
+let chain = null;
+if (chainKey) {
+  const c = resolveChain(chainKey);
+  const block = await latestBlock(c);
+  // pinned to one block, so every forge run below forks the same state (Foundry caches it)
+  extra.push('--fork-url', c.rpc, '--fork-block-number', String(block));
+  // on a fork every fresh address a fuzzer touches is an RPC round trip, so fuzz and invariant
+  // tests run short there (ponytail: fixed caps; the project's own FOUNDRY_* settings still win)
+  process.env.FOUNDRY_FUZZ_RUNS ??= '16';
+  process.env.FOUNDRY_INVARIANT_RUNS ??= '4';
+  process.env.FOUNDRY_INVARIANT_DEPTH ??= '8';
+  chain = { key: c.key, name: c.name, family: c.family, id: c.id, block };
+  console.log(`dort: forking ${c.name} at block ${block}`);
+}
+// a failed forge command ends the export with forge's own message (a compiler error, a bad
+// flag), not Node's dump of the whole error; `failOk` keeps the output of a run that exits 1
+// DORT_PROGRESS (set by the app's Start test, never needed by hand): machine lines `dort:: {…}`
+// beside the human ones, so the app lists the tests before forge reports and marks each result as
+// soon as it is in. Tagged with the run (local, or the fork's chain key).
+const progress = e => process.env.DORT_PROGRESS && console.log(`dort:: ${JSON.stringify({ run: chainKey || 'local', ...e })}`);
+const sh = (cmd, args, { failOk = false } = {}) => {
+  try {
+    return execFileSync(cmd, args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 512 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch (e) {
+    if (failOk && e.stdout?.includes('{')) return e.stdout;
+    console.error(`dort: ${cmd} ${args[0]} failed`);
+    console.error(String(e.stderr || e.message).trim().slice(0, 4000));
+    process.exit(1);
+  }
+};
+
+// ---------- artifacts: selectors, events, bytecode → contract, source maps ----------
+console.log('dort: building (forge build)');
+sh('forge', ['build']);
+const OUT = join(ROOT, 'out'), artifacts = [];
+const builds = existsSync(join(OUT, 'build-info')) ? readdirSync(join(OUT, 'build-info')).map(f => JSON.parse(readFileSync(join(OUT, 'build-info', f), 'utf8')).source_id_to_path || {}) : [];
+for (const dir of readdirSync(OUT)) {
+  if (dir === 'build-info' || !dir.endsWith('.sol')) continue;
+  for (const f of readdirSync(join(OUT, dir))) {
+    const a = JSON.parse(readFileSync(join(OUT, dir, f), 'utf8'));
+    const target = Object.entries(a.metadata?.settings?.compilationTarget || {})[0];
+    if (!target) continue;
+    // source ids are per compilation: pick the build that maps this artifact's own id to its file
+    const ids = builds.find(b => b[a.id] === target[0]) || builds[0] || {};
+    artifacts.push({ name: target[1], file: target[0], abi: a.abi, bytecode: (a.bytecode?.object || '').replace(/^0x/, ''), ids,
+      maps: { init: [a.bytecode?.object, a.bytecode?.sourceMap], run: [a.deployedBytecode?.object, a.deployedBytecode?.sourceMap] } });
+  }
+}
+
+const bySel = {}, events = {};
+for (const a of artifacts) for (const it of a.abi) {
+  if (it.type === 'function') (bySel[keccak256(sig(it)).slice(2, 10)] ||= []).push({ contract: a.name, it });
+  if (it.type === 'event') events[keccak256(sig(it))] = it;
+}
+
+// ---------- sources in scope (src/ + test/) ----------
+const sources = {}, lineOf = {};
+for (const a of artifacts) if (!a.file.startsWith('lib/') && existsSync(join(ROOT, a.file)) && !sources[a.file]) {
+  sources[a.file] = readFileSync(join(ROOT, a.file), 'utf8');
+  lineOf[a.file] = lineIndex(sources[a.file]);
+}
+
+// ---------- run tests ----------
+// a failing test makes forge exit 1; its JSON is still the whole run, and failures are what an
+// auditor came to see, so only a run without JSON (a build or flag error) stops the export
+if (process.env.DORT_PROGRESS) try {
+  // what forge is about to run (honours --mt / --mc / --mp), listed without running anything
+  const list = JSON.parse(execFileSync('forge', ['test', '--list', '--json', ...extra], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
+  progress({ plan: Object.values(list).flatMap(suites => Object.entries(suites).flatMap(([suite, names]) => names.map(name => ({ suite, name })))) });
+} catch {}
+console.log('dort: running forge test');
+const raw = sh('forge', ['test', '--json', '-vvvv', ...extra], { failOk: true });
+if (!raw.includes('{')) {
+  console.error('dort: forge ran no test (does a --mt / --mc filter match nothing?)');
+  process.exit(1);
+}
+const results = JSON.parse(raw.slice(raw.indexOf('{')));
+for (const [suiteId, suite] of Object.entries(results)) for (const [name, t] of Object.entries(suite.test_results))
+  progress({ result: { suite: suiteId.split(':').pop(), name, status: t.status, reason: t.reason, kind: t.kind } });
+const CHEAT = '0x7109709ecfa91a80626ff3989d68f67f5b1dd12d';
+
+// ---------- step data: one `forge test --debug --dump` per unit test, in parallel ----------
+const TMP = mkdtempSync(join(tmpdir(), 'dort-'));
+const passthrough = extra.filter((x, i) => !/^--(mt|mc|mp|match-test|match-contract|match-path)(=|$)/.test(x) && !/^--(mt|mc|mp|match-test|match-contract|match-path)$/.test(extra[i - 1] || ''));
+const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const jobs = [], dumps = {};
+for (const [suiteId, suite] of Object.entries(results)) for (const [testName, t] of Object.entries(suite.test_results)) {
+  if (t.status === 'Skipped' || !(t.kind === 'Unit' || 'Unit' in Object(t.kind))) continue; // fuzz/invariant replays differ from the traced run
+  const [file, contract] = suiteId.split(':'), dump = join(TMP, `${jobs.length}.json`);
+  jobs.push({ key: suiteId + '#' + testName, dump, args: ['test', '--debug', '--mp', file, '--mc', `^${esc(contract)}$`, '--mt', `^${esc(testName)}$`, '--dump', dump, ...passthrough] });
+}
+console.log(`dort: tracing ${jobs.length} unit tests step by step`);
+await Promise.all(Array.from({ length: Math.min(availableParallelism(), jobs.length) }, async () => {
+  // failing tests exit non-zero but still dump, so errors are ignored and the file decides
+  for (let j; (j = jobs.shift());) await new Promise(res => execFile('forge', j.args, { cwd: ROOT, maxBuffer: 64 * 1024 * 1024 }, () => res()))
+    .then(() => { if (existsSync(j.dump)) dumps[j.key] = j.dump; });
+}));
+
+const CALL_OPS = new Set([0xf0, 0xf1, 0xf2, 0xf4, 0xf5, 0xfa]), STORAGE_OPS = { 0x54: 'SLOAD', 0x55: 'SSTORE' };
+/** Re-join the flattened debug arena (a call's steps are split around each sub-call) into one entry per call. */
+function debugCalls(arena) {
+  const calls = [], stack = [];
+  for (const chunk of arena) {
+    const top = stack.at(-1);
+    let c = top;
+    if (!top || chunk.address.toLowerCase() !== top.address || chunk.steps[0]?.pc !== top.resume) {
+      c = { address: chunk.address.toLowerCase(), calldata: chunk.calldata.replace(/^0x/, ''), steps: [] };
+      calls.push(c);
+      stack.push(c);
+    }
+    for (const s of chunk.steps) c.steps.push(s);
+    const last = chunk.steps.at(-1);
+    if (last && CALL_OPS.has(last.op)) c.resume = last.pc + 1;
+    else stack.pop();
+  }
+  return calls;
+}
+
+const mapCache = new Map();
+function sourceMapFor(art, creation) {
+  const k = art.name + art.file + creation;
+  if (!mapCache.has(k)) {
+    const [code, sm] = art.maps[creation ? 'init' : 'run'];
+    mapCache.set(k, code && sm ? { ic: pcToIc(code), sm: parseSourceMap(sm) } : null);
+  }
+  return mapCache.get(k);
+}
+
+/** Steps of one call → executed lines, storage ops, and the source line of each sub-call / log op. */
+function attribute(steps, art, creation) {
+  const m = art && sourceMapFor(art, creation), at = s => {
+    const e = m && m.sm[m.ic[s.pc]], file = e && art.ids[e[2]];
+    return file && sources[file] ? { file, s: e[0], l: e[1], line: lineOf[file](e[0]) } : null;
+  };
+  const ranges = new Map(), storage = new Map(), callSites = [], logSites = [];
+  for (const s of steps) {
+    const loc = at(s);
+    if (loc) ranges.set(`${loc.file}:${loc.s}:${loc.l}`, [loc.file, loc.s, loc.l]);
+    if (CALL_OPS.has(s.op)) callSites.push(loc && { file: loc.file, line: loc.line });
+    else if (s.op >= 0xa0 && s.op <= 0xa4) logSites.push(loc && { file: loc.file, line: loc.line });
+    else if (STORAGE_OPS[s.op] && loc) storage.set(`${s.op}:${loc.file}:${loc.line}`, { op: STORAGE_OPS[s.op], file: loc.file, line: loc.line });
+  }
+  const lines = {};
+  for (const [file, s] of innermost([...ranges.values()])) (lines[file] ||= new Set()).add(lineOf[file](s));
+  return { lines: Object.fromEntries(Object.entries(lines).map(([f, set]) => [f, [...set].sort((a, b) => a - b)])), storage: [...storage.values()], callSites, logSites };
+}
+
+// ---------- decode ----------
+const tests = [];
+for (const [suiteId, suite] of Object.entries(results)) {
+  for (const [testName, t] of Object.entries(suite.test_results)) {
+    const names = { [CHEAT]: 'vm', ...Object.fromEntries(Object.entries(t.labeled_addresses || {}).map(([k, v]) => [k.toLowerCase(), v])) };
+    const contractAt = {};
+    // contracts created during deployment / setUp → name by matching init code
+    for (const [, arena] of t.traces || []) for (const n of arena.arena) {
+      const tr = n.trace;
+      if (!tr.kind.startsWith('CREATE')) continue;
+      const code = tr.data.replace(/^0x/, ''), a = artifacts.filter(x => x.bytecode && code.startsWith(x.bytecode)).sort((x, y) => y.bytecode.length - x.bytecode.length)[0];
+      if (a) { contractAt[tr.address.toLowerCase()] = a; names[tr.address.toLowerCase()] ||= a.name; }
+    }
+    const label = addr => names[addr.toLowerCase()] || addr.slice(0, 8) + '…';
+    const pretty = (type, v) => (type === 'address' ? label(v) : v);
+    const key = suiteId + '#' + testName;
+    const dbg = dumps[key] ? debugCalls(JSON.parse(readFileSync(dumps[key], 'utf8')).debug_arena) : [];
+    let cursor = 0;
+    const exec = (t.traces || []).find(([k]) => k === 'Execution');
+    const frames = [], transfers = [];
+    if (exec) {
+      const nodes = exec[1].arena;
+      const walk = (idx, depth, callSite) => {
+        const n = nodes[idx], tr = n.trace, addr = tr.address.toLowerCase();
+        const data = tr.data.replace(/^0x/, ''), sel = data.slice(0, 8), art = contractAt[addr];
+        const cands = bySel[sel] || [];
+        const hit = cands.find(c => art && c.contract === art.name) || cands[0];
+        const fr = { d: depth, kind: tr.kind, to: label(addr), contract: art?.name || (addr === CHEAT ? 'vm' : null), file: art?.file?.startsWith('lib/') ? null : art?.file || null,
+          fn: hit ? hit.it.name : (data ? '0x' + sel : 'fallback'), args: '', ret: '', ok: tr.success, status: tr.status, gas: tr.gas_used, events: [] };
+        if (hit) {
+          const ins = hit.it.inputs, outs = hit.it.outputs || [];
+          fr.args = decodeParams(ins, data.slice(8), pretty).map((v, i) => `${ins[i].name || 'arg' + i}=${v}`).join(', ');
+          const out = tr.output.replace(/^0x/, '');
+          if (tr.success && outs.length && out) fr.ret = decodeParams(outs, out, pretty).join(', ');
+        }
+        if (!tr.success) fr.ret = revertReason(tr.output);
+        if (callSite) fr.callSite = callSite;
+        // step data: debug calls only exist for frames that ran bytecode (not cheatcodes / precompiles)
+        let sites = { callSites: [], logSites: [] };
+        const c = dbg[cursor];
+        if (c && c.calldata === data && c.address === addr) {
+          cursor++;
+          const a = attribute(c.steps, art, tr.kind.startsWith('CREATE'));
+          if (Object.keys(a.lines).length) fr.lines = a.lines;
+          if (a.storage.length) fr.storage = a.storage;
+          sites = a;
+        }
+        const nCalls = n.ordering.filter(o => 'Call' in o).length;
+        const callSites = sites.callSites.length === nCalls ? sites.callSites : [], logSites = sites.logSites.length === n.logs.length ? sites.logSites : [];
+        frames.push(fr);
+        // children and logs, in execution order
+        let ci = 0;
+        for (const o of n.ordering) {
+          if ('Call' in o) walk(n.children[o.Call], depth + 1, callSites[ci++] || null);
+          else { const lg = n.logs[o.Log].raw_log, ev = events[lg.topics[0]];
+            const e = { name: ev ? ev.name : 'Log', args: {} };
+            if (ev) {
+              let ti = 1;
+              const plain = ev.inputs.filter(p => !p.indexed), vals = decodeParams(plain, lg.data, pretty);
+              for (const p of ev.inputs) e.args[p.name] = p.indexed
+                ? (/^(string|bytes|tuple)$|\]$/.test(p.type) ? lg.topics[ti++] : pretty(p.type, fmtWord(p.type, lg.topics[ti++].slice(2)))) // dynamic indexed = hash only
+                : vals[plain.indexOf(p)];
+            }
+            const ef = { d: depth + 1, kind: 'EVENT', to: label(addr), contract: art?.name, file: null, fn: e.name, args: Object.entries(e.args).map(([k, v]) => `${k}=${v}`).join(', '), ret: '', ok: true, gas: null };
+            if (logSites[o.Log]) ef.callSite = logSites[o.Log];
+            frames.push(ef);
+            if (e.name === 'Transfer') transfers.push({ token: label(addr), from: e.args.from, to: e.args.to, value: e.args.value }); }
+        }
+      };
+      walk(0, 0, null);
+    }
+    tests.push({ suite: suiteId.split(':').pop(), file: suiteId.split(':')[0], name: testName, status: t.status, kind: t.kind, reason: t.reason, frames, transfers });
+  }
+}
+rmSync(TMP, { recursive: true, force: true });
+
+/** Every other concrete contract outside lib/, test/ and script/ (mocks included): the Atlas's contract picker. */
+function otherContracts(root, skip) {
+  const out = join(root, 'out'), names = new Set();
+  for (const dir of existsSync(out) ? readdirSync(out) : []) {
+    if (!dir.endsWith('.sol')) continue;
+    for (const f of readdirSync(join(out, dir))) {
+      let ast;
+      try { ast = JSON.parse(readFileSync(join(out, dir, f), 'utf8')).ast; } catch { continue; }
+      if (!ast || /^(lib|test|script)\//.test(ast.absolutePath) || ast.absolutePath.endsWith('.t.sol')) continue;
+      for (const c of ast.nodes ?? [])
+        if (c.nodeType === 'ContractDefinition' && c.contractKind === 'contract' && !c.abstract && c.name !== skip) names.add(c.name);
+    }
+  }
+  return [...names].sort();
+}
+
+let atlas = null;
+// a fork run is only its traces (the --forks parent keeps the atlas, findings and coverage)
+if (!TRACE_ONLY) {
+  console.log('dort: mapping the contract (atlas, findings, coverage)');
+  try { atlas = buildAtlas({ root: ROOT }); } catch (e) { console.warn(`dort: atlas skipped — ${e.message}`); }
+}
+// the project's other contracts, so the Atlas can switch between them; the app marks mocks.
+// ponytail: one build per contract and no coverage / report findings for them (the main contract
+// keeps those); share one AST pass if exports of big projects get slow
+const atlases = [];
+if (atlas)
+  for (const name of otherContracts(ROOT, atlas.contract))
+    try { atlases.push(buildAtlas({ root: ROOT, contract: name })); } catch (e) { console.warn(`dort: atlas ${name} skipped — ${e.message}`); }
+if (atlases.length) console.log(`dort: atlas also maps ${atlases.map(a => a.contract).join(', ')}`);
+if (atlas) {
+  const files = reportFiles(ROOT, process.argv.slice(2));
+  mergeFindings(atlas, loadReports(files));
+  console.log(`dort: findings ${atlas.pieces.filter(p => p.sys === 'vulns').length} (${Object.entries(files).filter(([, f]) => f).map(([t]) => t).join(' + ') || 'atlas checks only'})`);
+}
+// coverage runs the whole suite (match filters dropped) so untested code is not an artefact of --mt
+if (atlas) try { atlas.coverage = buildCoverage({ root: ROOT, atlas, args: passthrough }); } catch (e) { console.warn(`dort: coverage skipped — ${e.message.split('\n')[0]}`); }
+
+const forgeVersion = sh('forge', ['--version']).split('\n')[0];
+const data = { generatedAt: new Date().toISOString(), forgeVersion, command: ['forge', 'test', '--json', '-vvvv', ...extra].join(' '), tests, sources, atlas, atlases, ...(chain ? { chain } : {}) };
+// --forks: one traced run per chain, each in a child export (sequential, gentle on public RPCs)
+if (forksArg) {
+  data.forks = {};
+  const own = process.argv.slice(2).filter((a, k, all) => !/^--(forks|chain)(=|$)/.test(a) && !/^--(forks|chain)$/.test(all[k - 1] ?? ''));
+  for (const key of forkKeys(forksArg)) {
+    const out = join(tmpdir(), `dort-fork-${key}-${process.pid}.json`);
+    try {
+      execFileSync(process.execPath, [fileURLToPath(import.meta.url), '--chain', key, ...own], { cwd: ROOT, stdio: 'inherit', env: { ...process.env, DORT_OUT: out, DORT_TRACE_ONLY: '1' } });
+      const run = JSON.parse(readFileSync(out, 'utf8'));
+      data.forks[key] = { chain: run.chain, generatedAt: run.generatedAt, tests: run.tests };
+      console.log(`dort: fork ${run.chain.name} — ${run.tests.length} tests`);
+    } catch (e) {
+      console.warn(`dort: fork ${key} skipped — ${e.message.split('\n')[0]}`);
+    } finally {
+      rmSync(out, { force: true });
+    }
+  }
+}
+// DORT_MERGE (set by the app's Start test for one test or a few): a filtered run updates only its
+// own tests in the previous dort-data.json, so the rest of the run stays in the app
+let out = data;
+if (process.env.DORT_MERGE && passthrough.length !== extra.length && existsSync(OUT_FILE))
+  try { out = mergeRun(JSON.parse(readFileSync(OUT_FILE, 'utf8')), data); } catch (e) { console.warn(`dort: merge skipped — ${e.message}`); }
+writeFileSync(OUT_FILE, JSON.stringify(out, null, 1));
+const traced = tests.reduce((n, t) => n + t.frames.filter(f => f.lines).length, 0);
+console.log(`dort: ${tests.length} tests, ${tests.reduce((n, t) => n + t.frames.length, 0)} frames (${traced} with source lines) → ${TRACE_ONLY ? 'the fork run' : basename(OUT_FILE)}`);
