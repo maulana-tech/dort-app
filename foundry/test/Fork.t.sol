@@ -4,7 +4,8 @@ pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
 
 /// Multicall3: deployed at the same address on Ethereum, Arbitrum, Base, Robinhood Chain, HyperEVM
-/// and Tempo (testnets included).
+/// and Tempo (testnets included). Portaldot V3 does not have it, so this test skips there and
+/// test/Portaldot.t.sol reads that chain's own live tokens instead.
 interface IMulticall3 {
     function getChainId() external view returns (uint256);
     function getBlockNumber() external view returns (uint256);
