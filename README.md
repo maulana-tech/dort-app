@@ -320,6 +320,101 @@ sequenceDiagram
     AI-->>Auditor: an explanation, never a verdict
 ```
 
+### Cross-chain bridge (Multi-Chain & Cross-Chain Infra)
+
+A lock-and-mint bridge between a home chain and Portaldot V3, built so its one real invariant can
+be *checked* rather than promised: **what Portaldot has minted always equals what the home chain
+has locked.**
+
+> **Trust model, stated plainly.** Messages cross by a **trusted relayer** — an address the owner
+> appoints, which reads one chain and calls the other. There is no light client and no proof of
+> remote state, so a stolen relayer key can move everything bridgeable. This is testnet scope.
+> Do not put value you care about on it.
+>
+> What the contracts enforce without trusting that relayer: a message pays out **at most once**; a
+> release can never exceed what is actually locked; transfers obey a per-message cap; the owner can
+> pause instantly; and the relayer may move value but never change roles, caps or the pause.
+
+| Piece | File | Role |
+|---|---|---|
+| Escrow | [`PortalBridgeEscrow.sol`](foundry/src/bridge/PortalBridgeEscrow.sol) | Home chain: `lock` holds the asset, `release` pays it back. Credits by balance delta, so a fee-on-transfer token cannot over-credit |
+| Minter | [`PortalBridgeMinter.sol`](foundry/src/bridge/PortalBridgeMinter.sol) | Portaldot: `mint` issues the wrapped copy, `burn` sends it home |
+| Wrapped asset | [`WrappedToken.sol`](foundry/src/bridge/WrappedToken.sol) | ERC-20 only its minter can mint or burn, bound to the home token and chain id |
+| Relayer | [`dort-relayer.mjs`](foundry/dort-relayer.mjs) | Plain Node, no dependencies. Reads events with `eth_getLogs`, submits with `cast`, checks `processed(id)` first so a restart is a no-op. Dry run by default |
+
+Both sides derive the message id from the same formula, so neither has to trust the number the
+other handed it:
+
+```
+id = keccak256(abi.encode(srcChainId, dstChainId, nonce, token, recipient, amount))
+```
+
+**Try the whole round trip, with no funds and no key of yours:**
+
+```bash
+bash script/bridge-local-demo.sh     # two local chains, lock → mint → burn → release
+forge test --mc PortalBridgeTest     # 13 tests: replay, caps, pause, roles, fuzzed invariant
+forge test --mc PortalBridgeCrossForkTest -vvv   # the same round trip on LIVE Base Sepolia ↔ Portaldot V3
+```
+
+The cross-fork test is the one worth reading: it forks **both chains at once**, deploys each side on
+its own fork, and after every step reads `locked` on Base Sepolia and `totalSupply` on Portaldot to
+compare them. Nothing is broadcast, so it costs nothing and needs no faucet.
+
+To put it on the real chains, deploy each side with
+[`DeployBridge.s.sol`](foundry/script/DeployBridge.s.sol) (it refuses the wrong chain), then point
+the relayer at both:
+
+```bash
+export BRIDGE_RELAYER=0x…
+forge script script/DeployBridge.s.sol --sig "home()"      --rpc-url https://sepolia.base.org --private-key $KEY --broadcast
+forge script script/DeployBridge.s.sol --sig "portaldot()" --rpc-url https://test-evm-rpc-v3.portaldot.dev --private-key $KEY --broadcast
+export DORT_RELAYER_KEY=0x…
+node dort-relayer.mjs --config bridge.json --send
+```
+
+### Portaldot V3 Architecture
+
+How a run reaches Portaldot, and what comes back. Everything left of the dashed line runs on the
+auditor's machine; nothing is ever broadcast on a fork run.
+
+```mermaid
+flowchart LR
+    subgraph local["On the auditor's machine"]
+        direction TB
+        CLI["node dort-export.mjs<br/>--chain portaldot-testnet"]
+        CHAINS["dort-chains.mjs<br/>latestBlock(): refuses an RPC<br/>that is not chain 420420777"]
+        FORGE["forge test --json -vvvv<br/>--fork-url … --fork-block-number N"]
+        REVM["revm executes locally:<br/>pulls code and storage on demand"]
+        DEC["dort-lib.mjs<br/>decode frames with project ABIs<br/>+ solc source maps → source lines"]
+        DATA[("dort-data.json")]
+        APP["Dort app<br/>Trace · Atlas · fork picker"]
+        CLI --> CHAINS --> FORGE --> REVM --> DEC --> DATA --> APP
+    end
+
+    subgraph chain["Portaldot V3 testnet"]
+        direction TB
+        RPC["eth-rpc (Polkadot SDK)<br/>test-evm-rpc-v3.portaldot.dev"]
+        RT["WASM runtime<br/>state and accounts"]
+        LIVE["Deployed EVM bytecode<br/>WPOT · pUSDT · your contracts"]
+        RPC --- RT --- LIVE
+    end
+
+    CHAINS -. "eth_chainId" .-> RPC
+    REVM -. "eth_getCode / eth_getStorageAt<br/>at the pinned block" .-> RPC
+    DEPLOY["forge script DeployPortaldot.s.sol<br/>--broadcast (needs a POT-funded key)"] -- "eth_sendRawTransaction" --> RPC
+
+    style DEPLOY stroke-dasharray: 4 3
+```
+
+Two details make this work, and both were verified against the live chain:
+
+1. **`eth_getCode` returns ordinary solc EVM bytecode**, even though the chain runs a WASM runtime.
+   That is why forge's EVM can execute Portaldot's deployed contracts inside a fork, and why the
+   decoder maps every frame to its ABI and source line with no Portaldot-specific code path.
+2. **No Multicall3 at the canonical address.** `Fork.t.sol` therefore skips on Portaldot, and
+   `Portaldot.t.sol` reads the chain's own live tokens as the proof the fork really touched it.
+
 ### Start Test State Machine
 
 ```mermaid
@@ -577,13 +672,28 @@ dort-data.json
 
 ## Hackathon Submission
 
+Portaldot Hacker House 2026.
+
 | | |
 |---|---|
-| **Category** | Security Tools |
-| **Chains** | Portaldot V3, Ethereum, Arbitrum, Base, Robinhood Chain, Hyperliquid, Tempo (testnet forks) |
+| **Track** | Node Operations & Tooling — network security analysis tooling for the Portaldot ecosystem |
+| **Chain** | Portaldot V3 Testnet, chain id `420420777`, EVM RPC `https://test-evm-rpc-v3.portaldot.dev` |
+| **Other chains** | Ethereum, Arbitrum, Base, Robinhood Chain, Hyperliquid, Tempo (testnet forks) |
+| **Contract address** | _not deployed yet — run [`script/DeployPortaldot.s.sol`](foundry/script/DeployPortaldot.s.sol) with a POT-funded testnet key_ |
+| **Transaction hash** | _written to `broadcast/DeployPortaldot.s.sol/420420777/run-latest.json` by that script_ |
 | **Website** | [dort-app.vercel.app](https://dort-app.vercel.app) |
 | **Source** | [github.com/maulana-tech/dort-app](https://github.com/maulana-tech/dort-app) |
 | **Team** | Bima Jadiva, developer |
+
+### What Portaldot gives this project, and what it gives back
+
+Dort needs a chain whose deployed contracts can be read and executed call by call. Portaldot V3
+provides exactly that through an Ethereum JSON-RPC over a WASM runtime, so a Portaldot auditor gets
+the same decoded traces an Ethereum auditor has — against contracts that really live on Portaldot
+(`PortaldotTest` reads Wrapped POT and Portal USDT at every run). In return, the ecosystem gets a
+defensive tool: a reviewer can fork Portaldot, replay a protocol's own Foundry tests against live
+state, and see every call next to the line of Solidity that ran, with Slither and Aderyn findings
+pinned to the same function.
 
 ---
 
