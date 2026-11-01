@@ -14,7 +14,7 @@ export function DocsVideo({ src, caption }: { src: string; caption: string }) {
     [],
   );
   return (
-    <figure className="overflow-hidden rounded-card border border-border bg-[#0b0b0d] shadow-float">
+    <figure className="overflow-hidden rounded-card border border-border bg-surface shadow-float">
       <video
         src={src}
         poster={src.replace(/\.mp4$/, ".jpg")}
