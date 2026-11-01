@@ -1,4 +1,5 @@
 export { AtlasWorkspace } from "./atlas/AtlasWorkspace";
+export { BridgeWorkspace } from "./bridge/BridgeWorkspace";
 export { ExploitsGallery } from "./exploits/ExploitsGallery";
 export { ExploitWorkspace } from "./exploits/ExploitWorkspace";
 export { ExploreGallery } from "./explore/ExploreGallery";
