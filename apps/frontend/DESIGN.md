@@ -1,8 +1,12 @@
 # Dort design system
 
-Monochrome node editor (ComfyUI-like): a near-black canvas with a faint dot grid, **graphite gradient
-cards** floating above it, soft white for whatever is active or primary, and colour used **only as tiny
+Blue node editor (ComfyUI-like): a deep-blue canvas with a faint dot grid, **blue gradient cards**
+floating above it, soft white for whatever is active or primary, and colour used **only as tiny
 semantic dots**. No coloured headers, bars, chips or wires anywhere.
+
+The whole UI is one blue: every surface and every text tone is the brand blue **`#0647B3`** (hue 217)
+held at a different lightness, so the app reads as blue and white. Blue is the *ground*, never an
+accent — a blue fill means nothing, exactly as the old graphite meant nothing.
 
 Source of truth: `src/app/globals.css` (tokens + utilities) and `src/components/ui` (primitives).
 If you need something that isn't covered there, add it there first. Don't invent one-off styles inside a feature.
@@ -13,38 +17,42 @@ Use the Tailwind names (`bg-raised`, `text-muted` …), or `var(--raised)` in fe
 
 ### Surfaces
 
+Every value below is hue 217, the brand blue's own hue; only lightness and saturation change.
+
 | Token | Value | Use |
 |---|---|---|
-| `canvas` | `#0e0e10` | App background, under everything |
-| `dot` | `#232327` | Dot-grid dots (22px grid) |
-| `card-top` → `card-bot` | `#2b2b2f` → `#1e1e21` | Outer card gradient (`bg-card-grad`, SVG `url(#g-card)`) |
-| `inner-top` → `inner-bot` | `#262629` → `#1b1b1e` | Nested inner card gradient (`bg-inner-grad`, SVG `url(#g-inner)`) |
-| `surface` | `#1e1e21` | Flat fallback where a gradient can't be used |
-| `raised` | `#252528` | Idle tiles, chips, badges sitting on a card |
-| `hover` | `#2e2e33` | Hover of `raised` |
-| `inset` | `#1c1c1f` | Select / control tiles, tracks |
-| `field` | `#1a1a1d` | Text inputs |
-| `border` | `rgba(255,255,255,.07)` | The card hairline (outer and inner card) |
-| `border-strong` | `rgba(255,255,255,.13)` | Hovered / selected card or field |
+| `brand` | `#0647b3` | The blue everything is derived from. A fill (glow, blue surface), never text |
+| `brand-lit` | `#0a5fe0` | The same blue, lifted, for a hover or a lit edge |
+| `canvas` | `#0647b3` | App background, under everything |
+| `dot` | `#236ce7` | Dot-grid dots (22px grid) |
+| `card-top` → `card-bot` | `#0e5ee1` → `#0d52c5` | Outer card gradient (`bg-card-grad`, SVG `url(#g-card)`) |
+| `inner-top` → `inner-bot` | `#0f56cc` → `#0e4cb4` | Nested inner card gradient (`bg-inner-grad`, SVG `url(#g-inner)`) |
+| `surface` | `#0d52c5` | Flat fallback where a gradient can't be used |
+| `raised` | `#115bd4` | Idle tiles, chips, badges sitting on a card |
+| `hover` | `#1868ec` | Hover of `raised` |
+| `inset` | `#0a429e` | Select / control tiles, tracks |
+| `field` | `#083e96` | Text inputs |
+| `border` | `rgba(255,255,255,.12)` | The card hairline (outer and inner card) |
+| `border-strong` | `rgba(255,255,255,.2)` | Hovered / selected card or field |
 
 ### Text
 
 | Token | Value | Use |
 |---|---|---|
-| `fg` | `#e6e6e8` | Titles, primary text |
-| `text` | `#dcdcde` | Inner-card header (kind row), chip text |
-| `body` | `#b9b9be` | Body text in cards (13px, line-height 1.5) |
-| `port` | `#a3a3a9` | Port labels (12.5px) |
-| `muted` | `#9b9ba1` | Control labels, secondary text |
-| `dim` | `#6f6f76` | Hints, placeholders, corner stats, disabled |
-| `primary` / `primary-fg` | `#f4f4f5` / `#0e0e10` | Active / primary tile: soft white fill, near-black text |
+| `fg` | `#ffffff` | Titles, primary text |
+| `text` | `#e5efff` | Inner-card header (kind row), chip text |
+| `body` | `#c6d6f1` | Body text in cards (13px, line-height 1.5) |
+| `port` | `#b0c5e8` | Port labels (12.5px) |
+| `muted` | `#a3bae0` | Control labels, secondary text |
+| `dim` | `#8ba5d0` | Hints, placeholders, corner stats, disabled |
+| `primary` / `primary-fg` | `#ffffff` / `#0647b3` | Active / primary tile: soft white fill, near-black text |
 
 ### Wires
 
 | Token | Value | Use |
 |---|---|---|
-| `wire` | `#7d7d84` | Every wire, 1px smooth bezier |
-| `wire-on` | `#f4f4f5` | Selected / active path |
+| `wire` | `#97b0d8` | Every wire, 1px smooth bezier |
+| `wire-on` | `#ffffff` | Selected / active path |
 | red at 70% | `#f87171` | Finding path (write after external call, revert wire) |
 
 ### Semantic dots — the only colour
@@ -77,7 +85,7 @@ The inner card sits 8px inside the outer card. Never put a sharp corner inside a
 
 ## Elevation
 
-- Cards: `bg-card-grad`, `border border-border`, `shadow-soft` (`0 10px 30px rgba(0,0,0,.45)`).
+- Cards: `bg-card-grad`, `border border-border`, `shadow-soft` (`0 10px 30px rgba(1,12,32,.45)`).
   Floating toolbars, docks, popovers: `shadow-float`.
 - The inner card: `bg-inner-grad` with its own faint `border`.
 - Separate with gradient contrast and spacing, not 1px lines. Avoid `divide-*` grids of boxes.
@@ -106,11 +114,11 @@ The inner card sits 8px inside the outer card. Never put a sharp corner inside a
 - **Tabs / TileGroup**: separate tiles with `gap-1.5`, no container, no underline, no folder tabs.
 - **SegmentedControl**: a compact choice inside one `inset` tray; the active segment is a white tile.
 - **Button**: `primary` (soft white), `accent` (pastel mint pill, near-black text, sparkle icon — the ONE main action, e.g. Run),
-  `secondary` (graphite, default), `ghost`. At most one `primary` or `accent` per area.
-- **Control row**: label left (`muted`, 13px), control right as a dark inset tile (`inset`, radius 10, 36px tall, value `#f0f0f2`, ▾ caret via `select-caret`).
+  `secondary` (blue, default), `ghost`. At most one `primary` or `accent` per area.
+- **Control row**: label left (`muted`, 13px), control right as a dark inset tile (`inset`, radius 10, 36px tall, value `#eff1f3`, ▾ caret via `select-caret`).
   Steppers are three separate tiles (◀ 30 ▶).
 - **Input**: `field` fill, radius 12, placeholder `dim`, white-ish focus border (no coloured rings).
-- **Chip**: graphite pill; the tone colours only its `dot`. **ToggleChip**: filter pill with a white dot when on.
+- **Chip**: blue pill; the tone colours only its `dot`. **ToggleChip**: filter pill with a white dot when on.
 - **Meter**: monochrome light-grey fill on a dark track; pass `tone="text-red"` only for bad values.
 - **Tooltip**, **KV**, **IconButton** (always pass `label`).
 
@@ -135,7 +143,7 @@ Never for decoration, headings or large areas.
 ### Node card anatomy (Lab, graph, flow nodes)
 
 - **Title outside, above the card**: white dot + title (14px 500 `fg`), 10px above the card. Badges
-  (`▲1 H`, `82%`) right-aligned in the same row, 8px apart: graphite pills with a semantic dot.
+  (`▲1 H`, `82%`) right-aligned in the same row, 8px apart: blue pills with a semantic dot.
 - **Inner header**: monochrome kind icon + label (14px `text`) — "Function", "Storage slot", "External contract", "Event"…
 - **Port rows**: 32px tall, `label ●` with the label 12.5px `port`, 12px between label and dot. Inputs in the left
   column, outputs in the right, ≥24px apart; long names ellipsize with a tooltip.
@@ -148,10 +156,10 @@ Never for decoration, headings or large areas.
 
 ## Floating chrome
 
-- **Toolbar**: graphite gradient container (`rounded-card`, `p-1.5`, `gap-1.5`) holding tiles or IconButtons.
-- **FloatingDock**: graphite bottom-centre card holding inputs and a row of tiles.
+- **Toolbar**: blue gradient container (`rounded-card`, `p-1.5`, `gap-1.5`) holding tiles or IconButtons.
+- **FloatingDock**: blue bottom-centre card holding inputs and a row of tiles.
 - Small grey stats (counts, zoom %, hints) sit in canvas corners as `dim` 12.5px text with no box.
-- App header: logo tile, `dort` wordmark and route tiles on the left; graphite status chips with dots on the right.
+- App header: logo tile, `dort` wordmark and route tiles on the left; blue status chips with dots on the right.
 
 ## Do / don't
 
