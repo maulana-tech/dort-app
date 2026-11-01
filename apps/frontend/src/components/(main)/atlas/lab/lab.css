@@ -1,4 +1,4 @@
-/* Lab node editor (DESIGN.md "Node card anatomy"): "● Title" + badges above each card, graphite
+/* Lab node editor (DESIGN.md "Node card anatomy"): "● Title" + badges above each card, blue
    gradient outer card with a nested inner card, a monochrome kind row (icon + label), 32px port
    rows with 7px semantic dots, 1px grey bezier wires.
    Geometry must match utils/lab-graph.ts: TITLE 22 + 10 gap, outer inset 8, inner padding 16,
@@ -34,7 +34,7 @@
   margin: 0;
   padding: 6px 16px 8px;
   font-size: 12.5px;
-  color: var(--dim);
+  color: var(--on-canvas-dim);
   pointer-events: none;
 }
 
@@ -137,7 +137,8 @@
   height: 22px;
   margin-bottom: 10px;
   padding: 0 6px;
-  color: var(--fg);
+  /* the title sits above the card, on the blue canvas — not inside it */
+  color: var(--on-canvas);
   cursor: pointer;
 }
 .lab-card header .kdot {
@@ -145,7 +146,7 @@
   height: 6px;
   flex: none;
   border-radius: 50%;
-  background: var(--fg);
+  background: var(--on-canvas);
 }
 .lab-card header b {
   flex: 1;
@@ -164,7 +165,7 @@
   border-radius: 50%;
   background: var(--raised) center / contain no-repeat;
 }
-/* badges: graphite pill, the semantic colour lives only on its dot */
+/* badges: blue pill, the semantic colour lives only on its dot */
 .lab-card .badge {
   flex: none;
   display: inline-flex;
@@ -173,7 +174,7 @@
   height: 20px;
   padding: 0 8px;
   border-radius: 8px;
-  background: var(--raised);
+  background: var(--surface);
   box-shadow: inset 0 0 0 1px var(--border);
   font: 12px / 20px var(--font-geist-mono);
   color: var(--text);
@@ -211,7 +212,7 @@
   background: linear-gradient(180deg, var(--card-top), var(--card-bot));
   box-shadow:
     inset 0 0 0 1px var(--border),
-    0 10px 30px rgba(0, 0, 0, 0.45);
+    0 10px 30px rgba(3, 28, 78, 0.45);
   transition: box-shadow 0.15s;
 }
 .lab-card .lab-inner {
@@ -226,23 +227,23 @@
 .lab-card.sel .lab-body {
   box-shadow:
     inset 0 0 0 1px var(--border-strong),
-    0 14px 40px rgba(0, 0, 0, 0.55);
+    0 14px 40px rgba(3, 28, 78, 0.55);
 }
 .lab-card.running .lab-body {
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.4),
-    0 14px 40px rgba(0, 0, 0, 0.55);
+    0 14px 40px rgba(3, 28, 78, 0.55);
 }
 .lab-card.run-pass .lab-body {
   box-shadow:
     inset 0 0 0 1px color-mix(in srgb, var(--green) 40%, transparent),
-    0 10px 30px rgba(0, 0, 0, 0.45);
+    0 10px 30px rgba(3, 28, 78, 0.45);
 }
 .lab-card.run-fail .lab-body,
 .lab-card.run-revert .lab-body {
   box-shadow:
     inset 0 0 0 1px color-mix(in srgb, var(--red) 50%, transparent),
-    0 10px 30px rgba(0, 0, 0, 0.45);
+    0 10px 30px rgba(3, 28, 78, 0.45);
 }
 
 /* inner header: monochrome kind icon + label — kinds are never colour-coded */
@@ -289,7 +290,7 @@
   background-color: var(--inset);
   border: 1px solid var(--border);
   border-radius: 10px;
-  color: #f0f0f2;
+  color: var(--fg);
   font: 13px var(--font-outfit);
   transition: border-color 0.15s;
 }
@@ -303,7 +304,7 @@
 .lab-card .w select {
   appearance: none;
   padding-right: 30px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%239b9ba1' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23909bac' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
 }
@@ -430,7 +431,7 @@
   background: linear-gradient(180deg, var(--card-top), var(--card-bot));
   box-shadow:
     inset 0 0 0 1px var(--border),
-    0 10px 30px rgba(0, 0, 0, 0.45);
+    0 10px 30px rgba(3, 28, 78, 0.45);
   font: 12px / 18px var(--font-geist-mono);
   color: var(--body);
   pointer-events: none;
@@ -470,7 +471,7 @@
   background: linear-gradient(180deg, var(--card-top), var(--card-bot));
   box-shadow:
     inset 0 0 0 1px var(--border),
-    0 14px 40px rgba(0, 0, 0, 0.55);
+    0 14px 40px rgba(3, 28, 78, 0.55);
   font-size: 13px;
   color: var(--muted);
 }
