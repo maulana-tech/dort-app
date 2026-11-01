@@ -86,7 +86,7 @@ function Fit({
   );
 }
 
-/** the panel chrome every mini UI shares: graphite card, white dot + title, dim aside */
+/** the panel chrome every mini UI shares: blue card, white dot + title, dim aside */
 function Panel({
   title,
   aside,
@@ -136,7 +136,7 @@ function MiniSource({ model, f }: { model: Model; f?: Piece }) {
       aside={`${model.file.split("/").pop()} L${lines[0] + 1}–${lines[lines.length - 1] + 1}`}
     >
       {f && (
-        <p className="px-3 pt-2.5 pb-1.5 font-mono text-[11.5px] text-text">
+        <p className="px-3 pt-2.5 pb-1.5 font-mono text-[11.5px] text-fg">
           {f.name}
         </p>
       )}
@@ -275,7 +275,7 @@ function MiniSearch({ model }: { model: Model }) {
         {hits.map((h, i) => (
           <li
             key={h.p.id}
-            className={`grid grid-cols-[24px_56px_1fr_auto] items-center gap-2.5 rounded-tile px-2 py-1.5 text-[13px] ${i ? "text-muted" : "bg-hover text-fg"}`}
+            className={`grid grid-cols-[24px_56px_1fr_auto] items-center gap-2.5 rounded-tile px-2 py-1.5 text-[13px] ${i ? "text-body" : "bg-hover text-fg"}`}
           >
             <PieceIcon piece={h.p} />
             <span className="font-mono text-[12px] text-fg">{h.code}</span>
