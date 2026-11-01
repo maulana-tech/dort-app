@@ -114,7 +114,7 @@
 .atlas .ex-card {
   fill: url(#g-card);
   stroke: var(--border);
-  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(0 10px 30px rgba(3, 28, 78, 0.45));
 }
 .atlas .ex-inset {
   fill: url(#g-inner);
@@ -212,7 +212,7 @@
 }
 .atlas .ex-leaf.on .ex-leafbox {
   stroke: rgba(255, 255, 255, 0.22);
-  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(0 10px 30px rgba(3, 28, 78, 0.45));
 }
 .atlas .ex-dot {
   stroke: var(--card-bot);
@@ -267,6 +267,6 @@
   box-shadow: var(--shadow-float);
 }
 .atlas .qsearch::backdrop {
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(3, 28, 78, 0.55);
   backdrop-filter: blur(2px);
 }
