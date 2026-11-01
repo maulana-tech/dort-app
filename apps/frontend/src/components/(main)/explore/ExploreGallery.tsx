@@ -22,10 +22,10 @@ export function ExploreGallery({ items }: { items: ProtocolSummary[] }) {
           <span className="size-1.5 rounded-full bg-green" />
           {items.length} protocols · pinned releases · read from the AST
         </p>
-        <h1 className="mt-4 font-medium text-fg text-ui-display">
+        <h1 className="mt-4 font-medium text-on-canvas text-ui-display">
           Explore DeFi protocols
         </h1>
-        <p className="mt-3 max-w-[620px] text-[14px] text-body leading-relaxed">
+        <p className="mt-3 max-w-[620px] text-[14px] text-on-canvas-muted leading-relaxed">
           Each one mapped from its own code: which contracts exist, how they
           call each other, and every business flow step by step. Open one, then
           ask your AI about it.
@@ -48,7 +48,7 @@ export function ExploreGallery({ items }: { items: ProtocolSummary[] }) {
                     <span className="truncate text-[13px] text-muted">
                       {p.version}
                     </span>
-                    <span className="ml-auto flex-none text-[12.5px] text-dim">
+                    <span className="ml-auto flex-none text-[12.5px] text-muted">
                       {p.category}
                     </span>
                   </span>
@@ -88,7 +88,7 @@ export function ExploreGallery({ items }: { items: ProtocolSummary[] }) {
             </li>
           ))}
         </ul>
-        <p className="mt-4 text-[12.5px] text-dim leading-normal">
+        <p className="mt-4 text-[12.5px] text-on-canvas-muted leading-normal">
           Not here yet: Curve (Vyper; the map reads solc ASTs) and Lido (solc
           0.4.24 with Aragon). Structure only means the licence (BUSL) keeps the
           code on GitHub: every function links to its line at the pinned commit.
@@ -127,7 +127,7 @@ function HubPreview({ preview: m }: { preview: ProtocolSummary["preview"] }) {
           />
         ))}
       </svg>
-      {/* the hub: graphite card, title and role */}
+      {/* the hub: blue card, title and role */}
       <span className="absolute top-1/2 left-2.5 flex w-[90px] -translate-y-1/2 flex-col rounded-tile border border-border-strong bg-card-grad px-2 py-1.5 shadow-soft">
         <span
           className="truncate font-medium text-[11.5px] text-fg"
@@ -152,7 +152,9 @@ function HubPreview({ preview: m }: { preview: ProtocolSummary["preview"] }) {
           </span>
         ))}
         {m.more > 0 && (
-          <span className="px-1.5 text-[10.5px] text-dim">+{m.more} more</span>
+          <span className="px-1.5 text-[10.5px] text-on-canvas-muted">
+            +{m.more} more
+          </span>
         )}
       </span>
     </span>
