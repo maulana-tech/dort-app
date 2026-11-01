@@ -62,13 +62,13 @@ export function TraceWidget({
               />
               <KindBadge kind={kind} size="sm" />
               <span className="font-mono text-[13px]">
-                <span className="text-muted">{f.to}</span>
+                <span className="text-body">{f.to}</span>
                 <span className="mx-px text-dim">.</span>
                 <span className="font-medium text-fg">{f.fn}</span>
               </span>
               {f.ret ? (
                 <span
-                  className={`hidden rounded-chip bg-raised px-2 py-0.5 font-mono text-[11px] sm:inline ${f.ok ? "text-muted" : "text-red"}`}
+                  className={`hidden rounded-chip bg-raised px-2 py-0.5 font-mono text-[11px] sm:inline ${f.ok ? "text-body" : "text-red"}`}
                 >
                   {f.ok ? `→ ${human(f.ret)}` : `✕ ${f.ret}`}
                 </span>
