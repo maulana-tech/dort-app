@@ -118,7 +118,7 @@ export function ProductTabs({
         role="tablist"
         aria-label="Dort views"
         data-lp="tabs"
-        className="relative z-10 mb-6 flex max-w-full gap-0.5 overflow-x-auto rounded-full border border-white/[.08] bg-[#0b0b0c]/90 p-1"
+        className="relative z-10 mb-6 flex max-w-full gap-0.5 overflow-x-auto rounded-full border border-white/[.08] bg-[#ffffff]/90 p-1"
       >
         {VIEWS.map((s, i) => (
           <button
@@ -133,7 +133,7 @@ export function ProductTabs({
             onFocus={() => setPaused(true)}
             onBlur={() => setPaused(false)}
             className={`relative overflow-hidden whitespace-nowrap rounded-full px-4 py-1.5 text-[13px] transition-colors ${
-              i === at ? "bg-white/[.09] text-fg" : "text-muted hover:text-fg"
+              i === at ? "bg-white/[.09] text-fg" : "text-body hover:text-fg"
             }`}
           >
             {s.label}
