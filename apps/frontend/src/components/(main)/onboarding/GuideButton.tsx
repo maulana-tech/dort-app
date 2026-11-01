@@ -11,7 +11,7 @@ export function GuideButton() {
     <button
       type="button"
       onClick={() => setPane("welcome")}
-      className="hdr-pill"
+      className="hdr-pill on-blue"
     >
       <PhIcon d={PH.compass} className="size-[15px] text-muted" />
       Get started
