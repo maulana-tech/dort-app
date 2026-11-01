@@ -9,7 +9,7 @@
       context') — round marks wired into ONE rounded square (its lit corner pins dropped), a light streak
       through it → .lp-hub-core (the wordmark's tile, 56px tall, that later hands over to the square
       growing into the Lab), the wires
-   B1 id.pinterest.com/pin/23432860626141831/   — graphite fine grid under a soft centre light
+   B1 id.pinterest.com/pin/23432860626141831/   — blue fine grid under a soft centre light
    B2 id.pinterest.com/pin/70437490488374/      — black dot field, a few dots lit → .lp-hub-bg
       (its dots were dropped; the fine grid and the centre light remain)
    Geometry: the origin (.lp-hub-o) is the hub's centre; in the pinned stage that is the stage
@@ -120,7 +120,7 @@
   height: 5px;
   border-radius: 9999px;
   border: 1px solid rgb(255 255 255 / 0.35);
-  background: #0b0b0c;
+  background: #ffffff;
 }
 /* a packet rides each wire into the core: transform + opacity only */
 .lp-hub-wire > i {
@@ -170,8 +170,9 @@
   width: calc(var(--cw) * 2);
   height: calc(var(--c) * 2);
   border-radius: 14px;
-  border: 1px solid rgb(255 255 255 / 0.16);
-  background: linear-gradient(180deg, #1b1c1e, #0c0c0d);
+  border: 1px solid rgb(255 255 255 / 0.3);
+  /* holds the white wordmark, so it stays the brand blue rather than turning white on white */
+  background: linear-gradient(180deg, #0a52cc, #0647b3);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.1),
     0 0 48px -8px rgb(255 255 255 / 0.2);
