@@ -93,7 +93,7 @@ export function TestChooser({
                     type="checkbox"
                     checked={on.has(keyOf(t))}
                     onChange={() => flip(keyOf(t))}
-                    className="size-3.5 flex-none accent-[#4ade80]"
+                    className="size-3.5 flex-none accent-[#126c34]"
                   />
                   <span className="truncate font-mono text-[12.5px] text-fg">
                     {t.name}
