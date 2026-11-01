@@ -4,6 +4,8 @@
  * edge (Uniswap / Rabby's network pills), so Tempo's black square still reads on the dark UI.
  */
 const FILE: Record<string, string> = {
+  // Portaldot's own mark, from its node console (node-console.portaldot.dev)
+  portaldot: "portaldot.png",
   ethereum: "ethereum.svg",
   arbitrum: "arbitrum.webp",
   base: "base.webp",
