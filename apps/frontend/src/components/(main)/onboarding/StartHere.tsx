@@ -24,7 +24,7 @@ const agentPrompt = (
 1. Check that \`forge --version\` and \`node --version\` (Node 20 or newer) work. If Foundry is missing, ask me first, then install it with \`curl -L https://foundry.paradigm.xyz | bash\` and \`foundryup\`.
 2. In the project root (the folder with foundry.toml), download the Dort exporter from the Dort app:
    curl -fsSLO -w "saved %{filename_effective}\\n" "${origin}/exporter/dort-{export,lib,atlas,findings,coverage,chains,bridge}.mjs"
-3. Run \`node dort-export.mjs\` there. It runs \`forge test\` with traces and writes dort-data.json. If Slither or Aderyn JSON reports exist in reports/, it merges them. If the build or a test fails, show me the error. Only if I ask for forks: \`node dort-export.mjs --forks all\` runs the same tests on copies of six EVM testnets (read-only public RPCs, no transaction is sent).
+3. Run \`node dort-export.mjs\` there. It runs \`forge test\` with traces and writes dort-data.json. If Slither or Aderyn JSON reports exist in reports/, it merges them. If the build or a test fails, show me the error. Only if I ask for forks: \`node dort-export.mjs --forks all\` runs the same tests on copies of seven EVM testnets (Portaldot V3 first) (read-only public RPCs, no transaction is sent).
 4. Tell me the absolute path of dort-data.json and the summary lines the exporter printed.
 
 Optional, only if I say yes: download ${origin}/exporter/dort-mcp.mjs and register it as an MCP server pointed at that dort-data.json (for Claude Code: \`claude mcp add dort -- node <abs path>/dort-mcp.mjs --data=<abs path>/dort-data.json\`), so you can read the run and propose test scenarios in the Dort Lab${LOCAL_APP ? "" : " (they reach this site while dort-bridge.mjs runs)"}.
