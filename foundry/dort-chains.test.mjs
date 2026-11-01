@@ -5,8 +5,10 @@ import { CHAINS, forkKeys, latestBlock, resolveChain } from './dort-chains.mjs';
 
 test('resolves chains, RPC overridable, unknown keys throw', () => {
   assert.equal(resolveChain('base-sepolia', {}).rpc, CHAINS['base-sepolia'].rpc);
+  assert.equal(resolveChain('portaldot-testnet', {}).id, 420420777);
+  assert.equal(resolveChain('portaldot-testnet', { DORT_RPC_PORTALDOT_TESTNET: 'http://pd' }).rpc, 'http://pd');
   assert.equal(resolveChain('base-sepolia', { DORT_RPC_BASE_SEPOLIA: 'http://x' }).rpc, 'http://x');
-  assert.throws(() => resolveChain('mainnet', {}), /one of sepolia/);
+  assert.throws(() => resolveChain('mainnet', {}), /one of portaldot-testnet, sepolia/);
   assert.deepEqual(forkKeys('all'), Object.keys(CHAINS));
   assert.deepEqual(forkKeys('sepolia, tempo-testnet'), ['sepolia', 'tempo-testnet']);
   assert.throws(() => forkKeys('sepolia,nope'));
