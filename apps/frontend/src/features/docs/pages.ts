@@ -426,7 +426,10 @@ export const GROUPS: DocGroup[] = [
                 ],
                 ["dort-findings.mjs", "Slither and Aderyn reports, merged"],
                 ["dort-coverage.mjs", "forge coverage mapped onto the atlas"],
-                ["dort-chains.mjs", "The six testnets for --chain and --forks"],
+                [
+                  "dort-chains.mjs",
+                  "The seven testnets for --chain and --forks",
+                ],
                 [
                   "dort-bridge.mjs",
                   "Optional: lets the hosted app run the exporter ([bridge](/docs/bridge))",
@@ -442,7 +445,7 @@ export const GROUPS: DocGroup[] = [
       {
         slug: "forks",
         title: "Testnet forks",
-        lead: "Run the same tests on copies of six EVM testnets, read-only.",
+        lead: "Run the same tests on copies of seven EVM testnets, Portaldot V3 first, read-only.",
         blocks: [
           {
             p: "`--chain <key>` runs your tests on a fork of that chain at its latest block; `--forks all` adds one such run per chain next to the local one. Nothing is sent on-chain: no key, no gas. Trace and Atlas switch between the runs with the fork picker.",
@@ -456,6 +459,7 @@ export const GROUPS: DocGroup[] = [
             table: {
               head: ["Key", "Chain"],
               rows: [
+                ["portaldot-testnet", "Portaldot V3 Testnet (420420777)"],
                 ["sepolia", "Ethereum Sepolia"],
                 ["arbitrum-sepolia", "Arbitrum Sepolia"],
                 ["base-sepolia", "Base Sepolia"],
