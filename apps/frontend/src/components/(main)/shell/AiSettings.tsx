@@ -173,7 +173,7 @@ export function AiSettings() {
         title={
           connected ? "Change your AI provider" : "Connect your own AI to Ask"
         }
-        className={`group hdr-pill ${connected ? "" : "lit"}`}
+        className={`group hdr-pill on-blue ${connected ? "" : "lit"}`}
       >
         {connected ? (
           <>
