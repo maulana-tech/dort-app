@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://getfoundry.sh"><img src="https://img.shields.io/badge/BUILT%20FOR-FOUNDRY-E5602C?style=flat-square&labelColor=555555" alt="Built for Foundry" /></a>
-  <img src="https://img.shields.io/badge/FORKS-6%20EVM%20TESTNETS-627EEA?style=flat-square&labelColor=555555" alt="Six EVM testnets" />
+  <img src="https://img.shields.io/badge/FORKS-7%20EVM%20TESTNETS-627EEA?style=flat-square&labelColor=555555" alt="Seven EVM testnets" />
   <img src="https://img.shields.io/badge/AI-BRING%20YOUR%20OWN-8B5CF6?style=flat-square&labelColor=555555" alt="Bring your own AI" />
   <img src="https://img.shields.io/badge/SCOPE-DEFENSIVE%20ONLY-16A34A?style=flat-square&labelColor=555555" alt="Defensive only" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/LICENSE-MIT-000000?style=flat-square&labelColor=555555" alt="MIT license" /></a>
@@ -18,7 +18,7 @@
 
 ---
 
-Dort is a visual workbench for **smart contract auditors and bug bounty hunters**. You run your usual **Foundry** tests, and Dort turns the output, normally a wall of text, into something a person can read: every call next to the line of code it ran, the contract as a map, test scenarios you build by connecting cards, the biggest DeFi protocols explained flow by flow, and real hacks taken apart as post-mortems. Tests can also run on a copy of **six EVM testnets**.
+Dort is a visual workbench for **smart contract auditors and bug bounty hunters**. You run your usual **Foundry** tests, and Dort turns the output, normally a wall of text, into something a person can read: every call next to the line of code it ran, the contract as a map, test scenarios you build by connecting cards, the biggest DeFi protocols explained flow by flow, and real hacks taken apart as post-mortems. Tests can also run on a copy of **seven EVM testnets**, with **Portaldot V3** first among them.
 
 > **Dort never decides for you.** AI is there to explain one piece at a time. The verdict is always a human's.
 >
@@ -92,7 +92,7 @@ Dort answers with five pieces, each doing a job the others cannot.
 
 A run is a choice of which tests and which chain. Dort ships every shape below through the same exporter and the same **Start test** button.
 
-| | **All tests, local** | **One test** | **A few tests** | **One testnet fork** | **All six forks** |
+| | **All tests, local** | **One test** | **A few tests** | **One testnet fork** | **All seven forks** |
 |---|---|---|---|---|---|
 | **Command** | `node dort-export.mjs` | `--mt test_deposit` | Choose in the app | `--chain base-sepolia` | `--forks all` |
 | **In the app** | Test all | This test | Choose | Fork picker (the local run plus that chain) | command line only |
@@ -129,7 +129,7 @@ node dort-export.mjs [--mt …] [--mc …] [--chain <key> | --forks all]
 - **Why It Passed**: click a test to see the exact assertions that held and the lines they checked
 - **Call Graph**: the same run drawn as a map of who called whom
 - **Start Test From The App**: run all tests, one test, or a chosen few, with a live pass or fail log per test
-- **Testnet Forks**: run the same tests on Ethereum Sepolia, Arbitrum Sepolia, Base Sepolia, Robinhood Chain Testnet, HyperEVM Testnet or Tempo Moderato
+- **Testnet Forks**: run the same tests on Portaldot V3, Ethereum Sepolia, Arbitrum Sepolia, Base Sepolia, Robinhood Chain Testnet, HyperEVM Testnet or Tempo Moderato
 - **Contract Atlas**: functions, storage slots, external calls and events as a node graph built from the AST
 - **Paths**: replay each entry point step by step, with writes after an external call flagged in red
 - **Findings Where They Belong**: Slither and Aderyn results deduplicated and pinned to the function they concern
@@ -157,7 +157,7 @@ node dort-export.mjs [--mt …] [--mc …] [--chain <key> | --forks all]
 | Exporter | Plain Node.js 20+ scripts, no dependencies |
 | Smart contracts | Foundry (`forge build`, `forge test`, `forge coverage`, `forge inspect`), Solidity 0.8.20 |
 | Static analysis | Slither, Aderyn (JSON reports merged into the atlas) |
-| Chains | Six EVM testnets through public read-only RPCs, overridable per chain |
+| Chains | Seven EVM testnets (Portaldot V3 first) through public read-only RPCs, overridable per chain |
 | AI | Claude through the user's own Claude Code, Ollama / LM Studio, Anthropic, OpenAI, OpenRouter |
 | AI tooling | MCP server over stdio (JSON-RPC 2.0) |
 | Tests | Node built-in test runner (8 exporter test files), 17 `*.check.ts` self-checks in the app, Foundry unit, fork and invariant tests |
@@ -178,7 +178,7 @@ Foundry is where the data comes from. Dort adds nothing to your project except s
 | **Atlas** | [`dort-atlas.mjs`](foundry/dort-atlas.mjs) | The contract map from `forge build --ast` and `forge inspect … storageLayout` |
 | **Findings** | [`dort-findings.mjs`](foundry/dort-findings.mjs) | Parses Slither and Aderyn JSON and merges them into the atlas, deduplicated |
 | **Coverage** | [`dort-coverage.mjs`](foundry/dort-coverage.mjs) | `forge coverage --report lcov` mapped onto atlas pieces |
-| **Chains** | [`dort-chains.mjs`](foundry/dort-chains.mjs) | The six testnets, `--chain` / `--forks`, and a check that each RPC really serves the chain it claims |
+| **Chains** | [`dort-chains.mjs`](foundry/dort-chains.mjs) | The seven testnets (Portaldot V3 first), `--chain` / `--forks`, and a check that each RPC really serves the chain it claims |
 | **Scenario runner** | [`dort-scenario.mjs`](foundry/dort-scenario.mjs) | Copies a test exported from Scenarios into `test/scenarios/` and runs just that file with `forge test --match-path` |
 | **Protocol maps** | [`dort-protocol.mjs`](foundry/dort-protocol.mjs) | Joins the maps of a protocol's contracts into one graph for Explore and checks the written flows against the AST |
 | **Start test route** | [`route.ts`](apps/frontend/src/app/api/test-run/route.ts) | Runs the exporter from the app, streams its output as NDJSON, one run at a time, 15 minute timeout |
@@ -235,10 +235,11 @@ claude mcp add dort -- node /abs/path/dort-mcp.mjs --data=/abs/path/dort-data.js
 
 ## Chain Integration
 
-Dort forks six EVM testnets. A fork run copies the chain's state at its latest block and runs your tests on that copy: nothing is sent, no wallet, no key, no gas.
+Dort forks seven EVM testnets, Portaldot V3 among them. A fork run copies the chain's state at its latest block and runs your tests on that copy: nothing is sent, no wallet, no key, no gas.
 
 | Key | Chain | Chain id | Default RPC |
 |---|---|---|---|
+| `portaldot-testnet` | Portaldot V3 Testnet | 420420777 | `test-evm-rpc-v3.portaldot.dev` |
 | `sepolia` | Ethereum Sepolia | 11155111 | `ethereum-sepolia-rpc.publicnode.com` |
 | `arbitrum-sepolia` | Arbitrum Sepolia | 421614 | `sepolia-rollup.arbitrum.io/rpc` |
 | `base-sepolia` | Base Sepolia | 84532 | `sepolia.base.org` |
@@ -246,7 +247,47 @@ Dort forks six EVM testnets. A fork run copies the chain's state at its latest b
 | `hyperevm-testnet` | Hyperliquid HyperEVM Testnet | 998 | `rpc.hyperliquid-testnet.xyz/evm` |
 | `tempo-testnet` | Tempo Testnet (Moderato) | 42431 | `rpc.moderato.tempo.xyz` |
 
-Set `DORT_RPC_<KEY>` (for example `DORT_RPC_BASE_SEPOLIA=https://…`) to use your own provider, since public RPCs rate-limit. Before every fork run, `latestBlock` asks the RPC for `eth_chainId` and refuses an endpoint that serves a different chain. The sample's [`Fork.t.sol`](foundry/test/Fork.t.sol) reads Multicall3, deployed at the same address on all six, to prove the run really touched the live chain.
+Set `DORT_RPC_<KEY>` (for example `DORT_RPC_BASE_SEPOLIA=https://…`) to use your own provider, since public RPCs rate-limit. Before every fork run, `latestBlock` asks the RPC for `eth_chainId` and refuses an endpoint that serves a different chain. The sample's [`Fork.t.sol`](foundry/test/Fork.t.sol) reads Multicall3, deployed at the same address on six of them, to prove the run really touched the live chain. Portaldot has no Multicall3 at that address, so [`Portaldot.t.sol`](foundry/test/Portaldot.t.sol) reads its live tokens instead.
+
+---
+
+### Portaldot V3 (the chain Dort targets)
+
+Portaldot V3 is a WASM-runtime chain that serves an Ethereum JSON-RPC: `web3_clientVersion`
+answers `eth-rpc/…` (the Polkadot SDK's Ethereum RPC), yet `eth_getCode` returns ordinary solc EVM
+bytecode. That is what makes Dort work there unchanged: `forge` forks it, and every frame is
+decoded against its ABI like on any EVM chain.
+
+| | |
+|---|---|
+| Chain id | `420420777` |
+| EVM RPC | `https://test-evm-rpc-v3.portaldot.dev` |
+| Node (Substrate) | `wss://test-node-v3.portaldot.dev` |
+| Node console | [node-console.portaldot.dev](https://node-console.portaldot.dev/) |
+| Own endpoint | `DORT_RPC_PORTALDOT_TESTNET=https://…` |
+
+```bash
+node dort-export.mjs --chain portaldot-testnet     # the suite on a fork of Portaldot V3
+forge test --fork-url https://test-evm-rpc-v3.portaldot.dev --mc PortaldotTest -vvv
+```
+
+[`Portaldot.t.sol`](foundry/test/Portaldot.t.sol) reads tokens that really live on the chain, so
+the trace shows calls into deployed code: Wrapped POT (`0xf67cE9…`, 18 decimals) and Portal USDT
+(`0xe0114A…`, 6 decimals). It skips itself anywhere `block.chainid != 420420777`, local runs
+included.
+
+To put the sample vault on Portaldot yourself, with a testnet key funded in POT:
+
+```bash
+forge script script/DeployPortaldot.s.sol \
+  --rpc-url https://test-evm-rpc-v3.portaldot.dev \
+  --private-key $PORTALDOT_PK --broadcast
+```
+
+[`DeployPortaldot.s.sol`](foundry/script/DeployPortaldot.s.sol) deploys DortVault with its mocks,
+makes one real deposit so the chain holds an interaction and not only bytecode, and refuses to run
+on any chain other than 420420777. Addresses and transaction hashes are written to
+`broadcast/DeployPortaldot.s.sol/420420777/run-latest.json`.
 
 ---
 
@@ -454,7 +495,8 @@ A small share-based vault in [`foundry/src/DortVault.sol`](foundry/src/DortVault
 | `test_harvestMovesFundsToStrategy`, `test_harvestRewards_swapsToAsset`, `test_harvestRewards_onlyKeeper` | Unit |
 | `test_setOracle_onlyOwner`, `test_pause_blocksDeposits` | Unit |
 | `invariant_solvency` | Invariant |
-| `test_fork_readsTheLiveChain` | Fork (Multicall3 on each testnet) |
+| `test_fork_readsTheLiveChain` | Fork (Multicall3, on the six chains that have it) |
+| `test_portaldot_readsWrappedPot`, `test_portaldot_readsPortalUsdt`, `test_portaldot_readsTokenStorage` | Fork (live WPOT and pUSDT on Portaldot V3) |
 
 ### Explore: protocols mapped
 
@@ -517,7 +559,7 @@ dort-data.json
 - [x] Exporter: decoded traces with source-line steps, no dependencies
 - [x] Trace view with call graph, source panel and why-it-passed
 - [x] Start test from the app: all, one, or a chosen few, with a live log
-- [x] **Testnet forks**: Ethereum Sepolia, Arbitrum Sepolia, Base Sepolia, Robinhood Chain, HyperEVM, Tempo
+- [x] **Testnet forks**: Portaldot V3, Ethereum Sepolia, Arbitrum Sepolia, Base Sepolia, Robinhood Chain, HyperEVM, Tempo
 - [x] Atlas from the AST with Slither, Aderyn and coverage on the map
 - [x] Paths: replay each entry point, writes after external calls flagged
 - [x] **Visual scenarios** that run in the browser and export a Foundry test
@@ -538,7 +580,7 @@ dort-data.json
 | | |
 |---|---|
 | **Category** | Security Tools |
-| **Chains** | Ethereum, Arbitrum, Base, Robinhood Chain, Hyperliquid, Tempo (testnet forks) |
+| **Chains** | Portaldot V3, Ethereum, Arbitrum, Base, Robinhood Chain, Hyperliquid, Tempo (testnet forks) |
 | **Website** | [dort-app.vercel.app](https://dort-app.vercel.app) |
 | **Source** | [github.com/maulana-tech/dort-app](https://github.com/maulana-tech/dort-app) |
 | **Team** | Bima Jadiva, developer |
