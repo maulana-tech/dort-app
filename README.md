@@ -9,10 +9,6 @@
 </p>
 
 <p align="center">
-  <a href="https://dort-app.vercel.app"><img src="https://img.shields.io/badge/WEBSITE-DORTSEC.XYZ-000000?style=flat-square&labelColor=555555" alt="Website" /></a>
-  <a href="https://dort-app.vercel.app/docs"><img src="https://img.shields.io/badge/DOCS-DORTSEC.XYZ%2FDOCS-000000?style=flat-square&labelColor=555555" alt="Docs" /></a>
-  <a href="https://x.com/dort_app"><img src="https://img.shields.io/badge/X-%40DORTSEC-000000?style=flat-square&labelColor=555555&logo=x&logoColor=white" alt="Dort on X" /></a>
-  <a href="https://github.com/maulana-tech/dort-app"><img src="https://img.shields.io/badge/SOURCE-GITHUB-000000?style=flat-square&labelColor=555555&logo=github&logoColor=white" alt="Source on GitHub" /></a>
   <a href="https://getfoundry.sh"><img src="https://img.shields.io/badge/BUILT%20FOR-FOUNDRY-E5602C?style=flat-square&labelColor=555555" alt="Built for Foundry" /></a>
   <img src="https://img.shields.io/badge/FORKS-6%20EVM%20TESTNETS-627EEA?style=flat-square&labelColor=555555" alt="Six EVM testnets" />
   <img src="https://img.shields.io/badge/AI-BRING%20YOUR%20OWN-8B5CF6?style=flat-square&labelColor=555555" alt="Bring your own AI" />

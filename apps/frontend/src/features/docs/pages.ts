@@ -426,10 +426,7 @@ export const GROUPS: DocGroup[] = [
                 ],
                 ["dort-findings.mjs", "Slither and Aderyn reports, merged"],
                 ["dort-coverage.mjs", "forge coverage mapped onto the atlas"],
-                [
-                  "dort-chains.mjs",
-                  "The six testnets for --chain and --forks",
-                ],
+                ["dort-chains.mjs", "The six testnets for --chain and --forks"],
                 [
                   "dort-bridge.mjs",
                   "Optional: lets the hosted app run the exporter ([bridge](/docs/bridge))",

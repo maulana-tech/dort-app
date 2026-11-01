@@ -106,7 +106,7 @@ export async function POST(req: Request) {
             // the exporter's machine lines (DORT_PROGRESS): the plan and each result, not log
             if (!warn && log.startsWith("dort:: ")) {
               try {
-                send({ progress: JSON.parse(log.slice(8)) });
+                send({ progress: JSON.parse(log.slice("dort:: ".length)) });
               } catch {}
               continue;
             }

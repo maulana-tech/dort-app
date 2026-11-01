@@ -1,4 +1,4 @@
-import type { Frame, DortData, TestResult } from "../types";
+import type { DortData, Frame, TestResult } from "../types";
 import { splitArgs } from "./format.ts";
 import { displayKind } from "./frame.ts";
 import { locateFrame } from "./source.ts";

@@ -29,20 +29,17 @@ import "./compare.css";
 const ROWS: { what: string; dort: string; cli: string }[] = [
   {
     what: "Traces you can read",
-    dort:
-      "Every call, event and cheatcode decoded, each frame on the source lines and storage it touched, and a call graph per test.",
+    dort: "Every call, event and cheatcode decoded, each frame on the source lines and storage it touched, and a call graph per test.",
     cli: "A text tree from forge -vvvv, the rest one opcode at a time in forge debug",
   },
   {
     what: "One finding per issue, triaged",
-    dort:
-      "Slither and Aderyn merged into one finding per issue, triaged in place and exported as a Markdown report.",
+    dort: "Slither and Aderyn merged into one finding per issue, triaged in place and exported as a Markdown report.",
     cli: "Two separate reports, no triage",
   },
   {
     what: "Coverage and tests you can wire",
-    dort:
-      "Coverage per function, untested ones first, and Lab scenarios exported as .t.sol tests.",
+    dort: "Coverage per function, untested ones first, and Lab scenarios exported as .t.sol tests.",
     cli: "A per-file table from forge coverage, tests written by hand",
   },
 ];

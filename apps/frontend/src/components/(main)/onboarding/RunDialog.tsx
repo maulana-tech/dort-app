@@ -126,8 +126,8 @@ function Welcome() {
   return (
     <>
       <Lead>
-        Dort turns your Foundry tests into pictures: every call a test made,
-        the source line it ran, your contract as a graph, and Slither / Aderyn
+        Dort turns your Foundry tests into pictures: every call a test made, the
+        source line it ran, your contract as a graph, and Slither / Aderyn
         findings in one place. It only reads files on your machine.
       </Lead>
       <div className="mx-2 mb-3 rounded-inner border border-border bg-inner-grad p-3">

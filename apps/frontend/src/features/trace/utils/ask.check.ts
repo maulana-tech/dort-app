@@ -32,10 +32,7 @@ assert.match(
   one,
   /^<context>\nFoundry test: test_depositThenWithdraw\(\) in test\/DortVault\.t\.sol, passed/,
 );
-assert.match(
-  one,
-  /Called through: #0 DortVaultTest\.test_depositThenWithdraw/,
-);
+assert.match(one, /Called through: #0 DortVaultTest\.test_depositThenWithdraw/);
 assert.match(one, /\n#7 CALL DortVault\.deposit\(amount=1000000000\)/);
 assert.match(one, /--- src\/DortVault\.sol/);
 assert.match(

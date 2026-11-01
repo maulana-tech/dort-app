@@ -5,7 +5,7 @@ import { DORT_DATA_PATH } from "@/config/env.server";
 import { SAMPLE_ATLAS } from "@/features/atlas/fixtures/sample-atlas";
 import type { AtlasData } from "@/features/atlas/types";
 import sample from "@/features/trace/fixtures/sample-trace.json";
-import type { Frame, DortData } from "@/features/trace/types";
+import type { DortData, Frame } from "@/features/trace/types";
 import { scenarioDemo, scenarioSol } from "./stats";
 
 /*

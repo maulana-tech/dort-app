@@ -43,7 +43,10 @@ export function Views({
   const model = useMemo(() => createAtlasModel(atlas), [atlas]);
   const graph = useMemo(() => contractGraph(model), [model]);
   // Paths shows the vault's withdraw(): checks, an external call, then the writes after it
-  const sim = useStepSim(model, model.entry.includes("withdraw") ? "withdraw" : (model.entry[0] ?? null));
+  const sim = useStepSim(
+    model,
+    model.entry.includes("withdraw") ? "withdraw" : (model.entry[0] ?? null),
+  );
   const triage = useTriage(model.contract);
   const maxGas = Math.max(1, ...frames.map((f) => f.gas ?? 0));
   const none = () => {};

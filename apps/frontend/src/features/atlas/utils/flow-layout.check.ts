@@ -230,14 +230,28 @@ assert.ok(circles.every((c) => c.x + c.r <= L.w && c.y + c.r <= L.h));
 // the step it follows (modifier check first, body check after the reads before it)
 const path = pathOf(model, "withdraw");
 assert.ok(path);
-const kinds = path.rows.map((r) => (r.kind === "check" ? `check:${r.reason}` : r.kind));
+const kinds = path.rows.map((r) =>
+  r.kind === "check" ? `check:${r.reason}` : r.kind,
+);
 assert.deepEqual(kinds.slice(0, 2), ["entry", "access"]);
-assert.ok(kinds.includes("check:paused") && kinds.includes("check:!shares"), kinds.join(","));
-assert.ok(kinds.indexOf("check:paused") < kinds.indexOf("c"), "the modifier check comes before the call");
-assert.ok(kinds.indexOf("check:!shares") < kinds.indexOf("c"), "the body check comes before the call");
+assert.ok(
+  kinds.includes("check:paused") && kinds.includes("check:!shares"),
+  kinds.join(","),
+);
+assert.ok(
+  kinds.indexOf("check:paused") < kinds.indexOf("c"),
+  "the modifier check comes before the call",
+);
+assert.ok(
+  kinds.indexOf("check:!shares") < kinds.indexOf("c"),
+  "the body check comes before the call",
+);
 assert.equal(kinds.at(-1), "ret");
 const late = path.rows.find((r) => r.kind === "w");
-assert.ok(late && "late" in late && late.late, "the write after the call is flagged (CEI)");
+assert.ok(
+  late && "late" in late && late.late,
+  "the write after the call is flagged (CEI)",
+);
 assert.deepEqual(path.findings, ["f1"]);
 assert.equal(pathOf(model, "nope"), null);
 
@@ -246,9 +260,19 @@ const tree = pathTree(model, "withdraw");
 assert.ok(tree);
 const t = tree.rows.map((r) => `${r.depth}:${r.kind}`);
 assert.equal(t[0], "0:ENTRY");
-assert.deepEqual(t.slice(1, 4), ["1:MODIFIER", "2:SLOAD", "2:REQUIRE"], t.join(" "));
-assert.ok(t.includes("1:CALL") && t.includes("1:SSTORE") && t.includes("1:EMIT"), t.join(" "));
+assert.deepEqual(
+  t.slice(1, 4),
+  ["1:MODIFIER", "2:SLOAD", "2:REQUIRE"],
+  t.join(" "),
+);
+assert.ok(
+  t.includes("1:CALL") && t.includes("1:SSTORE") && t.includes("1:EMIT"),
+  t.join(" "),
+);
 assert.equal(t.at(-1), "1:RETURN");
-assert.ok(tree.rows.find((r) => r.kind === "SSTORE")?.late, "the write after the call stays flagged");
+assert.ok(
+  tree.rows.find((r) => r.kind === "SSTORE")?.late,
+  "the write after the call stays flagged",
+);
 
 console.log("flow-layout ok");

@@ -1,4 +1,4 @@
-import type { Frame, DortData } from "../types";
+import type { DortData, Frame } from "../types";
 
 export type SourceSpan = {
   /** Primary file and its 0-based line range (caption + scroll target). */

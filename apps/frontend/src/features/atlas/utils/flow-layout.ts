@@ -473,7 +473,10 @@ export function pathTree(
   let stack: Piece[] = [];
   const open = (p: Piece) => {
     // nest under the innermost open function that calls it, else directly under the entry
-    while (stack.length && !word(callName(p)).test(body(stack[stack.length - 1])))
+    while (
+      stack.length &&
+      !word(callName(p)).test(body(stack[stack.length - 1]))
+    )
       stack.pop();
     rows.push({
       key: `${id}:g${rows.length}`,

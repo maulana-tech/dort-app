@@ -20,7 +20,7 @@ import {
 } from "@/features/atlas/utils/lab-scenario";
 import { createAtlasModel } from "@/features/atlas/utils/model";
 import sample from "@/features/trace/fixtures/sample-trace.json";
-import type { Frame, DortData, TestResult } from "@/features/trace/types";
+import type { DortData, Frame, TestResult } from "@/features/trace/types";
 
 type Run = DortData & { atlas?: AtlasData };
 
