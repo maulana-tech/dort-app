@@ -57,7 +57,7 @@ export function TestDrift({ tests }: { tests: DriftTest[] }) {
       aria-label={`The ${tests.length} forge tests of the sample run`}
       className="overflow-hidden py-24 md:py-32"
     >
-      <p className="mb-8 px-4 text-center text-[13px] text-dim">
+      <p className="mb-8 px-4 text-center text-[13px] text-on-canvas-muted">
         {tests.length} forge tests traced in the sample run
       </p>
       <div className="flex flex-col gap-3" aria-hidden="true">
