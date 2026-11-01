@@ -43,7 +43,7 @@ const TRIGGER = {
   pill: "hdr-pill sm",
   /** a form field */
   field:
-    "inline-flex h-9 items-center gap-2 rounded-tile border border-border bg-inset px-3 text-[13px] text-[#f0f0f2] transition-colors hover:border-border-strong",
+    "inline-flex h-9 items-center gap-2 rounded-tile border border-border bg-inset px-3 text-[13px] text-fg transition-colors hover:border-border-strong",
   /** a Lab card widget (lab.css .dd-card) */
   card: "dd-card",
   /** a small capsule in a composer's footer (the chat's model chip) */
@@ -233,7 +233,7 @@ export function Dropdown<T extends string>({
                   minWidth: Math.max(box.width, 180),
                   transformOrigin: box.up ? "bottom left" : "top left",
                 }}
-                className="fixed z-[100] max-h-[320px] max-w-[min(420px,calc(100vw-16px))] overflow-y-auto rounded-[14px] border border-white/[.09] bg-gradient-to-b from-[#1d1d20] to-[#141416] p-1.5 text-[13px] shadow-[0_18px_44px_-12px_rgba(0,0,0,.8)] outline-none"
+                className="fixed z-[100] max-h-[320px] max-w-[min(420px,calc(100vw-16px))] overflow-y-auto rounded-[14px] border border-border bg-gradient-to-b from-[#ffffff] to-[#f3f7fe] p-1.5 text-[13px] shadow-[0_18px_44px_-12px_rgba(3,28,78,.8)] outline-none"
               >
                 {options.map((o, i) => {
                   const head =
