@@ -179,10 +179,10 @@ export function ScatterGrow({
   return (
     <section ref={ref} id="product" data-tone="product" className="lp-sg">
       <div data-lp="head" className="lp-sg-head px-4 text-center">
-        <h2 className="font-medium text-[clamp(30px,4vw,50px)] text-fg leading-[1.04] tracking-[-0.03em]">
+        <h2 className="font-medium text-[clamp(30px,4vw,50px)] text-on-canvas leading-[1.04] tracking-[-0.03em]">
           Start from your own run,
           <br />
-          <span className="text-white/45">not a blank file.</span>
+          <span className="text-white/70">not a blank file.</span>
         </h2>
       </div>
       <div className="lp-hub">
@@ -217,7 +217,7 @@ export function ScatterGrow({
                 >
                   {/* crafted mark (lp-mark): one size, optically centred, a soft inner light (P1) */}
                   <span className="lp-mark">{m.node}</span>
-                  <span className="whitespace-nowrap text-[13px] text-dim transition-colors group-hover:text-muted">
+                  <span className="whitespace-nowrap text-[13px] text-on-canvas-muted transition-colors group-hover:text-on-canvas">
                     {m.title}
                   </span>
                 </a>
