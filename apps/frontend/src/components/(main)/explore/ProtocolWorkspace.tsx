@@ -223,16 +223,22 @@ export function ProtocolWorkspace({ protocol: p }: { protocol: Protocol }) {
     <div className="flex min-h-0 flex-1 flex-col">
       {/* a row of its own under the app's nav, not pressed against it */}
       <header className="flex flex-none items-center gap-3 px-3 pt-2.5 pb-3">
-        <Link href="/explore" className="hdr-pill sm" title="All protocols">
+        <Link
+          href="/explore"
+          className="hdr-pill on-blue sm"
+          title="All protocols"
+        >
           <Chevron className="rotate-180" />
           Explore
         </Link>
         <span className="flex min-w-0 items-center gap-2">
           <ProtocolLogo name={p.name} logo={p.logo} size={28} />
-          <span className="truncate font-medium text-[14px] text-fg">
+          <span className="truncate font-medium text-[14px] text-on-canvas">
             {p.name}
           </span>
-          <span className="truncate text-[13px] text-muted">{p.version}</span>
+          <span className="truncate text-[13px] text-on-canvas">
+            {p.version}
+          </span>
         </span>
         <SegmentedControl
           size="md"
@@ -245,13 +251,16 @@ export function ProtocolWorkspace({ protocol: p }: { protocol: Protocol }) {
             icon: <PhIcon d={s.icon} className="size-[15px]" />,
           }))}
         />
-        <span className="ml-auto hidden h-8 items-center gap-3 px-3 text-[12.5px] text-muted xl:inline-flex">
+        <span className="ml-auto hidden h-8 items-center gap-3 px-3 text-[12.5px] text-on-canvas xl:inline-flex">
           <span>
-            <span className="font-mono text-fg">{p.contracts.length}</span>{" "}
+            <span className="font-mono text-on-canvas">
+              {p.contracts.length}
+            </span>{" "}
             contracts
           </span>
           <span>
-            <span className="font-mono text-fg">{p.flows.length}</span> flows
+            <span className="font-mono text-on-canvas">{p.flows.length}</span>{" "}
+            flows
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span
@@ -666,7 +675,7 @@ function Checklist({
                             return n;
                           })
                         }
-                        className="mt-1 size-3.5 flex-none accent-[#4ade80]"
+                        className="mt-1 size-3.5 flex-none accent-[#126c34]"
                       />
                       <span
                         className={done.has(k) ? "text-muted line-through" : ""}
