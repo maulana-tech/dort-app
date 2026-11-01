@@ -3,6 +3,7 @@ node_modules/
 .vercel
 .env*
 !.env.example
+README.md
 
 # Remotion video project (local only)
 video/
