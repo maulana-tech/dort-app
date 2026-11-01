@@ -60,7 +60,7 @@ export function HeroLab({
   return (
     <div
       ref={root}
-      className="dot-grid relative h-full overflow-hidden rounded-t-[24px] border border-white/[.08] border-b-0 bg-[#0b0b0d]"
+      className="dot-grid relative h-full overflow-hidden rounded-t-[24px] border border-white/[.08] border-b-0 bg-[#ffffff]"
     >
       {/* LB: one soft light over the canvas, as the ref's blur behind its nodes (monochrome) */}
       <div
@@ -72,7 +72,7 @@ export function HeroLab({
         <div
           role="tablist"
           aria-label="Lab view"
-          className="flex rounded-full border border-white/[.08] bg-[#141416] p-1 shadow-soft"
+          className="flex rounded-full border border-white/[.08] bg-[#eef3fb] p-1 shadow-soft"
         >
           {TABS.map((label, i) => (
             <button
@@ -85,24 +85,24 @@ export function HeroLab({
               className={`h-8 rounded-full px-4 text-[13px] transition-colors ${
                 tab === i
                   ? "bg-primary text-primary-fg"
-                  : "text-muted hover:text-fg"
+                  : "text-body hover:text-fg"
               }`}
             >
               {label}
             </button>
           ))}
         </div>
-        <span className="hidden font-mono text-[11.5px] text-dim md:block">
+        <span className="hidden font-mono text-[11.5px] text-on-canvas-dim md:block">
           /atlas · {TABS[tab]}
         </span>
         {/* the app header's Connect AI capsule (header.css .hdr-pill.lit), the graph icon in front */}
-        <Link href="/atlas" className="group hdr-pill lit ml-auto">
+        <Link href="/atlas" className="group hdr-pill lit on-blue ml-auto">
           <PhIcon
             d={PH.graph}
             className="size-[15px] transition-transform duration-500 group-hover:scale-110 motion-reduce:transition-none"
           />
           Open the Atlas
-          <PhIcon d={PH.caretRight} className="size-3 text-dim" />
+          <PhIcon d={PH.caretRight} className="size-3 text-on-canvas-dim" />
         </Link>
       </div>
 
@@ -123,14 +123,14 @@ export function HeroLab({
             />
           </div>
           {/* the Lab's run bar: Run (with the run's result), Export .t.sol */}
-          <div className="absolute bottom-[clamp(28px,6svh,56px)] left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-[16px] border border-white/[.08] bg-[#141416] p-1.5 shadow-float">
-            <span className="flex h-9 items-center gap-1.5 rounded-[11px] bg-mint px-4 font-medium text-[13px] text-primary-fg">
+          <div className="absolute bottom-[clamp(28px,6svh,56px)] left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-[16px] border border-white/[.08] bg-[#eef3fb] p-1.5 shadow-float">
+            <span className="flex h-9 items-center gap-1.5 rounded-[11px] bg-mint px-4 font-medium text-[13px] text-[#06331f]">
               <span aria-hidden="true">▶</span> Run ·{" "}
               {Object.values(scenario.runs).some((r) => r.status === "fail")
                 ? "fail"
                 : "pass"}
             </span>
-            <span className="flex h-9 items-center rounded-[11px] px-3.5 text-[13px] text-text">
+            <span className="flex h-9 items-center rounded-[11px] px-3.5 text-[13px] text-fg">
               Export .t.sol ↓
             </span>
           </div>
