@@ -1,7 +1,7 @@
 import type { InputHTMLAttributes, TextareaHTMLAttributes } from "react";
 
 const FIELD =
-  "h-9 border border-border px-3 text-[13px] text-[#f0f0f2] outline-none transition-colors placeholder:text-dim hover:border-border-strong focus:border-white/25";
+  "h-9 border border-border px-3 text-[13px] text-fg outline-none transition-colors placeholder:text-dim hover:border-border-strong focus:border-primary/60";
 
 export function Input({
   className = "",
