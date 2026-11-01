@@ -10,7 +10,7 @@ import { SearchButton } from "./DocsSearch";
 /** where to follow the project, at the foot of the page list */
 function Follow() {
   const link =
-    "flex items-center gap-2.5 rounded-tile px-2.5 py-1.5 text-[13.5px] text-muted transition-colors hover:text-fg";
+    "flex items-center gap-2.5 rounded-tile px-2.5 py-1.5 text-[13.5px] text-on-canvas-dim transition-colors hover:text-on-canvas";
   return (
     <div className="flex flex-col gap-0.5 border-border border-t pt-4">
       <a
@@ -46,7 +46,7 @@ export function DocsSidebar() {
     <nav aria-label="Docs" className="flex flex-col gap-5">
       {GROUPS.map((g) => (
         <div key={g.title}>
-          <p className="mb-1.5 px-2.5 font-medium text-[13px] text-fg">
+          <p className="mb-1.5 px-2.5 font-medium text-[13px] text-on-canvas">
             {g.title}
           </p>
           <ul className="flex flex-col gap-0.5">
@@ -58,7 +58,7 @@ export function DocsSidebar() {
                   <Link
                     href={href}
                     aria-current={on ? "page" : undefined}
-                    className={`block rounded-tile px-2.5 py-1.5 text-[13.5px] transition-colors ${on ? "bg-white/[.07] text-fg" : "text-muted hover:text-fg"}`}
+                    className={`block rounded-tile px-2.5 py-1.5 text-[13.5px] transition-colors ${on ? "bg-white/20 text-on-canvas" : "text-on-canvas-dim hover:text-on-canvas"}`}
                   >
                     {p.title}
                   </Link>
