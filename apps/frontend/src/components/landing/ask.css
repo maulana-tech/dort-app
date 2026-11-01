@@ -55,7 +55,7 @@
   }
 }
 
-/* The stage (Genie's warm backdrop + clouds, in graphite). Full viewport width, masked out at the
+/* The stage (Genie's warm backdrop + clouds, in blue). Full viewport width, masked out at the
    section's top and bottom so it melts into the page backdrop with no seam. It stays inside the
    section: the section is a positioned stacking context, anything reaching out would paint over
    its neighbours. */
