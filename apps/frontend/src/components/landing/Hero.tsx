@@ -51,7 +51,7 @@ export function Nav({ active = "product" }: { active?: "product" | "docs" }) {
       </Link>
       {/* the landing's sections; the docs keep a quiet bar (onorca.dev/docs) without them */}
       <ul
-        className={`absolute left-1/2 -translate-x-1/2 items-center gap-0.5 rounded-full border border-white/[.08] bg-gradient-to-b from-white/[.07] to-white/[.02] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,.08),0_10px_30px_rgba(0,0,0,.45)] ${docs ? "hidden" : "hidden md:flex"}`}
+        className={`absolute left-1/2 -translate-x-1/2 items-center gap-0.5 rounded-full border border-white/[.08] bg-gradient-to-b from-white/[.07] to-white/[.02] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,.08),0_10px_30px_rgba(3,28,78,.45)] ${docs ? "hidden" : "hidden md:flex"}`}
       >
         {items.map((i) => (
           <li key={i.label}>
@@ -60,8 +60,8 @@ export function Nav({ active = "product" }: { active?: "product" | "docs" }) {
               aria-current={i.on ? "page" : undefined}
               className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] transition-colors ${
                 i.on
-                  ? "bg-white/[.1] text-fg shadow-[inset_0_1px_0_rgba(255,255,255,.1)]"
-                  : "text-muted hover:text-fg"
+                  ? "bg-white/[.1] text-on-canvas shadow-[inset_0_1px_0_rgba(255,255,255,.1)]"
+                  : "text-on-canvas-muted hover:text-on-canvas"
               }`}
             >
               {i.mark && <GitHubMark className="size-3.5" />}
@@ -81,7 +81,7 @@ export function Nav({ active = "product" }: { active?: "product" | "docs" }) {
               rel="noopener noreferrer"
               aria-label="Dort on X"
               title="Follow @dort_app on X"
-              className="grid size-8 place-items-center text-muted transition-colors hover:text-fg"
+              className="grid size-8 place-items-center text-on-canvas-muted transition-colors hover:text-on-canvas"
             >
               <XMark className="size-[15px]" />
             </a>
@@ -91,7 +91,7 @@ export function Nav({ active = "product" }: { active?: "product" | "docs" }) {
               rel="noopener noreferrer"
               aria-label="Dort on GitHub"
               title="Dort on GitHub"
-              className="grid size-8 place-items-center text-muted transition-colors hover:text-fg"
+              className="grid size-8 place-items-center text-on-canvas-muted transition-colors hover:text-on-canvas"
             >
               <GitHubMark className="size-[17px]" />
             </a>
@@ -99,7 +99,7 @@ export function Nav({ active = "product" }: { active?: "product" | "docs" }) {
         )}
         {/* the app header's Connect AI capsule (header.css .hdr-pill.lit): the Dort starburst
             where it has its sparkle, a caret pointing on */}
-        <Link href="/trace" className="group hdr-pill lit">
+        <Link href="/trace" className="group hdr-pill lit on-blue">
           <svg
             aria-hidden="true"
             viewBox="-40 -40 80 80"
@@ -112,7 +112,7 @@ export function Nav({ active = "product" }: { active?: "product" | "docs" }) {
             <path d="M8-8L21-21M-8 8L-21 21M-8-8L-21-21M8 8L21 21" />
           </svg>
           Launch app
-          <PhIcon d={PH.caretRight} className="size-3 text-dim" />
+          <PhIcon d={PH.caretRight} className="size-3 text-on-canvas-dim" />
         </Link>
       </div>
       <div
@@ -169,7 +169,7 @@ const TOOLS = [
       key="sol"
       aria-hidden="true"
       viewBox="0 0 24 24"
-      fill="#363636"
+      fill="#e3ebf7"
       className="size-full"
     >
       <path d={SOLIDITY} />
@@ -220,23 +220,23 @@ export async function Hero() {
         <div className="lh-up relative z-10" style={{ "--d": "0.1s" } as Delay}>
           <div className="flex flex-wrap items-center gap-2">
             <a
-              href="https://colosseum.com/arena/projects/dort"
+              href="https://portaldot.io"
               {...OUT}
-              className="inline-flex h-9 items-center gap-2.5 rounded-[8px] border border-white/[.08] bg-[#131315] pr-3.5 pl-1.5 font-mono text-[13.5px] text-muted transition-colors hover:border-white/[.16]"
+              className="inline-flex h-9 items-center gap-2.5 rounded-[8px] border border-white/[.08] bg-[#f3f7fe] pr-3.5 pl-1.5 font-mono text-[13.5px] text-body transition-colors hover:border-white/[.16]"
             >
               <Image
-                src="/logos/colloseum.jpg"
+                src="/logos/chains/portaldot.png"
                 alt=""
                 width={24}
                 height={24}
                 className="size-6 rounded-[5px]"
               />
-              Built in <span className="text-fg">Colosseum</span>
+              Built for <span className="text-fg">Portaldot V3</span>
             </a>
             <a
               href={GITHUB}
               {...OUT}
-              className="inline-flex h-9 items-center gap-2.5 rounded-[8px] border border-white/[.08] bg-[#131315] pr-3.5 pl-1.5 font-mono text-[13.5px] text-muted transition-colors hover:border-white/[.16]"
+              className="inline-flex h-9 items-center gap-2.5 rounded-[8px] border border-white/[.08] bg-[#f3f7fe] pr-3.5 pl-1.5 font-mono text-[13.5px] text-body transition-colors hover:border-white/[.16]"
             >
               <span className="grid size-6 place-items-center rounded-[5px] bg-white text-black">
                 <GitHubMark className="size-4" />
@@ -244,15 +244,15 @@ export async function Hero() {
               Open source on <span className="text-fg">GitHub</span>
             </a>
           </div>
-          <h1 className="mt-5 font-medium text-[clamp(22px,2.1vw,30px)] text-fg leading-tight tracking-[-0.02em]">
+          <h1 className="mt-5 font-medium text-[clamp(22px,2.1vw,30px)] text-on-canvas leading-tight tracking-[-0.02em]">
             See what your contract actually does.
           </h1>
-          <p className="mt-1 text-[clamp(16px,1.5vw,20px)] text-dim leading-tight">
+          <p className="mt-1 text-[clamp(16px,1.5vw,20px)] text-on-canvas-dim leading-tight">
             Contract graphs and scenario tests
           </p>
           {/* the chains whose testnets the exporter forks (dort-export.mjs --forks), then the
               tools whose output Dort reads, on white tiles as they ship them */}
-          <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-3 font-mono text-[13px] text-dim">
+          <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-3 font-mono text-[13px] text-on-canvas-dim">
             <p className="flex items-center gap-3">
               Powered by
               <span className="flex items-center gap-2">
