@@ -444,14 +444,14 @@ export function HowItWorks({
 
   const head = (
     <>
-      <p className="flex items-center gap-2 text-[13px] text-text">
+      <p className="flex items-center gap-2 text-[13px] text-on-canvas">
         <span className="size-1.5 rounded-full bg-white" />
         How Dort works
       </p>
-      <h2 className="mt-4 font-medium text-[clamp(30px,3.2vw,44px)] text-fg leading-[1.06] tracking-[-0.025em]">
+      <h2 className="mt-4 font-medium text-[clamp(30px,3.2vw,44px)] text-on-canvas leading-[1.06] tracking-[-0.025em]">
         Four layers,
         <br />
-        <span className="text-white/45">one local run.</span>
+        <span className="text-white/70">one local run.</span>
       </h2>
     </>
   );
@@ -480,7 +480,7 @@ export function HowItWorks({
                   </span>
                 </span>
               </span>
-              <span className="mb-2 font-mono text-[12.5px] text-dim lg:mb-3">
+              <span className="mb-2 font-mono text-[12.5px] text-on-canvas-dim lg:mb-3">
                 / 0{STEPS.length}
               </span>
             </div>
@@ -492,12 +492,16 @@ export function HowItWorks({
                   aria-hidden={i !== at}
                   className="lp-how-note absolute inset-x-0 top-0"
                 >
-                  <h3 className="flex items-center gap-2.5 text-[18px] text-fg leading-tight tracking-[-0.01em] lg:text-[22px]">
-                    <Icon k={s.icon} className="size-[18px] text-muted" />
+                  <h3 className="flex items-center gap-2.5 text-[18px] text-on-canvas leading-tight tracking-[-0.01em] lg:text-[22px]">
+                    <Icon
+                      k={s.icon}
+                      className="size-[18px] text-on-canvas-muted"
+                    />
                     {s.title}
                   </h3>
-                  <p className="mt-2 text-[14px] text-body leading-relaxed lg:mt-3 lg:text-[15px]">
-                    {s.copy[0]} <span className="text-muted">{s.copy[1]}</span>
+                  <p className="mt-2 text-[14px] text-on-canvas-muted leading-relaxed lg:mt-3 lg:text-[15px]">
+                    {s.copy[0]}{" "}
+                    <span className="text-on-canvas-dim">{s.copy[1]}</span>
                   </p>
                 </div>
               ))}
@@ -515,10 +519,10 @@ export function HowItWorks({
                     aria-label={`Step ${i + 1}: ${s.title}`}
                     className={`grid size-8 flex-none place-items-center rounded-full border font-mono text-[12px] transition-colors ${
                       i === at
-                        ? "border-transparent bg-primary text-primary-fg"
+                        ? "border-transparent bg-on-canvas text-primary"
                         : i < at
-                          ? "border-white/40 text-fg"
-                          : "border-white/[.14] text-dim hover:text-muted"
+                          ? "border-white/50 text-on-canvas"
+                          : "border-white/30 text-on-canvas-muted hover:text-on-canvas"
                     }`}
                   >
                     {i + 1}
@@ -549,7 +553,7 @@ export function HowItWorks({
                 <Wires key={s.title} items={s.in} side="in" />
               ))}
             </div>
-            <div className="relative h-full rounded-[30px] border border-white/[.07] bg-white/[.025] p-2.5 shadow-[0_40px_90px_-30px_rgba(0,0,0,.9)]">
+            <div className="relative h-full rounded-[30px] border border-white/[.07] bg-white/[.025] p-2.5 shadow-[0_40px_90px_-30px_rgba(3,28,78,.9)]">
               {/* the core's two ports, where the wires land */}
               <span className="absolute top-1/2 -left-[3px] size-1.5 -translate-y-1/2 rounded-full bg-wire-on" />
               <span className="absolute top-1/2 -right-[3px] size-1.5 -translate-y-1/2 rounded-full bg-wire-on" />
@@ -609,13 +613,13 @@ export function HowItWorks({
                   <span className="text-[19px]">{s.title}</span>
                 </p>
                 <p className="mt-3 text-[15px] text-body leading-relaxed">
-                  {s.copy[0]} <span className="text-muted">{s.copy[1]}</span>
+                  {s.copy[0]} <span className="text-body">{s.copy[1]}</span>
                 </p>
                 <p className="mt-4 flex flex-wrap items-center gap-1.5">
                   {s.in.map((io) => (
                     <Pill key={io.t} io={io} />
                   ))}
-                  <span aria-hidden="true" className="px-1 text-dim">
+                  <span aria-hidden="true" className="px-1 text-on-canvas-dim">
                     →
                   </span>
                   {s.out.map((io) => (
