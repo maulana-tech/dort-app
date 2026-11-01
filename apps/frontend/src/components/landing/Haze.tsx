@@ -4,7 +4,7 @@ import { type ReactNode, useRef } from "react";
 import { type Gsap, MOTION_MQ, useStage } from "./motion";
 
 /**
- * Dort's stand-in for Genie's clouds: a rising perspective grid in a graphite haze. Used twice,
+ * Dort's stand-in for Genie's clouds: a rising perspective grid in a blue haze. Used twice,
  * swallowing the hero on the way out and carrying the city up at the very end (symmetric).
  */
 export function Haze({ className = "" }: { className?: string }) {
