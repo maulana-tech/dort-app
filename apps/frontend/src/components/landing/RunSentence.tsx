@@ -104,12 +104,12 @@ export function RunSentence({ scenario }: { scenario: LabDemo }) {
     <section ref={ref} data-tone="run" className="lp-run">
       <p
         data-lp="sentence"
-        className="lp-run-sentence relative z-10 mx-auto max-w-[900px] px-4 text-center font-light text-[clamp(34px,5.4vw,72px)] text-fg leading-[1.15] tracking-[-0.035em]"
+        className="lp-run-sentence relative z-10 mx-auto max-w-[900px] px-4 text-center font-light text-[clamp(34px,5.4vw,72px)] text-on-canvas leading-[1.15] tracking-[-0.035em]"
       >
         You can{" "}
         <span
           data-lp="run"
-          className="inline-flex translate-y-[-0.12em] items-center gap-[0.3em] rounded-[0.32em] bg-mint px-[0.42em] py-[0.12em] align-middle font-normal text-[0.62em] text-primary-fg shadow-[0_10px_40px_-8px_rgba(134,239,172,.45)]"
+          className="inline-flex translate-y-[-0.12em] items-center gap-[0.3em] rounded-[0.32em] bg-mint px-[0.42em] py-[0.12em] align-middle font-normal text-[0.62em] text-[#06331f] shadow-[0_10px_40px_-8px_rgba(134,239,172,.45)]"
         >
           <svg
             aria-hidden="true"
@@ -123,7 +123,7 @@ export function RunSentence({ scenario }: { scenario: LabDemo }) {
         </span>{" "}
         a scenario
         <br />
-        <span className="text-white/45">with one click.</span>
+        <span className="text-white/70">with one click.</span>
       </p>
       <div ref={box} className="lp-run-graph">
         <div
