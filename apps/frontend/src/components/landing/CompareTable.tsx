@@ -194,26 +194,26 @@ export function CompareWorlds({ data }: { data: CompareData }) {
   return (
     <div ref={ref} className="lp-cmp-stage">
       {/* C1 + C2: an editorial title, big and light, second line muted; the note at its foot */}
-      <h2 className="font-light text-[clamp(40px,6.4vw,88px)] text-fg leading-[0.94] tracking-[-0.045em]">
+      <h2 className="font-light text-[clamp(40px,6.4vw,88px)] text-on-canvas leading-[0.94] tracking-[-0.045em]">
         <span className="lp-cmp-line">
           <span data-rise>The CLIs print text.</span>
         </span>
         <span className="lp-cmp-line">
-          <span data-rise className="text-white/40">
+          <span data-rise className="text-white/70">
             Dort draws the contract.
           </span>
         </span>
       </h2>
       <div className="mt-8 flex flex-col-reverse gap-6 md:mt-10 md:flex-row md:items-end md:justify-between">
-        <p className="flex items-center gap-3 text-[13px] text-dim">
+        <p className="flex items-center gap-3 text-[13px] text-on-canvas-dim">
           What the CLIs print
           <span
             aria-hidden="true"
             className="h-4 w-0.5 rounded-full bg-white shadow-[0_0_12px_2px_rgba(255,255,255,.35)]"
           />
-          <span className="text-fg">What Dort draws from it</span>
+          <span className="text-on-canvas">What Dort draws from it</span>
         </p>
-        <p className="max-w-[420px] text-[16px] text-muted leading-relaxed">
+        <p className="max-w-[420px] text-[16px] text-on-canvas-muted leading-relaxed">
           Dort does not replace forge or the analyzers. It reads what they
           already produce and lays it over the contract.
         </p>
@@ -226,24 +226,24 @@ export function CompareWorlds({ data }: { data: CompareData }) {
             className="grid gap-5 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:items-center lg:gap-12"
           >
             <div className="lg:pr-2">
-              <p className="font-mono text-[12.5px] text-dim lg:text-[13.5px]">
+              <p className="font-mono text-[12.5px] text-on-canvas-dim lg:text-[13.5px]">
                 {String(i + 1).padStart(2, "0")} /{" "}
                 {String(ROWS.length).padStart(2, "0")}
               </p>
-              <h3 className="mt-2 font-medium text-[19px] text-fg leading-snug tracking-[-0.01em] lg:text-[25px]">
+              <h3 className="mt-2 font-medium text-[19px] text-on-canvas leading-snug tracking-[-0.01em] lg:text-[25px]">
                 {r.what}
               </h3>
               {/* C1: what everyone else does (faded) over what Dort does (lit) */}
               <p
                 data-them
-                className="mt-4 flex gap-2.5 text-[13.5px] text-dim leading-snug lg:mt-5 lg:text-[15.5px]"
+                className="mt-4 flex gap-2.5 text-[13.5px] text-on-canvas-dim leading-snug lg:mt-5 lg:text-[15.5px]"
               >
                 <Mark on={false} />
                 {r.cli}
               </p>
               <p
                 data-us
-                className="mt-2 flex gap-2.5 text-[15px] text-fg leading-snug lg:mt-3 lg:text-[17.5px]"
+                className="mt-2 flex gap-2.5 text-[15px] text-on-canvas leading-snug lg:mt-3 lg:text-[17.5px]"
               >
                 <Mark on />
                 {r.dort}
@@ -285,7 +285,7 @@ function World({ raw, children }: { raw: string[]; children: ReactNode }) {
       <div data-raw aria-hidden="true" className="lp-cmp-raw">
         {raw.map((l, j) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: static lines, blanks repeat
-          <span key={j} className={j === 0 ? "text-white/60" : undefined}>
+          <span key={j} className={j === 0 ? "text-white/80" : undefined}>
             {l || " "}
           </span>
         ))}
