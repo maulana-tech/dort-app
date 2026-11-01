@@ -118,12 +118,12 @@ export function CityHorizon() {
           <stop offset="1" stopColor="#000" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="lp-ground" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#09090b" />
-          <stop offset="1" stopColor="#020203" />
+          <stop offset="0" stopColor="#eef3fb" />
+          <stop offset="1" stopColor="#e3ebf7" />
         </linearGradient>
         <linearGradient id="lp-fadein" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#000" stopOpacity="1" />
-          <stop offset="1" stopColor="#000" stopOpacity="0" />
+          <stop offset="0" stopColor="#0647b3" stopOpacity="1" />
+          <stop offset="1" stopColor="#0647b3" stopOpacity="0" />
         </linearGradient>
       </defs>
 
@@ -132,7 +132,7 @@ export function CityHorizon() {
       <rect y={TOP} width={W} height="150" fill="url(#lp-fadein)" />
 
       {/* R14: far layer, then the near city with lit roofs and windows */}
-      <path fill="#0b0b0d" d={FAR_D} />
+      <path fill="#ffffff" d={FAR_D} />
       <path fill="url(#lp-ground)" d={NEAR_D} />
       <g strokeWidth="1">
         {ROOFS.map(([a, d]) => (
