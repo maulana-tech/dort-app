@@ -124,8 +124,13 @@ function bigWords(root: HTMLElement, gsap: Gsap) {
       spin.to(
         g,
         {
-          keyframes: { x: [0, r, 0, -r, 0], y: [-r, 0, r, 0, -r] },
-          easeEach: "sine.inOut",
+          // easeEach belongs INSIDE the keyframes object; as a sibling GSAP rejects it
+          // ("Invalid property easeEach") and every orbit step runs linear instead of eased.
+          keyframes: {
+            x: [0, r, 0, -r, 0],
+            y: [-r, 0, r, 0, -r],
+            easeEach: "sine.inOut",
+          },
           rotate: i ? -40 : 40,
           ease: "none",
         },
@@ -140,7 +145,7 @@ function Glyph({ icon, at, bad }: Word["glyphs"][number]) {
     <span
       data-lp="glyph"
       aria-hidden="true"
-      className={`absolute z-10 grid size-11 place-items-center rounded-full border border-white/[.1] bg-card-grad text-muted shadow-soft md:size-14 ${at}`}
+      className={`absolute z-10 grid size-11 place-items-center rounded-full border border-white/[.1] bg-card-grad text-on-canvas-muted shadow-soft md:size-14 ${at}`}
     >
       <svg
         aria-hidden="true"
@@ -237,7 +242,7 @@ export function BigWords({
           >
             <h2
               aria-label={w.word}
-              className={`font-light text-fg leading-[0.9] tracking-[-0.06em] ${
+              className={`font-light text-on-canvas leading-[0.9] tracking-[-0.06em] ${
                 w.layout === "top"
                   ? "text-[clamp(96px,17vw,240px)]"
                   : "text-[clamp(96px,11vw,168px)]"
@@ -257,7 +262,7 @@ export function BigWords({
             </h2>
             <p
               data-lp="line"
-              className={`mt-6 max-w-[420px] text-balance text-[16px] text-muted leading-relaxed md:text-[18px] ${
+              className={`mt-6 max-w-[420px] text-balance text-[16px] text-on-canvas-muted leading-relaxed md:text-[18px] ${
                 w.layout === "top"
                   ? "mx-auto"
                   : w.layout === "right"
