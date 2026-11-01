@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-/** The protocol's real logo when the app ships one (public/logos), else its initial on a graphite tile. */
+/** The protocol's real logo when the app ships one (public/logos), else its initial on a blue tile. */
 export function ProtocolLogo({
   name,
   logo,
