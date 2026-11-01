@@ -53,10 +53,10 @@ export function StartHere() {
           <PhIcon d={PH.rocket} className="size-[13px] text-fg" />
           Start here
         </p>
-        <h1 className="font-medium text-[clamp(24px,3vw,32px)] text-fg leading-tight tracking-[-0.02em]">
+        <h1 className="font-medium text-[clamp(24px,3vw,32px)] text-on-canvas leading-tight tracking-[-0.02em]">
           Load your first run
         </h1>
-        <p className="mt-2 max-w-[560px] text-[14px] text-body leading-relaxed">
+        <p className="mt-2 max-w-[560px] text-[14px] text-on-canvas-muted leading-relaxed">
           Dort shows what your Foundry tests actually did: every call, the
           source line it ran, your contract as a graph and its findings. Nothing
           is loaded yet. A few minutes from zero, by hand or with your AI agent.
@@ -69,9 +69,9 @@ export function StartHere() {
             <PhIcon d={PH.flask} className="size-[14px]" />
             Try the sample vault
           </Button>
-          <p className="min-w-0 flex-1 text-[12.5px] text-muted leading-normal">
-            <span className="text-text">No Foundry project at hand?</span> Look
-            around with DortVault, a small demo vault bundled with the app.
+          <p className="min-w-0 flex-1 text-[12.5px] text-on-canvas-muted leading-normal">
+            <span className="text-on-canvas">No Foundry project at hand?</span>{" "}
+            Look around with DortVault, a small demo vault bundled with the app.
           </p>
         </div>
 
@@ -176,7 +176,7 @@ export function StartHere() {
           )}
         </motion.ol>
 
-        <p className="mt-4 text-[12.5px] text-dim">
+        <p className="mt-4 text-[12.5px] text-on-canvas-muted">
           Everything stays on your machine: the exporter and the app read local
           files, a dropped file is read in this tab only.
         </p>
