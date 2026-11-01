@@ -307,7 +307,7 @@ function Focus({
                     {g.caller}
                   </span>
                   {g.by && (
-                    <span className="flex-none font-mono text-[11px] text-dim">
+                    <span className="flex-none font-mono text-[11px] text-fg">
                       {g.by}
                     </span>
                   )}
