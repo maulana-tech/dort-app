@@ -13,13 +13,13 @@ export const SYSTEMS: Record<SystemKey, { label: string; sub: string }> = {
 
 /** Layer palette (also mirrored as CSS vars in atlas.css). */
 export const COLORS = {
-  ext: "#7d8288",
+  ext: "#717e94",
   entry: "#f2f3f4",
-  logic: "#c3c6ca",
-  state: "#9ca0a6",
-  access: "#dfe1e3",
-  events: "#a9adb2",
-  vulns: "#f87171",
+  logic: "#bfc5ce",
+  state: "#949eae",
+  access: "#dde0e5",
+  events: "#a2abb9",
+  vulns: "#b71e1e",
 } as const;
 export const SYS_COLOR: Record<SystemKey, keyof typeof COLORS> = {
   entry: "entry",
