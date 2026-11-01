@@ -139,6 +139,7 @@ const ETHEREUM =
 
 /** the chains whose testnets the exporter forks, in the order the app lists them */
 const CHAINS = [
+  ["portaldot", "Portaldot V3", "https://portaldot.io"],
   ["ethereum", "Ethereum", "https://ethereum.org"],
   ["arbitrum", "Arbitrum", "https://arbitrum.io"],
   ["base", "Base", "https://www.base.org"],
@@ -342,8 +343,8 @@ export async function Product() {
       node: icon(SOLIDITY),
     },
     {
-      // any EVM chain, not just L1 (the fork picker runs Ethereum, Arbitrum, Base, Robinhood,
-      // HyperEVM and Tempo testnets); the diamond stays as the EVM's own mark
+      // any EVM chain, not just L1 (the fork picker runs Portaldot V3, Ethereum, Arbitrum,
+      // Base, Robinhood, HyperEVM and Tempo testnets); the diamond stays as the EVM's own mark
       title: "EVM Chain",
       href: "https://ethereum.org/developers/docs/evm/",
       node: icon(ETHEREUM),
