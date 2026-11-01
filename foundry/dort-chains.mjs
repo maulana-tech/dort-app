@@ -1,9 +1,16 @@
-// The testnets Dort can fork: `node dort-export.mjs --chain base-sepolia` runs the tests on a
+// The testnets Dort can fork: `node dort-export.mjs --chain portaldot-testnet` runs the tests on a
 // copy of that chain's state at its latest block (nothing is sent, no key, no gas), and
 // `--forks all` adds one such run per chain next to the local one. Public RPCs; for a provider
 // endpoint set DORT_RPC_<KEY>, e.g. DORT_RPC_BASE_SEPOLIA=https://… (public ones rate-limit).
+//
+// Portaldot V3 comes first: it is the chain Dort is built for. Its Ethereum JSON-RPC is served by
+// the Polkadot SDK's eth-rpc (web3_clientVersion answers `eth-rpc/…`) in front of a WASM runtime,
+// yet eth_getCode returns ordinary solc EVM bytecode, so forge forks it and decodes calls into
+// deployed contracts exactly as it does on Ethereum. What it does NOT have is Multicall3 at the
+// canonical address, so test/Portaldot.t.sol — not test/Fork.t.sol — is the live-chain proof here.
 
 export const CHAINS = {
+  'portaldot-testnet': { name: 'Portaldot V3 Testnet', family: 'portaldot', id: 420420777, rpc: 'https://test-evm-rpc-v3.portaldot.dev' },
   'sepolia': { name: 'Ethereum Sepolia', family: 'ethereum', id: 11155111, rpc: 'https://ethereum-sepolia-rpc.publicnode.com' },
   'arbitrum-sepolia': { name: 'Arbitrum Sepolia', family: 'arbitrum', id: 421614, rpc: 'https://sepolia-rollup.arbitrum.io/rpc' },
   'base-sepolia': { name: 'Base Sepolia', family: 'base', id: 84532, rpc: 'https://sepolia.base.org' },
