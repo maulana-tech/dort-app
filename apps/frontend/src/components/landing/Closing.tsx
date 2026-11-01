@@ -86,16 +86,16 @@ export function Faq() {
     >
       <Reveal className="grid gap-5 md:grid-cols-2 md:items-end md:gap-10">
         <div>
-          <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/[.08] bg-white/[.04] px-3 py-1 text-[12px] text-muted">
+          <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/[.18] bg-white/[.1] px-3 py-1 text-[12px] text-on-canvas-muted">
             <span className="size-1.5 rounded-full bg-white/60" />
             FAQ
           </p>
           {/* F1: a regular-weight, one-tone two-line title, as the ref sets it */}
-          <h2 className="max-w-[560px] font-normal text-[clamp(30px,3.4vw,46px)] text-fg leading-[1.12] tracking-[-0.025em]">
+          <h2 className="max-w-[560px] font-normal text-[clamp(30px,3.4vw,46px)] text-on-canvas leading-[1.12] tracking-[-0.025em]">
             Answers to the questions auditors ask most.
           </h2>
         </div>
-        <p className="max-w-[400px] text-[15px] text-muted leading-relaxed md:justify-self-end">
+        <p className="max-w-[400px] text-[15px] text-on-canvas-muted leading-relaxed md:justify-self-end">
           How Dort runs, what it reads from your Foundry project and what stays
           on your machine.
         </p>
@@ -106,12 +106,12 @@ export function Faq() {
         className="mt-10 grid gap-3 md:mt-14 md:grid-cols-[260px_minmax(0,1fr)] md:grid-rows-[auto_1fr] md:gap-4"
       >
         {/* F1: the category tabs (radios, so the filter needs no JS) */}
-        <fieldset className="grid grid-cols-2 gap-1 rounded-[16px] border border-white/[.07] bg-[#0e0e10] p-1.5 md:flex md:flex-col">
+        <fieldset className="grid grid-cols-2 gap-1 rounded-[16px] border border-white/[.07] bg-[#0647b3] p-1.5 md:flex md:flex-col">
           <legend className="sr-only">Filter the questions</legend>
           {CATS.map(([id, label]) => (
             <label
               key={id}
-              className="flex h-10 cursor-pointer items-center justify-center rounded-[11px] px-3 text-[13.5px] text-muted transition-colors hover:text-fg has-[:checked]:bg-gradient-to-b has-[:checked]:from-white/[.09] has-[:checked]:to-white/[.04] has-[:checked]:text-fg has-[:checked]:shadow-[inset_0_1px_0_rgba(255,255,255,.08)] has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-white/30"
+              className="flex h-10 cursor-pointer items-center justify-center rounded-[11px] px-3 text-[13.5px] text-on-canvas-muted transition-colors hover:text-on-canvas has-[:checked]:bg-gradient-to-b has-[:checked]:from-white/[.22] has-[:checked]:to-white/[.12] has-[:checked]:text-on-canvas has-[:checked]:shadow-[inset_0_1px_0_rgba(255,255,255,.08)] has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-white/30"
             >
               <input
                 type="radio"
@@ -131,11 +131,11 @@ export function Faq() {
             <details
               key={q}
               data-cat={cat}
-              className="group rounded-[16px] border border-white/[.07] bg-gradient-to-b from-[#151517] to-[#0f0f11] px-5 transition-colors hover:border-white/[.12] open:border-white/[.12] md:px-6 [&_summary::-webkit-details-marker]:hidden"
+              className="group rounded-[16px] border border-border bg-gradient-to-b from-[#f3f7fe] to-[#ffffff] px-5 transition-colors hover:border-border-strong open:border-border-strong md:px-6 [&_summary::-webkit-details-marker]:hidden"
             >
               <summary className="flex min-h-[62px] cursor-pointer list-none items-center justify-between gap-6 py-3 text-[15px] text-fg md:text-[16px]">
                 {q}
-                <span className="grid size-8 flex-none place-items-center rounded-full border border-white/[.1] bg-white/[.03] text-muted transition-transform duration-300 group-open:rotate-180">
+                <span className="grid size-8 flex-none place-items-center rounded-full border border-border bg-inset text-muted transition-transform duration-300 group-open:rotate-180">
                   <svg
                     aria-hidden="true"
                     viewBox="0 0 16 16"
@@ -150,7 +150,7 @@ export function Faq() {
                   </svg>
                 </span>
               </summary>
-              <p className="max-w-[600px] pb-5 text-[14px] text-muted leading-relaxed">
+              <p className="max-w-[600px] pb-5 text-[14px] text-dim leading-relaxed">
                 {a}
               </p>
             </details>
@@ -158,9 +158,9 @@ export function Faq() {
         </div>
 
         {/* F1: 'Got questions?' at the foot of the left column */}
-        <div className="rounded-[16px] border border-white/[.07] bg-[#0e0e10] p-5 md:col-start-1 md:row-start-2 md:self-end">
+        <div className="rounded-[16px] border border-white/[.07] bg-[#0647b3] p-5 md:col-start-1 md:row-start-2 md:self-end">
           <p className="text-[17px] text-fg">Not answered here?</p>
-          <p className="mt-2 text-[13.5px] text-muted leading-relaxed">
+          <p className="mt-2 text-[13.5px] text-dim leading-relaxed">
             Open an issue on the repository with the run and the contract you
             are looking at.
           </p>
@@ -222,29 +222,29 @@ export function FinalCta() {
             <path d="M0-7V-34M0 7V34M-7 0H-34M7 0H34" />
             <path d="M6-6L19-19M-6 6L-19 19M-6-6L-19-19M6 6L19 19" />
           </svg>
-          <h2 className="relative font-light text-[clamp(36px,5.6vw,72px)] text-fg leading-[1.02] tracking-[-0.035em]">
+          <h2 className="relative font-light text-[clamp(36px,5.6vw,72px)] text-on-canvas leading-[1.02] tracking-[-0.035em]">
             Open the sample vault.
           </h2>
-          <p className="relative mx-auto mt-5 max-w-[460px] text-[16px] text-muted leading-relaxed">
+          <p className="relative mx-auto mt-5 max-w-[460px] text-[16px] text-on-canvas-muted leading-relaxed">
             Everything on this page runs on it. Then point Dort at your own
             Foundry project.
           </p>
           <div className="relative mt-9 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/atlas"
-              className="rounded-full bg-primary px-5 py-2.5 font-medium text-[14px] text-primary-fg transition-colors hover:bg-white"
+              className="rounded-full bg-on-canvas px-5 py-2.5 font-medium text-[14px] text-primary transition-colors hover:bg-white"
             >
               Open the Atlas
             </Link>
             <a
               href={GITHUB}
-              className="inline-flex items-center gap-2 rounded-full border border-white/[.09] bg-raised px-5 py-2.5 text-[14px] text-fg transition-colors hover:bg-hover"
+              className="inline-flex items-center gap-2 rounded-full border border-white/[.28] bg-white/[.12] px-5 py-2.5 text-[14px] text-on-canvas transition-colors hover:bg-white/20"
             >
               <GitHubMark />
               View on GitHub
             </a>
           </div>
-          <p className="relative mt-8 font-mono text-[12px] text-dim">
+          <p className="relative mt-8 font-mono text-[12px] text-on-canvas-dim">
             cd foundry && node dort-export.mjs
           </p>
         </div>
@@ -277,23 +277,26 @@ export function Footer() {
     },
   ];
   return (
-    <footer className="bg-[linear-gradient(to_bottom,transparent,rgba(0,0,0,.5)_40%)]">
+    <footer className="relative isolate bg-[linear-gradient(to_bottom,transparent,rgba(3,28,78,.5)_40%)] before:absolute before:inset-x-0 before:bottom-0 before:top-0 before:-z-10 before:bg-[linear-gradient(to_bottom,transparent,rgba(6,71,179,.82)_38%,rgba(4,46,120,.94))]">
       <div className="mx-auto grid max-w-[1240px] gap-10 px-4 py-14 md:grid-cols-[2fr_1fr_1fr] md:px-6">
         <div>
           <span className="flex items-center gap-2.5">
             <LogoText height={28} />
           </span>
-          <p className="mt-4 max-w-[300px] text-[13px] text-dim leading-relaxed">
+          <p className="mt-4 max-w-[300px] text-[13px] text-on-canvas-dim leading-relaxed">
             Visual tooling for smart contract audits. Defensive by design.
           </p>
         </div>
         {cols.map((c) => (
           <div key={c.title}>
-            <p className="text-[13px] text-text">{c.title}</p>
-            <ul className="mt-4 space-y-2.5 text-[13px] text-dim">
+            <p className="text-[13px] text-on-canvas">{c.title}</p>
+            <ul className="mt-4 space-y-2.5 text-[13px] text-on-canvas-dim">
               {c.links.map(([label, href]) => (
                 <li key={label}>
-                  <a href={href} className="transition-colors hover:text-fg">
+                  <a
+                    href={href}
+                    className="transition-colors hover:text-on-canvas"
+                  >
                     {label}
                   </a>
                 </li>
@@ -302,7 +305,7 @@ export function Footer() {
           </div>
         ))}
       </div>
-      <div className="mx-auto flex max-w-[1240px] justify-between px-4 pb-8 text-[12px] text-dim md:px-6">
+      <div className="mx-auto flex max-w-[1240px] justify-between px-4 pb-8 text-[12px] text-on-canvas-dim md:px-6">
         <span>© 2026 Dort</span>
         <span>Built for auditors.</span>
       </div>
