@@ -127,7 +127,7 @@ function Row({
   const name = s.fn ? `${s.fn}()` : (s.label ?? "");
   const line = bad ? "bg-red" : "bg-white/45";
   const chip = bad
-    ? "border-red/50 bg-[#2a1719] text-[#fca5a5]"
+    ? "border-red/50 bg-red/10 text-red"
     : "border-border bg-raised text-fg";
   return (
     <li
@@ -216,7 +216,7 @@ function Row({
         {s.fn && s.from !== s.to && (
           <span
             aria-hidden="true"
-            className={`absolute top-1/2 z-[1] h-7 w-[7px] -translate-x-[3px] -translate-y-1/2 rounded-[2px] border ${bad ? "border-red/70 bg-[#3a1d20]" : "border-white/25 bg-raised"}`}
+            className={`absolute top-1/2 z-[1] h-7 w-[7px] -translate-x-[3px] -translate-y-1/2 rounded-[2px] border ${bad ? "border-red/70 bg-red/[.14]" : "border-white/25 bg-raised"}`}
             style={{ left: `${b}%` }}
           />
         )}
