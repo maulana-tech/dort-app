@@ -11,7 +11,7 @@ const TONES: Record<Tone, string> = {
   solid: "bg-primary text-primary-fg",
 };
 
-/** Soft graphite pill for status / counts; `dot` adds the tone-coloured dot. */
+/** Soft blue pill for status / counts; `dot` adds the tone-coloured dot. */
 export function Chip({
   children,
   tone = "neutral",
