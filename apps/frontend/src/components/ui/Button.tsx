@@ -3,7 +3,7 @@ import type { ButtonHTMLAttributes } from "react";
 const VARIANTS = {
   primary: "bg-primary text-primary-fg shadow-soft hover:bg-white",
   /** pastel green pill for the ONE main action of a view (Run) */
-  accent: "rounded-chip! bg-mint text-primary-fg hover:bg-[#a7f3c4]",
+  accent: "rounded-chip! bg-mint text-[#06331f] hover:bg-[#2bbf8a]",
   secondary: "bg-raised text-fg hover:bg-hover",
   ghost: "text-muted hover:bg-hover hover:text-fg",
 } as const;
