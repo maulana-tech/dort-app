@@ -31,7 +31,7 @@ export function DataBadge() {
   // a bridge link that did not connect: say so, and let the auditor retry once it runs
   if (bridgeError)
     return (
-      <span className="hdr-pill split">
+      <span className="hdr-pill on-blue split">
         <span title={bridgeError} className="max-w-72">
           <span className="hdr-dot text-red" aria-hidden="true" />
           <span className="text-dim">Bridge</span>
@@ -49,7 +49,7 @@ export function DataBadge() {
   if (!run && !bridge && origin !== "sample") return null;
   // T2 / T3: one capsule, what is shown on the left, its Reset inside on the right
   return (
-    <span className="hdr-pill split">
+    <span className="hdr-pill on-blue split">
       <span
         title={
           bridge
