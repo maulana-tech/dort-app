@@ -1862,6 +1862,2081 @@
     "test/Solvency.invariant.t.sol": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\nimport {Test} from \"forge-std/Test.sol\";\nimport {DortVault, IERC20, IOracle, IStrategy, IUniswapV2Router02} from \"../src/DortVault.sol\";\nimport {MockUSDC, MockOracle, MockStrategy, MockUniswapRouter} from \"../src/mocks/Mocks.sol\";\n\n/// Drives the vault with random deposits / withdrawals from a few users.\ncontract Handler is Test {\n    DortVault vault;\n    MockUSDC usdc;\n    address[3] users = [address(0xA11CE), address(0xB0B), address(0xCA7)];\n\n    constructor(DortVault _vault, MockUSDC _usdc) {\n        vault = _vault;\n        usdc = _usdc;\n        for (uint256 i; i < users.length; i++) {\n            usdc.mint(users[i], 1_000_000e6);\n            vm.prank(users[i]);\n            usdc.approve(address(vault), type(uint256).max);\n        }\n    }\n\n    function deposit(uint256 who, uint256 amount) external {\n        address u = users[who % users.length];\n        amount = bound(amount, 1e6, 100_000e6);\n        vm.prank(u);\n        vault.deposit(amount);\n    }\n\n    function withdraw(uint256 who, uint256 amount) external {\n        address u = users[who % users.length];\n        uint256 held = vault.shares(u);\n        if (held == 0) return;\n        amount = bound(amount, 1, held);\n        vm.prank(u);\n        vault.withdraw(amount);\n    }\n}\n\ncontract SolvencyInvariantTest is Test {\n    DortVault vault;\n    MockUSDC usdc;\n    Handler handler;\n\n    function setUp() public {\n        usdc = new MockUSDC();\n        vault = new DortVault(\n            IERC20(address(usdc)),\n            IOracle(address(new MockOracle())),\n            IStrategy(address(new MockStrategy())),\n            address(this),\n            IUniswapV2Router02(address(new MockUniswapRouter())),\n            IERC20(address(new MockUSDC()))\n        );\n        handler = new Handler(vault, usdc);\n        targetContract(address(handler));\n    }\n\n    /// Every share must stay fully backed by USDC held in the vault.\n    function invariant_solvency() public view {\n        assertGe(usdc.balanceOf(address(vault)), vault.totalShares());\n    }\n}\n"
   },
   "forks": {
+    "portaldot-testnet": {
+      "chain": {
+        "key": "portaldot-testnet",
+        "name": "Portaldot V3 Testnet",
+        "family": "portaldot",
+        "id": 420420777,
+        "block": 276125
+      },
+      "generatedAt": "2026-11-01T10:22:51.708Z",
+      "tests": [
+        {
+          "suite": "ForkTest",
+          "file": "test/Fork.t.sol",
+          "name": "test_fork_readsTheLiveChain()",
+          "status": "Skipped",
+          "kind": {
+            "Unit": {
+              "gas": 0
+            }
+          },
+          "reason": null,
+          "frames": [],
+          "transfers": []
+        },
+        {
+          "suite": "DortVaultTest",
+          "file": "test/DortVault.t.sol",
+          "name": "test_deposit()",
+          "status": "Success",
+          "kind": {
+            "Unit": {
+              "gas": 137432
+            }
+          },
+          "reason": null,
+          "frames": [
+            {
+              "d": 0,
+              "kind": "CALL",
+              "to": "DortVaultTest",
+              "contract": "DortVaultTest",
+              "file": "test/DortVault.t.sol",
+              "fn": "test_deposit",
+              "args": "",
+              "ret": "",
+              "ok": true,
+              "status": "Stop",
+              "gas": 137432,
+              "events": [],
+              "lines": {
+                "test/DortVault.t.sol": [68, 69, 70, 71, 72]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "test/DortVault.t.sol",
+                  "line": 68
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "test/DortVault.t.sol",
+                  "line": 69
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "test/DortVault.t.sol",
+                  "line": 70
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "test/DortVault.t.sol",
+                  "line": 71
+                }
+              ]
+            },
+            {
+              "d": 1,
+              "kind": "CALL",
+              "to": "vm",
+              "contract": "vm",
+              "file": null,
+              "fn": "prank",
+              "args": "msgSender=alice",
+              "ret": "",
+              "ok": true,
+              "status": "Return",
+              "gas": 0,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 68
+              }
+            },
+            {
+              "d": 1,
+              "kind": "CALL",
+              "to": "DortVault",
+              "contract": "DortVault",
+              "file": "src/DortVault.sol",
+              "fn": "deposit",
+              "args": "amount=1000000000",
+              "ret": "",
+              "ok": true,
+              "status": "Stop",
+              "gas": 112396,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 69
+              },
+              "lines": {
+                "src/DortVault.sol": [47, 74, 75, 76, 77, 78, 117, 118]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 47
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 118
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 75
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 76
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/DortVault.sol",
+                  "line": 76
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 77
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/DortVault.sol",
+                  "line": 77
+                }
+              ]
+            },
+            {
+              "d": 2,
+              "kind": "CALL",
+              "to": "MockUSDC",
+              "contract": "MockUSDC",
+              "file": "src/mocks/Mocks.sol",
+              "fn": "transferFrom",
+              "args": "from=alice, to=DortVault, amount=1000000000",
+              "ret": "true",
+              "ok": true,
+              "status": "Return",
+              "gas": 36161,
+              "events": [],
+              "callSite": {
+                "file": "src/DortVault.sol",
+                "line": 75
+              },
+              "lines": {
+                "src/mocks/Mocks.sol": [30, 31, 32, 35, 36, 37, 38, 39]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 31
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 31
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 36
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 36
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 37
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 37
+                }
+              ]
+            },
+            {
+              "d": 3,
+              "kind": "EVENT",
+              "to": "MockUSDC",
+              "contract": "MockUSDC",
+              "file": null,
+              "fn": "Transfer",
+              "args": "from=alice, to=DortVault, value=1000000000",
+              "ret": "",
+              "ok": true,
+              "gas": null,
+              "callSite": {
+                "file": "src/mocks/Mocks.sol",
+                "line": 38
+              }
+            },
+            {
+              "d": 2,
+              "kind": "EVENT",
+              "to": "DortVault",
+              "contract": "DortVault",
+              "file": null,
+              "fn": "Deposit",
+              "args": "user=alice, assets=1000000000, shares=1000000000",
+              "ret": "",
+              "ok": true,
+              "gas": null,
+              "callSite": {
+                "file": "src/DortVault.sol",
+                "line": 78
+              }
+            },
+            {
+              "d": 1,
+              "kind": "STATICCALL",
+              "to": "DortVault",
+              "contract": "DortVault",
+              "file": "src/DortVault.sol",
+              "fn": "shares",
+              "args": "arg0=alice",
+              "ret": "1000000000",
+              "ok": true,
+              "status": "Return",
+              "gas": 2868,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 70
+              },
+              "lines": {
+                "src/DortVault.sol": [37]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 37
+                }
+              ]
+            },
+            {
+              "d": 1,
+              "kind": "STATICCALL",
+              "to": "MockUSDC",
+              "contract": "MockUSDC",
+              "file": "src/mocks/Mocks.sol",
+              "fn": "balanceOf",
+              "args": "arg0=DortVault",
+              "ret": "1000000000",
+              "ok": true,
+              "status": "Return",
+              "gas": 2823,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 71
+              },
+              "lines": {
+                "src/mocks/Mocks.sol": [9]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 9
+                }
+              ]
+            }
+          ],
+          "transfers": [
+            {
+              "token": "MockUSDC",
+              "from": "alice",
+              "to": "DortVault",
+              "value": "1000000000"
+            }
+          ]
+        },
+        {
+          "suite": "DortVaultTest",
+          "file": "test/DortVault.t.sol",
+          "name": "test_depositThenWithdraw()",
+          "status": "Success",
+          "kind": {
+            "Unit": {
+              "gas": 282479
+            }
+          },
+          "reason": null,
+          "frames": [
+            {
+              "d": 0,
+              "kind": "CALL",
+              "to": "DortVaultTest",
+              "contract": "DortVaultTest",
+              "file": "test/DortVault.t.sol",
+              "fn": "test_depositThenWithdraw",
+              "args": "",
+              "ret": "",
+              "ok": true,
+              "status": "Stop",
+              "gas": 292079,
+              "events": [],
+              "lines": {
+                "test/DortVault.t.sol": [73, 74, 76, 77, 78, 79, 80, 82]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "test/DortVault.t.sol",
+                  "line": 73
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "test/DortVault.t.sol",
+                  "line": 76
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "test/DortVault.t.sol",
+                  "line": 77
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "test/DortVault.t.sol",
+                  "line": 79
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "test/DortVault.t.sol",
+                  "line": 82
+                }
+              ]
+            },
+            {
+              "d": 1,
+              "kind": "CALL",
+              "to": "vm",
+              "contract": "vm",
+              "file": null,
+              "fn": "prank",
+              "args": "msgSender=bob",
+              "ret": "",
+              "ok": true,
+              "status": "Return",
+              "gas": 0,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 73
+              }
+            },
+            {
+              "d": 1,
+              "kind": "CALL",
+              "to": "DortVault",
+              "contract": "DortVault",
+              "file": "src/DortVault.sol",
+              "fn": "deposit",
+              "args": "amount=20000000000",
+              "ret": "",
+              "ok": true,
+              "status": "Stop",
+              "gas": 112408,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 73
+              },
+              "lines": {
+                "src/DortVault.sol": [47, 74, 75, 76, 77, 78, 117, 118]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 47
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 118
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 75
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 76
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/DortVault.sol",
+                  "line": 76
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 77
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/DortVault.sol",
+                  "line": 77
+                }
+              ]
+            },
+            {
+              "d": 2,
+              "kind": "CALL",
+              "to": "MockUSDC",
+              "contract": "MockUSDC",
+              "file": "src/mocks/Mocks.sol",
+              "fn": "transferFrom",
+              "args": "from=bob, to=DortVault, amount=20000000000",
+              "ret": "true",
+              "ok": true,
+              "status": "Return",
+              "gas": 36161,
+              "events": [],
+              "callSite": {
+                "file": "src/DortVault.sol",
+                "line": 75
+              },
+              "lines": {
+                "src/mocks/Mocks.sol": [30, 31, 32, 35, 36, 37, 38, 39]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 31
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 31
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 36
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 36
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 37
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 37
+                }
+              ]
+            },
+            {
+              "d": 3,
+              "kind": "EVENT",
+              "to": "MockUSDC",
+              "contract": "MockUSDC",
+              "file": null,
+              "fn": "Transfer",
+              "args": "from=bob, to=DortVault, value=20000000000",
+              "ret": "",
+              "ok": true,
+              "gas": null,
+              "callSite": {
+                "file": "src/mocks/Mocks.sol",
+                "line": 38
+              }
+            },
+            {
+              "d": 2,
+              "kind": "EVENT",
+              "to": "DortVault",
+              "contract": "DortVault",
+              "file": null,
+              "fn": "Deposit",
+              "args": "user=bob, assets=20000000000, shares=20000000000",
+              "ret": "",
+              "ok": true,
+              "gas": null,
+              "callSite": {
+                "file": "src/DortVault.sol",
+                "line": 78
+              }
+            },
+            {
+              "d": 1,
+              "kind": "CALL",
+              "to": "vm",
+              "contract": "vm",
+              "file": null,
+              "fn": "startPrank",
+              "args": "msgSender=alice",
+              "ret": "",
+              "ok": true,
+              "status": "Return",
+              "gas": 0,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 76
+              }
+            },
+            {
+              "d": 1,
+              "kind": "CALL",
+              "to": "DortVault",
+              "contract": "DortVault",
+              "file": "src/DortVault.sol",
+              "fn": "deposit",
+              "args": "amount=1000000000",
+              "ret": "",
+              "ok": true,
+              "status": "Stop",
+              "gas": 86821,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 76
+              },
+              "lines": {
+                "src/DortVault.sol": [
+                  47, 74, 75, 76, 77, 78, 117, 118, 119, 122, 123
+                ]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 47
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 118
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 123
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 75
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 76
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/DortVault.sol",
+                  "line": 76
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 77
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/DortVault.sol",
+                  "line": 77
+                }
+              ]
+            },
+            {
+              "d": 2,
+              "kind": "STATICCALL",
+              "to": "MockOracle",
+              "contract": "MockOracle",
+              "file": "src/mocks/Mocks.sol",
+              "fn": "getPrice",
+              "args": "arg0=MockUSDC",
+              "ret": "1000000000000000000",
+              "ok": true,
+              "status": "Return",
+              "gas": 2718,
+              "events": [],
+              "callSite": {
+                "file": "src/DortVault.sol",
+                "line": 123
+              },
+              "lines": {
+                "src/mocks/Mocks.sol": [47, 48]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 48
+                }
+              ]
+            },
+            {
+              "d": 2,
+              "kind": "CALL",
+              "to": "MockUSDC",
+              "contract": "MockUSDC",
+              "file": "src/mocks/Mocks.sol",
+              "fn": "transferFrom",
+              "args": "from=alice, to=DortVault, amount=1000000000",
+              "ret": "true",
+              "ok": true,
+              "status": "Return",
+              "gas": 19061,
+              "events": [],
+              "callSite": {
+                "file": "src/DortVault.sol",
+                "line": 75
+              },
+              "lines": {
+                "src/mocks/Mocks.sol": [30, 31, 32, 35, 36, 37, 38, 39]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 31
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 31
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 36
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 36
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 37
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 37
+                }
+              ]
+            },
+            {
+              "d": 3,
+              "kind": "EVENT",
+              "to": "MockUSDC",
+              "contract": "MockUSDC",
+              "file": null,
+              "fn": "Transfer",
+              "args": "from=alice, to=DortVault, value=1000000000",
+              "ret": "",
+              "ok": true,
+              "gas": null,
+              "callSite": {
+                "file": "src/mocks/Mocks.sol",
+                "line": 38
+              }
+            },
+            {
+              "d": 2,
+              "kind": "EVENT",
+              "to": "DortVault",
+              "contract": "DortVault",
+              "file": null,
+              "fn": "Deposit",
+              "args": "user=alice, assets=1000000000, shares=1000000000",
+              "ret": "",
+              "ok": true,
+              "gas": null,
+              "callSite": {
+                "file": "src/DortVault.sol",
+                "line": 78
+              }
+            },
+            {
+              "d": 1,
+              "kind": "CALL",
+              "to": "DortVault",
+              "contract": "DortVault",
+              "file": "src/DortVault.sol",
+              "fn": "withdraw",
+              "args": "shareAmount=1000000000",
+              "ret": "",
+              "ok": true,
+              "status": "Stop",
+              "gas": 64063,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 77
+              },
+              "lines": {
+                "src/DortVault.sol": [47, 82, 83, 84, 85, 86, 87, 122, 123]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 47
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 82
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 123
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 84
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 85
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/DortVault.sol",
+                  "line": 85
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 86
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/DortVault.sol",
+                  "line": 86
+                }
+              ]
+            },
+            {
+              "d": 2,
+              "kind": "STATICCALL",
+              "to": "MockOracle",
+              "contract": "MockOracle",
+              "file": "src/mocks/Mocks.sol",
+              "fn": "getPrice",
+              "args": "arg0=MockUSDC",
+              "ret": "1000000000000000000",
+              "ok": true,
+              "status": "Return",
+              "gas": 2718,
+              "events": [],
+              "callSite": {
+                "file": "src/DortVault.sol",
+                "line": 123
+              },
+              "lines": {
+                "src/mocks/Mocks.sol": [47, 48]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 48
+                }
+              ]
+            },
+            {
+              "d": 2,
+              "kind": "CALL",
+              "to": "MockUSDC",
+              "contract": "MockUSDC",
+              "file": "src/mocks/Mocks.sol",
+              "fn": "transfer",
+              "args": "to=alice, amount=1000000000",
+              "ret": "true",
+              "ok": true,
+              "status": "Return",
+              "gas": 13480,
+              "events": [],
+              "callSite": {
+                "file": "src/DortVault.sol",
+                "line": 84
+              },
+              "lines": {
+                "src/mocks/Mocks.sol": [26, 27, 35, 36, 37, 38, 39]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 36
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 36
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 37
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 37
+                }
+              ]
+            },
+            {
+              "d": 3,
+              "kind": "EVENT",
+              "to": "MockUSDC",
+              "contract": "MockUSDC",
+              "file": null,
+              "fn": "Transfer",
+              "args": "from=DortVault, to=alice, value=1000000000",
+              "ret": "",
+              "ok": true,
+              "gas": null,
+              "callSite": {
+                "file": "src/mocks/Mocks.sol",
+                "line": 38
+              }
+            },
+            {
+              "d": 2,
+              "kind": "EVENT",
+              "to": "DortVault",
+              "contract": "DortVault",
+              "file": null,
+              "fn": "Withdraw",
+              "args": "user=alice, assets=1000000000, shares=1000000000",
+              "ret": "",
+              "ok": true,
+              "gas": null,
+              "callSite": {
+                "file": "src/DortVault.sol",
+                "line": 87
+              }
+            },
+            {
+              "d": 1,
+              "kind": "CALL",
+              "to": "vm",
+              "contract": "vm",
+              "file": null,
+              "fn": "stopPrank",
+              "args": "",
+              "ret": "",
+              "ok": true,
+              "status": "Return",
+              "gas": 0,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 78
+              }
+            },
+            {
+              "d": 1,
+              "kind": "STATICCALL",
+              "to": "MockUSDC",
+              "contract": "MockUSDC",
+              "file": "src/mocks/Mocks.sol",
+              "fn": "balanceOf",
+              "args": "arg0=alice",
+              "ret": "5000000000",
+              "ok": true,
+              "status": "Return",
+              "gas": 2823,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 79
+              },
+              "lines": {
+                "src/mocks/Mocks.sol": [9]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 9
+                }
+              ]
+            },
+            {
+              "d": 1,
+              "kind": "STATICCALL",
+              "to": "DortVault",
+              "contract": "DortVault",
+              "file": "src/DortVault.sol",
+              "fn": "totalShares",
+              "args": "",
+              "ret": "20000000000",
+              "ok": true,
+              "status": "Return",
+              "gas": 2448,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 82
+              },
+              "lines": {
+                "src/DortVault.sol": [36]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 36
+                }
+              ]
+            }
+          ],
+          "transfers": [
+            {
+              "token": "MockUSDC",
+              "from": "bob",
+              "to": "DortVault",
+              "value": "20000000000"
+            },
+            {
+              "token": "MockUSDC",
+              "from": "alice",
+              "to": "DortVault",
+              "value": "1000000000"
+            },
+            {
+              "token": "MockUSDC",
+              "from": "DortVault",
+              "to": "alice",
+              "value": "1000000000"
+            }
+          ]
+        },
+        {
+          "suite": "DortVaultTest",
+          "file": "test/DortVault.t.sol",
+          "name": "test_harvestMovesFundsToStrategy()",
+          "status": "Success",
+          "kind": {
+            "Unit": {
+              "gas": 238332
+            }
+          },
+          "reason": null,
+          "frames": [
+            {
+              "d": 0,
+              "kind": "CALL",
+              "to": "DortVaultTest",
+              "contract": "DortVaultTest",
+              "file": "test/DortVault.t.sol",
+              "fn": "test_harvestMovesFundsToStrategy",
+              "args": "",
+              "ret": "",
+              "ok": true,
+              "status": "Stop",
+              "gas": 243132,
+              "events": [],
+              "lines": {
+                "test/DortVault.t.sol": [85, 86, 88, 89, 90, 91, 92]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "test/DortVault.t.sol",
+                  "line": 85
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "test/DortVault.t.sol",
+                  "line": 88
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "test/DortVault.t.sol",
+                  "line": 89
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "test/DortVault.t.sol",
+                  "line": 91
+                }
+              ]
+            },
+            {
+              "d": 1,
+              "kind": "CALL",
+              "to": "vm",
+              "contract": "vm",
+              "file": null,
+              "fn": "prank",
+              "args": "msgSender=alice",
+              "ret": "",
+              "ok": true,
+              "status": "Return",
+              "gas": 0,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 85
+              }
+            },
+            {
+              "d": 1,
+              "kind": "CALL",
+              "to": "DortVault",
+              "contract": "DortVault",
+              "file": "src/DortVault.sol",
+              "fn": "deposit",
+              "args": "amount=1000000000",
+              "ret": "",
+              "ok": true,
+              "status": "Stop",
+              "gas": 112396,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 85
+              },
+              "lines": {
+                "src/DortVault.sol": [47, 74, 75, 76, 77, 78, 117, 118]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 47
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 118
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 75
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 76
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/DortVault.sol",
+                  "line": 76
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 77
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/DortVault.sol",
+                  "line": 77
+                }
+              ]
+            },
+            {
+              "d": 2,
+              "kind": "CALL",
+              "to": "MockUSDC",
+              "contract": "MockUSDC",
+              "file": "src/mocks/Mocks.sol",
+              "fn": "transferFrom",
+              "args": "from=alice, to=DortVault, amount=1000000000",
+              "ret": "true",
+              "ok": true,
+              "status": "Return",
+              "gas": 36161,
+              "events": [],
+              "callSite": {
+                "file": "src/DortVault.sol",
+                "line": 75
+              },
+              "lines": {
+                "src/mocks/Mocks.sol": [30, 31, 32, 35, 36, 37, 38, 39]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 31
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 31
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 36
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 36
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 37
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 37
+                }
+              ]
+            },
+            {
+              "d": 3,
+              "kind": "EVENT",
+              "to": "MockUSDC",
+              "contract": "MockUSDC",
+              "file": null,
+              "fn": "Transfer",
+              "args": "from=alice, to=DortVault, value=1000000000",
+              "ret": "",
+              "ok": true,
+              "gas": null,
+              "callSite": {
+                "file": "src/mocks/Mocks.sol",
+                "line": 38
+              }
+            },
+            {
+              "d": 2,
+              "kind": "EVENT",
+              "to": "DortVault",
+              "contract": "DortVault",
+              "file": null,
+              "fn": "Deposit",
+              "args": "user=alice, assets=1000000000, shares=1000000000",
+              "ret": "",
+              "ok": true,
+              "gas": null,
+              "callSite": {
+                "file": "src/DortVault.sol",
+                "line": 78
+              }
+            },
+            {
+              "d": 1,
+              "kind": "CALL",
+              "to": "DortVault",
+              "contract": "DortVault",
+              "file": "src/DortVault.sol",
+              "fn": "harvest",
+              "args": "",
+              "ret": "",
+              "ok": true,
+              "status": "Stop",
+              "gas": 97659,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 88
+              },
+              "lines": {
+                "src/DortVault.sol": [91, 92, 93, 94, 127, 128, 129]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 91
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 92
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 93
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 127
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 128
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/DortVault.sol",
+                  "line": 128
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 129
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/DortVault.sol",
+                  "line": 129
+                }
+              ]
+            },
+            {
+              "d": 2,
+              "kind": "STATICCALL",
+              "to": "MockUSDC",
+              "contract": "MockUSDC",
+              "file": "src/mocks/Mocks.sol",
+              "fn": "balanceOf",
+              "args": "arg0=DortVault",
+              "ret": "1000000000",
+              "ok": true,
+              "status": "Return",
+              "gas": 2823,
+              "events": [],
+              "callSite": {
+                "file": "src/DortVault.sol",
+                "line": 91
+              },
+              "lines": {
+                "src/mocks/Mocks.sol": [9]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 9
+                }
+              ]
+            },
+            {
+              "d": 2,
+              "kind": "CALL",
+              "to": "MockUSDC",
+              "contract": "MockUSDC",
+              "file": "src/mocks/Mocks.sol",
+              "fn": "transfer",
+              "args": "to=MockStrategy, amount=1000000000",
+              "ret": "true",
+              "ok": true,
+              "status": "Return",
+              "gas": 28580,
+              "events": [],
+              "callSite": {
+                "file": "src/DortVault.sol",
+                "line": 92
+              },
+              "lines": {
+                "src/mocks/Mocks.sol": [26, 27, 35, 36, 37, 38, 39]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 36
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 36
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 37
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 37
+                }
+              ]
+            },
+            {
+              "d": 3,
+              "kind": "EVENT",
+              "to": "MockUSDC",
+              "contract": "MockUSDC",
+              "file": null,
+              "fn": "Transfer",
+              "args": "from=DortVault, to=MockStrategy, value=1000000000",
+              "ret": "",
+              "ok": true,
+              "gas": null,
+              "callSite": {
+                "file": "src/mocks/Mocks.sol",
+                "line": 38
+              }
+            },
+            {
+              "d": 2,
+              "kind": "CALL",
+              "to": "MockStrategy",
+              "contract": "MockStrategy",
+              "file": "src/mocks/Mocks.sol",
+              "fn": "invest",
+              "args": "amount=1000000000",
+              "ret": "20000000",
+              "ok": true,
+              "status": "Return",
+              "gas": 997,
+              "events": [],
+              "callSite": {
+                "file": "src/DortVault.sol",
+                "line": 93
+              },
+              "lines": {
+                "src/mocks/Mocks.sol": [73, 74]
+              }
+            },
+            {
+              "d": 1,
+              "kind": "STATICCALL",
+              "to": "MockUSDC",
+              "contract": "MockUSDC",
+              "file": "src/mocks/Mocks.sol",
+              "fn": "balanceOf",
+              "args": "arg0=MockStrategy",
+              "ret": "1000000000",
+              "ok": true,
+              "status": "Return",
+              "gas": 2823,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 88
+              },
+              "lines": {
+                "src/mocks/Mocks.sol": [9]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/mocks/Mocks.sol",
+                  "line": 9
+                }
+              ]
+            },
+            {
+              "d": 1,
+              "kind": "STATICCALL",
+              "to": "DortVault",
+              "contract": "DortVault",
+              "file": "src/DortVault.sol",
+              "fn": "owner",
+              "args": "",
+              "ret": "DortVaultTest",
+              "ok": true,
+              "status": "Return",
+              "gas": 2574,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 91
+              },
+              "lines": {
+                "src/DortVault.sol": [31]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 31
+                }
+              ]
+            },
+            {
+              "d": 1,
+              "kind": "STATICCALL",
+              "to": "DortVault",
+              "contract": "DortVault",
+              "file": "src/DortVault.sol",
+              "fn": "shares",
+              "args": "arg0=DortVaultTest",
+              "ret": "100000",
+              "ok": true,
+              "status": "Return",
+              "gas": 2868,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 91
+              },
+              "lines": {
+                "src/DortVault.sol": [37]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 37
+                }
+              ]
+            }
+          ],
+          "transfers": [
+            {
+              "token": "MockUSDC",
+              "from": "alice",
+              "to": "DortVault",
+              "value": "1000000000"
+            },
+            {
+              "token": "MockUSDC",
+              "from": "DortVault",
+              "to": "MockStrategy",
+              "value": "1000000000"
+            }
+          ]
+        },
+        {
+          "suite": "DortVaultTest",
+          "file": "test/DortVault.t.sol",
+          "name": "test_pause_blocksDeposits()",
+          "status": "Success",
+          "kind": {
+            "Unit": {
+              "gas": 84105
+            }
+          },
+          "reason": null,
+          "frames": [
+            {
+              "d": 0,
+              "kind": "CALL",
+              "to": "DortVaultTest",
+              "contract": "DortVaultTest",
+              "file": "test/DortVault.t.sol",
+              "fn": "test_pause_blocksDeposits",
+              "args": "",
+              "ret": "",
+              "ok": true,
+              "status": "Stop",
+              "gas": 84105,
+              "events": [],
+              "lines": {
+                "test/DortVault.t.sol": [96]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "test/DortVault.t.sol",
+                  "line": 96
+                }
+              ]
+            },
+            {
+              "d": 1,
+              "kind": "CALL",
+              "to": "vm",
+              "contract": "vm",
+              "file": null,
+              "fn": "prank",
+              "args": "msgSender=keeper",
+              "ret": "",
+              "ok": true,
+              "status": "Return",
+              "gas": 0,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 96
+              }
+            },
+            {
+              "d": 1,
+              "kind": "CALL",
+              "to": "DortVault",
+              "contract": "DortVault",
+              "file": "src/DortVault.sol",
+              "fn": "pause",
+              "args": "",
+              "ret": "",
+              "ok": true,
+              "status": "Stop",
+              "gas": 45587,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 96
+              },
+              "lines": {
+                "src/DortVault.sol": [113, 114]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 113
+                },
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 114
+                },
+                {
+                  "op": "SSTORE",
+                  "file": "src/DortVault.sol",
+                  "line": 114
+                }
+              ]
+            },
+            {
+              "d": 1,
+              "kind": "CALL",
+              "to": "vm",
+              "contract": "vm",
+              "file": null,
+              "fn": "prank",
+              "args": "msgSender=alice",
+              "ret": "",
+              "ok": true,
+              "status": "Return",
+              "gas": 0,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 96
+              }
+            },
+            {
+              "d": 1,
+              "kind": "CALL",
+              "to": "vm",
+              "contract": "vm",
+              "file": null,
+              "fn": "expectRevert",
+              "args": "revertData=0x706175736564",
+              "ret": "",
+              "ok": true,
+              "status": "Return",
+              "gas": 0,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 96
+              }
+            },
+            {
+              "d": 1,
+              "kind": "CALL",
+              "to": "DortVault",
+              "contract": "DortVault",
+              "file": "src/DortVault.sol",
+              "fn": "deposit",
+              "args": "amount=1000000",
+              "ret": "paused",
+              "ok": false,
+              "status": "Revert",
+              "gas": 24110,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 96
+              },
+              "lines": {
+                "src/DortVault.sol": [47, 73]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 47
+                }
+              ]
+            }
+          ],
+          "transfers": []
+        },
+        {
+          "suite": "DortVaultTest",
+          "file": "test/DortVault.t.sol",
+          "name": "test_setOracle_onlyOwner()",
+          "status": "Success",
+          "kind": {
+            "Unit": {
+              "gas": 35637
+            }
+          },
+          "reason": null,
+          "frames": [
+            {
+              "d": 0,
+              "kind": "CALL",
+              "to": "DortVaultTest",
+              "contract": "DortVaultTest",
+              "file": "test/DortVault.t.sol",
+              "fn": "test_setOracle_onlyOwner",
+              "args": "",
+              "ret": "",
+              "ok": true,
+              "status": "Stop",
+              "gas": 35637,
+              "events": [],
+              "lines": {
+                "test/DortVault.t.sol": [96]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "test/DortVault.t.sol",
+                  "line": 96
+                }
+              ]
+            },
+            {
+              "d": 1,
+              "kind": "CALL",
+              "to": "vm",
+              "contract": "vm",
+              "file": null,
+              "fn": "prank",
+              "args": "msgSender=alice",
+              "ret": "",
+              "ok": true,
+              "status": "Return",
+              "gas": 0,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 96
+              }
+            },
+            {
+              "d": 1,
+              "kind": "CALL",
+              "to": "vm",
+              "contract": "vm",
+              "file": null,
+              "fn": "expectRevert",
+              "args": "revertData=0x216f776e6572",
+              "ret": "",
+              "ok": true,
+              "status": "Return",
+              "gas": 0,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 96
+              }
+            },
+            {
+              "d": 1,
+              "kind": "CALL",
+              "to": "DortVault",
+              "contract": "DortVault",
+              "file": "src/DortVault.sol",
+              "fn": "setOracle",
+              "args": "newOracle=0x000000…",
+              "ret": "!owner",
+              "ok": false,
+              "status": "Revert",
+              "gas": 24246,
+              "events": [],
+              "callSite": {
+                "file": "test/DortVault.t.sol",
+                "line": 96
+              },
+              "lines": {
+                "src/DortVault.sol": [52, 108]
+              },
+              "storage": [
+                {
+                  "op": "SLOAD",
+                  "file": "src/DortVault.sol",
+                  "line": 52
+                }
+              ]
+            }
+          ],
+          "transfers": []
+        },
+        {
+          "suite": "SolvencyInvariantTest",
+          "file": "test/Solvency.invariant.t.sol",
+          "name": "invariant_solvency()",
+          "status": "Success",
+          "kind": {
+            "Invariant": {
+              "runs": 4,
+              "calls": 32,
+              "reverts": 0,
+              "workers": 1,
+              "metrics": {
+                "test/Solvency.invariant.t.sol:Handler.deposit": {
+                  "calls": 16,
+                  "reverts": 0,
+                  "discards": 0
+                },
+                "test/Solvency.invariant.t.sol:Handler.withdraw": {
+                  "calls": 16,
+                  "reverts": 0,
+                  "discards": 0
+                }
+              },
+              "failed_corpus_replays": 0,
+              "optimization_best_value": null
+            }
+          },
+          "reason": null,
+          "frames": [
+            {
+              "d": 0,
+              "kind": "CALL",
+              "to": "Handler",
+              "contract": "Handler",
+              "file": "test/Solvency.invariant.t.sol",
+              "fn": "deposit",
+              "args": "who=1000000, amount=353",
+              "ret": "",
+              "ok": true,
+              "status": "Stop",
+              "gas": 125299,
+              "events": []
+            },
+            {
+              "d": 1,
+              "kind": "CALL",
+              "to": "vm",
+              "contract": "vm",
+              "file": null,
+              "fn": "prank",
+              "args": "msgSender=0x000000…",
+              "ret": "",
+              "ok": true,
+              "status": "Return",
+              "gas": 0,
+              "events": []
+            },
+            {
+              "d": 1,
+              "kind": "CALL",
+              "to": "DortVault",
+              "contract": "DortVault",
+              "file": "src/DortVault.sol",
+              "fn": "deposit",
+              "args": "amount=99999000354",
+              "ret": "",
+              "ok": true,
+              "status": "Stop",
+              "gas": 112420,
+              "events": []
+            },
+            {
+              "d": 2,
+              "kind": "CALL",
+              "to": "MockUSDC",
+              "contract": "MockUSDC",
+              "file": "src/mocks/Mocks.sol",
+              "fn": "transferFrom",
+              "args": "from=0x000000…, to=DortVault, amount=99999000354",
+              "ret": "true",
+              "ok": true,
+              "status": "Return",
+              "gas": 36161,
+              "events": []
+            },
+            {
+              "d": 3,
+              "kind": "EVENT",
+              "to": "MockUSDC",
+              "contract": "MockUSDC",
+              "file": null,
+              "fn": "Transfer",
+              "args": "from=0x000000…, to=DortVault, value=99999000354",
+              "ret": "",
+              "ok": true,
+              "gas": null
+            },
+            {
+              "d": 2,
+              "kind": "EVENT",
+              "to": "DortVault",
+              "contract": "DortVault",
+              "file": null,
+              "fn": "Deposit",
+              "args": "user=0x000000…, assets=99999000354, shares=99999000354",
+              "ret": "",
+              "ok": true,
+              "gas": null
+            }
+          ],
+          "transfers": [
+            {
+              "token": "MockUSDC",
+              "from": "0x000000…",
+              "to": "DortVault",
+              "value": "99999000354"
+            }
+          ]
+        },
+        {
+          "suite": "PortaldotTest",
+          "file": "test/Portaldot.t.sol",
+          "name": "test_portaldot_readsPortalUsdt()",
+          "status": "Success",
+          "kind": {
+            "Unit": {
+              "gas": 14673
+            }
+          },
+          "reason": null,
+          "frames": [
+            {
+              "d": 0,
+              "kind": "CALL",
+              "to": "PortaldotTest",
+              "contract": "PortaldotTest",
+              "file": "test/Portaldot.t.sol",
+              "fn": "test_portaldot_readsPortalUsdt",
+              "args": "",
+              "ret": "",
+              "ok": true,
+              "status": "Stop",
+              "gas": 14673,
+              "events": [],
+              "lines": {
+                "test/Portaldot.t.sol": [28, 46, 47, 48]
+              }
+            },
+            {
+              "d": 1,
+              "kind": "STATICCALL",
+              "to": "0xe0114a…",
+              "contract": null,
+              "file": null,
+              "fn": "symbol",
+              "args": "",
+              "ret": "\"pUSDT\"",
+              "ok": true,
+              "status": "Return",
+              "gas": 3213,
+              "events": [],
+              "callSite": {
+                "file": "test/Portaldot.t.sol",
+                "line": 47
+              }
+            },
+            {
+              "d": 1,
+              "kind": "STATICCALL",
+              "to": "vm",
+              "contract": "vm",
+              "file": null,
+              "fn": "assertEq",
+              "args": "left=\"pUSDT\", right=\"pUSDT\", err=\"symbol from the live contract\"",
+              "ret": "",
+              "ok": true,
+              "status": "Return",
+              "gas": 0,
+              "events": []
+            },
+            {
+              "d": 1,
+              "kind": "STATICCALL",
+              "to": "0xe0114a…",
+              "contract": null,
+              "file": null,
+              "fn": "decimals",
+              "args": "",
+              "ret": "6",
+              "ok": true,
+              "status": "Return",
+              "gas": 293,
+              "events": [],
+              "callSite": {
+                "file": "test/Portaldot.t.sol",
+                "line": 48
+              }
+            }
+          ],
+          "transfers": []
+        },
+        {
+          "suite": "PortaldotTest",
+          "file": "test/Portaldot.t.sol",
+          "name": "test_portaldot_readsTokenStorage()",
+          "status": "Success",
+          "kind": {
+            "Unit": {
+              "gas": 6073
+            }
+          },
+          "reason": null,
+          "frames": [
+            {
+              "d": 0,
+              "kind": "CALL",
+              "to": "PortaldotTest",
+              "contract": "PortaldotTest",
+              "file": "test/Portaldot.t.sol",
+              "fn": "test_portaldot_readsTokenStorage",
+              "args": "",
+              "ret": "",
+              "ok": true,
+              "status": "Stop",
+              "gas": 6073,
+              "events": [],
+              "lines": {
+                "test/Portaldot.t.sol": [26, 54, 55]
+              }
+            },
+            {
+              "d": 1,
+              "kind": "STATICCALL",
+              "to": "0xf67ce9…",
+              "contract": null,
+              "file": null,
+              "fn": "balanceOf",
+              "args": "who=0x26fe9e…",
+              "ret": "0",
+              "ok": true,
+              "status": "Return",
+              "gas": 2541,
+              "events": [],
+              "callSite": {
+                "file": "test/Portaldot.t.sol",
+                "line": 55
+              }
+            }
+          ],
+          "transfers": []
+        },
+        {
+          "suite": "PortaldotTest",
+          "file": "test/Portaldot.t.sol",
+          "name": "test_portaldot_readsWrappedPot()",
+          "status": "Success",
+          "kind": {
+            "Unit": {
+              "gas": 20085
+            }
+          },
+          "reason": null,
+          "frames": [
+            {
+              "d": 0,
+              "kind": "CALL",
+              "to": "PortaldotTest",
+              "contract": "PortaldotTest",
+              "file": "test/Portaldot.t.sol",
+              "fn": "test_portaldot_readsWrappedPot",
+              "args": "",
+              "ret": "",
+              "ok": true,
+              "status": "Stop",
+              "gas": 20085,
+              "events": [],
+              "lines": {
+                "test/Portaldot.t.sol": [22, 26, 36, 37, 39, 40, 41]
+              }
+            },
+            {
+              "d": 1,
+              "kind": "STATICCALL",
+              "to": "0xf67ce9…",
+              "contract": null,
+              "file": null,
+              "fn": "symbol",
+              "args": "",
+              "ret": "\"WPOT\"",
+              "ok": true,
+              "status": "Return",
+              "gas": 3213,
+              "events": [],
+              "callSite": {
+                "file": "test/Portaldot.t.sol",
+                "line": 39
+              }
+            },
+            {
+              "d": 1,
+              "kind": "STATICCALL",
+              "to": "vm",
+              "contract": "vm",
+              "file": null,
+              "fn": "assertEq",
+              "args": "left=\"WPOT\", right=\"WPOT\", err=\"symbol from the live contract\"",
+              "ret": "",
+              "ok": true,
+              "status": "Return",
+              "gas": 0,
+              "events": []
+            },
+            {
+              "d": 1,
+              "kind": "STATICCALL",
+              "to": "0xf67ce9…",
+              "contract": null,
+              "file": null,
+              "fn": "decimals",
+              "args": "",
+              "ret": "18",
+              "ok": true,
+              "status": "Return",
+              "gas": 2313,
+              "events": [],
+              "callSite": {
+                "file": "test/Portaldot.t.sol",
+                "line": 40
+              }
+            },
+            {
+              "d": 1,
+              "kind": "STATICCALL",
+              "to": "0xf67ce9…",
+              "contract": null,
+              "file": null,
+              "fn": "totalSupply",
+              "args": "",
+              "ret": "202250146291086249091",
+              "ok": true,
+              "status": "Return",
+              "gas": 228,
+              "events": [],
+              "callSite": {
+                "file": "test/Portaldot.t.sol",
+                "line": 41
+              }
+            }
+          ],
+          "transfers": []
+        }
+      ]
+    },
     "sepolia": {
       "chain": {
         "key": "sepolia",
