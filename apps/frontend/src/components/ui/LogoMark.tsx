@@ -19,7 +19,7 @@ export function LogoText({ height = 26 }: { height?: number }) {
     <img
       src="/brand/logo-text.png"
       alt="dort"
-      width={Math.round((height * 300) / 96)}
+      width={Math.round((height * 289) / 96)}
       height={height}
       className="shrink-0"
     />
