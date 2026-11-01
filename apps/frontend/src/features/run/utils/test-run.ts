@@ -12,6 +12,12 @@ import type { TestResult } from "../../trace/types";
  */
 export const FORK_CHAINS = [
   {
+    key: "portaldot-testnet",
+    name: "Portaldot V3 Testnet",
+    family: "portaldot",
+    id: 420420777,
+  },
+  {
     key: "sepolia",
     name: "Ethereum Sepolia",
     family: "ethereum",
