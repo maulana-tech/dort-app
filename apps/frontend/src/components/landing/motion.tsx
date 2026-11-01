@@ -92,21 +92,23 @@ export function useStage(
  * (collars, fades). Never on :root: an inherited property changing there restyles the whole page
  * on every scroll frame.
  */
+/** Blue, not grey: these are the page background itself, so they follow globals.css's blue
+ * surfaces (hue 217). They are plain RGB triplets, so a hex-based theme sweep will miss them. */
 const TONES: Record<
   string,
   { bg: number[]; glow: number; x: number; y: number }
 > = {
-  hero: { bg: [0, 0, 0], glow: 0.09, x: 50, y: 0 },
-  product: { bg: [9, 9, 11], glow: 0.07, x: 50, y: 18 },
-  run: { bg: [12, 12, 14], glow: 0.06, x: 50, y: 50 },
-  words: { bg: [6, 6, 7], glow: 0.05, x: 50, y: 40 },
-  how: { bg: [10, 10, 12], glow: 0.04, x: 50, y: 60 },
-  findings: { bg: [13, 13, 15], glow: 0.08, x: 50, y: 100 },
-  tests: { bg: [9, 9, 11], glow: 0.05, x: 50, y: 50 },
-  ask: { bg: [16, 15, 14], glow: 0.07, x: 30, y: 80 },
-  compare: { bg: [7, 7, 8], glow: 0.05, x: 30, y: 30 },
-  faq: { bg: [4, 4, 5], glow: 0.04, x: 50, y: 60 },
-  finale: { bg: [0, 0, 0], glow: 0, x: 50, y: 100 },
+  hero: { bg: [9, 74, 180], glow: 0.09, x: 50, y: 0 },
+  product: { bg: [11, 82, 201], glow: 0.07, x: 50, y: 18 },
+  run: { bg: [11, 85, 207], glow: 0.06, x: 50, y: 50 },
+  words: { bg: [10, 79, 193], glow: 0.05, x: 50, y: 40 },
+  how: { bg: [11, 83, 203], glow: 0.04, x: 50, y: 60 },
+  findings: { bg: [11, 86, 209], glow: 0.08, x: 50, y: 100 },
+  tests: { bg: [11, 82, 201], glow: 0.05, x: 50, y: 50 },
+  ask: { bg: [11, 86, 211], glow: 0.07, x: 30, y: 80 },
+  compare: { bg: [10, 80, 197], glow: 0.05, x: 30, y: 30 },
+  faq: { bg: [10, 77, 189], glow: 0.04, x: 50, y: 60 },
+  finale: { bg: [9, 74, 180], glow: 0, x: 50, y: 100 },
 };
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
