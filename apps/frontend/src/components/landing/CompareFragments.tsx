@@ -6,7 +6,7 @@ import type { CompareData } from "./compare-data";
 
 /*
  * The Dort side of Compare's two worlds: one small, real fragment of the app per row (three), drawn from
- * the sample run (compare-data.ts) in the app's own parts (Chip, Meter, tiles, graphite cards,
+ * the sample run (compare-data.ts) in the app's own parts (Chip, Meter, tiles, blue cards,
  * semantic dots). Mounted only near the screen (Lazy in CompareTable). Read-only pictures: the
  * row's copy carries the words, so these stay aria-hidden.
  */
@@ -49,10 +49,10 @@ function Calls({ d }: { d: CompareData }) {
             className="flex h-[26px] items-center gap-2 text-[12.5px]"
             style={{ paddingLeft: c.d * 14 }}
           >
-            <span className="w-3 text-center text-[11px] text-muted">
+            <span className="w-3 text-center text-[11px] text-body">
               {KIND[c.kind]}
             </span>
-            <span className={c.kind === "event" ? "text-muted" : "text-fg"}>
+            <span className={c.kind === "event" ? "text-body" : "text-fg"}>
               {c.name}
             </span>
             <span className="truncate font-mono text-[11px] text-dim">
@@ -85,7 +85,7 @@ function Merged(_: { d: CompareData }) {
           {tools.map(([t, det]) => (
             <p
               key={t}
-              className="rounded-tile border border-white/[.07] bg-raised px-2.5 py-1.5 text-[12px] text-text"
+              className="rounded-tile border border-white/[.07] bg-raised px-2.5 py-1.5 text-[12px] text-fg"
             >
               {t}
               <span className="block truncate font-mono text-[10.5px] text-dim">
@@ -102,7 +102,7 @@ function Merged(_: { d: CompareData }) {
         >
           <path
             d="M0 18C22 18 18 40 40 40M0 62C22 62 18 40 40 40"
-            stroke="#7d7d84"
+            stroke="#8696af"
           />
         </svg>
         <Inner>
@@ -133,7 +133,7 @@ function Scenario({ d }: { d: CompareData }) {
       <div className="flex flex-wrap items-center gap-y-2">
         {d.scenario.map((n, i) => (
           <span key={n.title} className="flex items-center">
-            {i ? <span className="h-px w-4 bg-[#7d7d84]" /> : null}
+            {i ? <span className="h-px w-4 bg-[#8696af]" /> : null}
             <Chip
               dot
               tone={n.ok ? "ok" : "bad"}
@@ -146,7 +146,7 @@ function Scenario({ d }: { d: CompareData }) {
       </div>
       <div className="mt-3">
         <Inner>
-          <p className="flex items-center gap-2 text-[12.5px] text-text">
+          <p className="flex items-center gap-2 text-[12.5px] text-fg">
             <span className="font-mono text-[11.5px]">{d.sol.file}</span>
             <span className={`${tile(true)} ml-auto h-6 px-2.5 text-[11.5px]`}>
               Export .t.sol
