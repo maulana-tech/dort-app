@@ -12,8 +12,8 @@
 .lp-how-num {
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.92),
-    rgba(255, 255, 255, 0.06) 92%
+    rgba(255, 255, 255, 0.95),
+    rgba(255, 255, 255, 0.28) 92%
   );
   -webkit-background-clip: text;
   background-clip: text;
