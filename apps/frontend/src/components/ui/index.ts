@@ -18,6 +18,7 @@ export { SegmentedControl } from "./SegmentedControl";
 export { SOLIDITY, SolidityLogo } from "./SolidityLogo";
 export { Tabs, TileGroup } from "./Tabs";
 export { ToggleChip } from "./ToggleChip";
+export { TokenIcon } from "./TokenIcon";
 export { Toolbar } from "./Toolbar";
 export { Tooltip } from "./Tooltip";
 export { tile } from "./tile";
