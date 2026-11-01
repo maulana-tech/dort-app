@@ -77,14 +77,14 @@ export function FindingsWheel({ findings }: { findings: WheelFinding[] }) {
   return (
     <section ref={ref} id="findings" data-tone="findings" className="lp-wheel">
       <div data-lp="wheel-head" className="lp-wheel-head px-4 text-center">
-        <p className="flex items-center justify-center gap-2 text-[13px] text-text">
+        <p className="flex items-center justify-center gap-2 text-[13px] text-on-canvas">
           <span className="size-1.5 rounded-full bg-red" />
           {findings.length} findings in the sample vault
         </p>
-        <h2 className="mt-4 font-medium text-[clamp(30px,4vw,50px)] text-fg leading-[1.04] tracking-[-0.03em]">
+        <h2 className="mt-4 font-medium text-[clamp(30px,4vw,50px)] text-on-canvas leading-[1.04] tracking-[-0.03em]">
           Every analyzer,
           <br />
-          <span className="text-white/45">one finding per issue.</span>
+          <span className="text-white/70">one finding per issue.</span>
         </h2>
       </div>
       <ul data-lp="wheel" className="lp-wheel-ring">
@@ -132,16 +132,16 @@ export function FindingsWheel({ findings }: { findings: WheelFinding[] }) {
         ))}
       </ul>
       <div className="lp-wheel-read px-4 text-center" aria-live="polite">
-        <p className="text-[12.5px] text-dim">
+        <p className="text-[12.5px] text-on-canvas-muted">
           <span className="lp-wheel-hint-hover">Hover to read a finding</span>
           <span className="lp-wheel-hint-touch">Tap a card to read it</span>
         </p>
         {f && (
           <p
             key={f.id}
-            className="lp-fadein mx-auto mt-3 max-w-[560px] text-[15px] text-body leading-relaxed"
+            className="lp-fadein mx-auto mt-3 max-w-[560px] text-[15px] text-on-canvas-muted leading-relaxed"
           >
-            <span className="text-fg">
+            <span className="text-on-canvas">
               {f.id} {f.title}.
             </span>{" "}
             {f.what}
