@@ -476,8 +476,8 @@ export function AskCarousel({ atlas }: { atlas: AtlasData }) {
               style={place(wrap(i - first, n), 330)}
               className={`lp-ask-card absolute top-[1em] left-1/2 w-[24em] cursor-pointer rounded-card border bg-card-grad p-[0.65em] text-left transition-[border-color,box-shadow] duration-500 md:w-[28em] ${
                 on
-                  ? "border-border-strong shadow-[0_40px_80px_-24px_rgba(0,0,0,.85),0_16px_32px_-16px_rgba(0,0,0,.7)]"
-                  : "border-border shadow-[0_28px_56px_-24px_rgba(0,0,0,.8)]"
+                  ? "border-border-strong shadow-[0_40px_80px_-24px_rgba(3,28,78,.85),0_16px_32px_-16px_rgba(3,28,78,.7)]"
+                  : "border-border shadow-[0_28px_56px_-24px_rgba(3,28,78,.8)]"
               }`}
             >
               <span className="flex items-center gap-2 px-[0.65em] pt-[0.3em] pb-[0.8em]">
@@ -486,12 +486,12 @@ export function AskCarousel({ atlas }: { atlas: AtlasData }) {
                   {c.p.name}
                 </span>
                 {c.found > 0 && (
-                  <span className="ml-auto flex shrink-0 items-center gap-1.5 rounded-chip bg-raised px-[0.65em] text-[1em] text-text leading-[1.8]">
+                  <span className="ml-auto flex shrink-0 items-center gap-1.5 rounded-chip bg-raised px-[0.65em] text-[1em] text-fg leading-[1.8]">
                     <span className="size-1.5 rounded-full bg-red" />▲ {c.found}
                   </span>
                 )}
               </span>
-              <span className="block h-[12.5em] overflow-hidden rounded-inner border border-border bg-[#0b0b0d] py-[0.65em] font-mono text-[1em] leading-[1.85]">
+              <span className="block h-[12.5em] overflow-hidden rounded-inner border border-border bg-[#ffffff] py-[0.65em] font-mono text-[1em] leading-[1.85]">
                 {c.lines.map((l) => (
                   <span
                     key={l.n}
@@ -526,7 +526,7 @@ export function AskCarousel({ atlas }: { atlas: AtlasData }) {
           bottom-left, the actions bottom-right; once asked, the question in big type and the
           answer under it, taking the height left under the row */}
       <div
-        className={`relative mx-auto mt-[clamp(6px,1.6svh,24px)] flex min-h-0 w-full max-w-[920px] flex-col rounded-[28px] border border-border bg-card-grad p-2 shadow-[0_48px_96px_-32px_rgba(0,0,0,.9),0_20px_40px_-20px_rgba(0,0,0,.7)]`}
+        className={`relative mx-auto mt-[clamp(6px,1.6svh,24px)] flex min-h-0 w-full max-w-[920px] flex-col rounded-[28px] border border-border bg-card-grad p-2 shadow-[0_48px_96px_-32px_rgba(3,28,78,.9),0_20px_40px_-20px_rgba(3,28,78,.7)]`}
       >
         <div className="shrink-0 px-3 pt-[clamp(8px,1.6svh,22px)] pb-2 md:px-5">
           <div className={q ? "" : "min-h-[clamp(52px,8svh,96px)]"}>
@@ -554,7 +554,7 @@ export function AskCarousel({ atlas }: { atlas: AtlasData }) {
                 key={`ph:${at}`}
                 type="button"
                 onClick={() => ask("risks")}
-                className="lp-ask-in block w-full cursor-pointer text-left text-[clamp(17px,min(2.4vw,2.9svh),28px)] text-white/30 leading-[1.25] tracking-[-0.02em] transition-colors hover:text-white/45"
+                className="lp-ask-in block w-full cursor-pointer text-left text-[clamp(17px,min(2.4vw,2.9svh),28px)] text-white/30 leading-[1.25] tracking-[-0.02em] transition-colors hover:text-white/70"
               >
                 <span aria-hidden="true" className="lp-ask-caret" />
                 Ask about {card.p.name} on line {line}…
@@ -591,7 +591,7 @@ export function AskCarousel({ atlas }: { atlas: AtlasData }) {
                     type="button"
                     aria-pressed="false"
                     onClick={() => ask(x.q)}
-                    className="h-[clamp(30px,4svh,36px)] cursor-pointer rounded-full bg-raised px-3.5 text-[13px] text-muted transition-colors hover:bg-hover hover:text-fg"
+                    className="h-[clamp(30px,4svh,36px)] cursor-pointer rounded-full bg-raised px-3.5 text-[13px] text-body transition-colors hover:bg-hover hover:text-fg"
                   >
                     {x.label}
                   </button>
@@ -669,7 +669,7 @@ export function AskCarousel({ atlas }: { atlas: AtlasData }) {
                           className="lp-ask-in flex items-start gap-2 rounded-lg border border-white/[.05] bg-white/[.03] px-2.5 py-1.5 text-white/80"
                         >
                           <span
-                            className={`mt-[3px] shrink-0 rounded px-1.5 text-[10.5px] leading-[16px] ${b.risk === "high" || b.risk === "med" ? "bg-red/[.14] text-red" : "bg-white/[.08] text-muted"}`}
+                            className={`mt-[3px] shrink-0 rounded px-1.5 text-[10.5px] leading-[16px] ${b.risk === "high" || b.risk === "med" ? "bg-red/[.14] text-red" : "bg-white/[.08] text-body"}`}
                           >
                             {SEV[b.risk ?? "low"]}
                           </span>
