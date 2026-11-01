@@ -54,7 +54,7 @@ export function AskDemo() {
                     ) : (
                       <span
                         key={x.q}
-                        className="flex h-9 items-center rounded-full bg-raised px-3.5 text-[13px] text-muted"
+                        className="flex h-9 items-center rounded-full bg-raised px-3.5 text-[13px] text-body"
                       >
                         {x.label}
                       </span>
