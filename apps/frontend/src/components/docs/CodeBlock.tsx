@@ -13,7 +13,7 @@ export function CodeBlock({ text }: { text: string }) {
     } catch {}
   };
   return (
-    <div className="overflow-hidden rounded-inner border border-border bg-[#0d0d0f]">
+    <div className="overflow-hidden rounded-inner border border-border bg-inset">
       <div className="flex justify-end border-white/[.05] border-b px-2 py-1.5">
         <button
           type="button"
