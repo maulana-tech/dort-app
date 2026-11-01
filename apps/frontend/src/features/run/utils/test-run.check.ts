@@ -116,6 +116,7 @@ assert.equal(clock(83), "1:23");
 assert.deepEqual(
   FORK_CHAINS.map((c) => splitChain(c.name)),
   [
+    ["Portaldot V3", "Testnet"],
     ["Ethereum", "Sepolia"],
     ["Arbitrum", "Sepolia"],
     ["Base", "Sepolia"],
