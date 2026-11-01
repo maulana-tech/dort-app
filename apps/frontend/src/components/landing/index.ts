@@ -77,7 +77,7 @@
  * pass), pins studied 2026-10-09:
  *  R27 pin/36028865763636582 (Ageeva "A card with features you won't find anywhere else") — the
  *      product column a raised, lighter rounded card standing above a flat table, checks in circles
- *      → `Compare`: the Dort column is one graphite card with a soft white glow over every row.
+ *      → `Compare`: the Dort column is one blue card with a soft white glow over every row.
  *  R28 pin/175218241748813574 (Ortocosmos "Competitor analysis") — '№ / Subject / About' over a
  *      hairline, '[003]' index, compact table hung from the Subject column → `Compare` header.
  *  R29 pin/36028865764245218 (Ageeva "Constructor vs Legacy vs Building In-House") — every cell a
@@ -92,12 +92,12 @@
  *
  * Sixth pass (2026-10-09, "make it flow like geniestudio.app — yang penting nyambung"), Genie studied
  * by scrolling it top to bottom: Lenis + GSAP ScrollTrigger, three pinned scrubbed stages, a
- * background that never cuts. Same dark graphite look, same content and data; only the staging.
+ * background that never cuts. Same dark blue look, same content and data; only the staging.
  *  Section (file)                         → Genie pattern
  *  SmoothScroll + .lp-backdrop (motion)   → Lenis smooth scroll on the GSAP ticker; one fixed
  *                                           background whose tone drifts per section (data-tone)
  *  Hero (Haze.tsx HeroExit)               → the hero swallowed by clouds rising from below: a
- *                                           graphite haze + perspective grid climbs over it
+ *                                           blue haze + perspective grid climbs over it
  *  Product (ScatterGrow.tsx, pinned)      → row of 5 round icons scatters, a tiny square in the
  *                                           centre grows into the app mockup (the live ProductTabs)
  *  Run (RunSentence.tsx, pinned)          → 'You can [+ Create] with one click', button inside the
@@ -176,7 +176,7 @@
  *  W1 pin/56858014040806247 (Integrations Wheel) — rings around one core, tools on the orbit
  *  W2 pin/1076360379685275188 (MagicWand) — tick ring, one lit arc, short labels on the leaders
  *  W3 pin/1150880879804919385 (zsearch) — round marks wired into one lit-cornered square
- *  B1 pin/23432860626141831 / B2 pin/70437490488374 — graphite grid under a soft light, lit dots
+ *  B1 pin/23432860626141831 / B2 pin/70437490488374 — blue grid under a soft light, lit dots
  *  → ScatterGrow.tsx + hub.css: Foundry / Solidity / Ethereum on arms wired into the Dort core,
  *    what each hands over on its wire (forge test -vvvv · forge coverage, your own ABIs, calls &
  *    events · one local run), packets riding in, masked grid behind; the hub comes apart into the
