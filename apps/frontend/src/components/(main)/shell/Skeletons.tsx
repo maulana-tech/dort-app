@@ -26,7 +26,7 @@ function Bone({
   );
 }
 
-/** a node card: title above, graphite card with port rows (Atlas Graph, Explore Map) */
+/** a node card: title above, blue card with port rows (Atlas Graph, Explore Map) */
 function NodeCard({ rows, w = "w-[300px]" }: { rows: number; w?: string }) {
   return (
     <div className={w}>
