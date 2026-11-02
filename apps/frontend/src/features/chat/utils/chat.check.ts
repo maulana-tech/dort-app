@@ -83,6 +83,11 @@ assert.equal(modeBadge(none), "General");
 assert.equal(modeBadge(shown), "Sample");
 assert.equal(modeBadge(real), "Your run");
 
+assert.ok(
+  !real.contracts.includes("vm"),
+  "Foundry's cheatcode address is not a contract in the project",
+);
+
 // ── the context block ──────────────────────────────────────────────────────────────────────
 const ctx = contextBlock(real);
 assert.match(ctx, /^<context>/, "it is fenced as data");
