@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { askStream } from "@/features/ai/services/ask";
 import type { AiConfig } from "@/features/ai/types";
 import { aiReady } from "@/features/ai/utils/provider";
+import { builtinAnswer } from "../utils/builtin";
 import { type RunDigest, type Turn, toMessages } from "../utils/chat";
 
 /**
@@ -18,8 +19,13 @@ export type ChatState = {
   turns: Turn[];
   busy: boolean;
   error: string | null;
-  /** false until the user has configured their own AI; the page then points at the settings */
+  /**
+   * whether a question can be asked at all. True even with no provider configured: the "none"
+   * provider answers from the run's own figures (utils/builtin), so the box is never dead.
+   */
   ready: boolean;
+  /** the answers are Dort's own text, not a model's — the page has to say so */
+  builtin: boolean;
   send: (text: string) => void;
   stop: () => void;
   reset: () => void;
@@ -69,6 +75,24 @@ export function useChat(cfg: AiConfig, digest: RunDigest): ChatState {
       ]);
       setBusy(true);
 
+      // no provider configured: answer from the run's figures, here, with no request at all.
+      // Dort hosts no model, and this is the honest middle — real answers to the questions
+      // arithmetic can settle, and a plain hand-off to the reader's own model for the rest.
+      if (cfg.kind === "none") {
+        const text = builtinAnswer(digest, q);
+        setTurns((prev) => {
+          const copy = [...prev];
+          copy[copy.length - 1] = {
+            role: "assistant",
+            content: text,
+            at: Date.now() + 1,
+          };
+          return copy;
+        });
+        setBusy(false);
+        return;
+      }
+
       const ctrl = new AbortController();
       abort.current = ctrl;
 
@@ -110,5 +134,15 @@ export function useChat(cfg: AiConfig, digest: RunDigest): ChatState {
     [busy, turns, cfg, digest],
   );
 
-  return { turns, busy, error, ready: aiReady(cfg), send, stop, reset, load };
+  return {
+    turns,
+    busy,
+    error,
+    ready: aiReady(cfg) || cfg.kind === "none",
+    builtin: cfg.kind === "none",
+    send,
+    stop,
+    reset,
+    load,
+  };
 }
