@@ -25,9 +25,7 @@ export function ReloadButton() {
         d={PH.reload}
         className={`size-[15px] ${pending ? "animate-spin motion-reduce:animate-none" : ""}`}
       />
-      <span className="truncate">
-        {pending ? "Reloading…" : "Reload trace"}
-      </span>
+      <span className="truncate">{pending ? "Reloading…" : "Reload run"}</span>
       <kbd className="ml-auto flex-none rounded-full border border-white/[.08] bg-black/30 px-1.5 py-0.5 font-mono text-[11px] text-dim">
         ⌘R
       </kbd>
