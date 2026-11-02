@@ -12,6 +12,11 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1", "[::1]"],
   experimental: {
     agentFeedback: true,
+    /**
+     * Set by `next upgrade --agent=security` (16.4.0 → 16.4.3). It records that this app takes
+     * security releases through the agent upgrade path.
+     */
+    agentUpgrade: "security",
   },
   cacheComponents: true,
   partialPrefetching: true,
