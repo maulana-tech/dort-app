@@ -457,12 +457,12 @@ export const GROUPS: DocGroup[] = [
               head: ["Pick", "Call", "What it does"],
               rows: [
                 [
-                  "the asset (USDC)",
+                  "the asset (pUSDT)",
                   "`withdraw`",
                   "takes an exact amount of the asset, burning however many shares that costs, rounded up",
                 ],
                 [
-                  "the share (dUSDC)",
+                  "the share (dpUSDT)",
                   "`redeem`",
                   "burns an exact number of shares",
                 ],
@@ -481,9 +481,46 @@ export const GROUPS: DocGroup[] = [
               "**What arrived, not what was asked.** Shares are priced on the balance delta, so a fee-on-transfer asset shortchanges nobody else.",
             ],
           },
+          { h2: "Which chain, and which asset" },
+          {
+            p: "The vault is the one on-chain feature with no second end — unlike the bridge, it is a single contract on a single chain. So the same contract runs on two, and the page opens on whichever of them really has one.",
+          },
+          {
+            table: {
+              head: ["Chain", "Asset", "Vault"],
+              rows: [
+                [
+                  "Base Sepolia `84532`",
+                  "USDC `0x036CbD53…cF7e`, Circle's own",
+                  "`0x162Dcf95…5aF8` — live",
+                ],
+                [
+                  "Portaldot V3 `420420777`",
+                  "pUSDT `0xe0114Adc…Dbc2`, the token [Swap](/docs/swap) trades",
+                  "pending testnet gas",
+                ],
+              ],
+            },
+          },
+          {
+            p: "Portaldot is the better home and stays first in the picker: one chain would cover the whole loop — POT from the faucet, swapped for pUSDT on PortalSwapRouter, deposited into the vault. Its testnet gas is handed out by an admin rather than a self-service faucet, so Base Sepolia went first.",
+          },
+          {
+            p: "Both assets are named in the app before a vault exists over them, so a chain with nothing deployed tells you what it would hold and says so plainly, rather than guessing at an address. Deploying one is three lines:",
+          },
+          {
+            code: 'export VAULT_ASSET=0xe0114Adc0a2072B602C645f5a07EeFA1eaDBDbc2\nexport VAULT_NAME="Dort pUSDT Vault" VAULT_SYMBOL=dpUSDT VAULT_DECIMALS=6\nforge script script/DeployVault.s.sol --sig "run()" \\\n  --rpc-url https://test-evm-rpc-v3.portaldot.dev --account dort --sender $ME --broadcast',
+          },
+          {
+            p: "Paste the `DortSafeVault` address it prints into the `vault` field of `VAULTS` in `features/vault/vault.ts`. Nothing else has to change: `firstDeployedChain()` picks the chain the page opens on, so a newly filled address moves the default there on its own. About 3.0M gas either way — roughly 0.00000015 POT on Portaldot, or 0.000012 ETH on Base Sepolia.",
+          },
+          {
+            note: "The faucet sends to a native Portaldot address beginning with `5`, not to your `0x…` one. They are the same account written two ways; sending to the `0x…` form loses the tokens.",
+            tone: "warn",
+          },
           { h2: "Try it without a testnet" },
           {
-            p: "Nothing is deployed on a public testnet yet. The demo deploys two mock assets and a vault over each on a local anvil, then runs a deposit, a withdraw, a full exit and the first-depositor attack:",
+            p: "The demo deploys two mock assets and a vault over each on a local anvil, then runs a deposit, a withdraw, a full exit and the first-depositor attack:",
           },
           {
             code: "bash script/vault-local-demo.sh",
@@ -492,7 +529,7 @@ export const GROUPS: DocGroup[] = [
             p: "Then open **Vault** and press **Use the local demo**.",
           },
           {
-            note: "That anvil runs under Base Sepolia's chain id so your wallet and the page agree on it. Point the wallet at `http://127.0.0.1:8545` or the page will lock the button — see [Connecting a wallet](/docs/wallet).",
+            note: "That anvil runs under Base Sepolia's chain id so your wallet and the page agree on it, and the switch moves the page's chain there with it. Point the wallet at `http://127.0.0.1:8545` or the page will lock the button — see [Connecting a wallet](/docs/wallet).",
             tone: "warn",
           },
         ],
