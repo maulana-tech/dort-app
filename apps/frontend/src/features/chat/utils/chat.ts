@@ -88,7 +88,9 @@ function contractsOf(tests: TestResult[]): string[] {
   for (const t of tests)
     for (const f of t.frames) {
       const c = f.contract;
-      if (!c) continue;
+      // `vm` is Foundry's cheatcode address: it shows up in frames but is not a contract in the
+      // project, and listing it invites the model to explain a dependency that does not exist
+      if (!c || c === "vm" || c === "VM") continue;
       seen.set(c, (seen.get(c) ?? 0) + 1);
     }
   return [...seen.entries()].sort((a, b) => b[1] - a[1]).map(([name]) => name);
