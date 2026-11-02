@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Chip, PH, PhIcon } from "@/components/ui";
-import { modeLine } from "@/features/chat";
+import { ChatThread } from "./ChatThread";
 import type { ChatDemo } from "./stats";
 
 /**
@@ -16,7 +16,6 @@ import type { ChatDemo } from "./stats";
  * these same facts to whichever model the reader brings.
  */
 export function HeroChat({ demo }: { demo: ChatDemo }) {
-  const { digest, question, answer } = demo;
   return (
     <div className="lp-chat relative h-full w-full overflow-hidden rounded-t-[24px] border border-white/[.08] border-b-0 bg-[#ffffff]">
       {/* the app's own header row: the panel's name, the mode badge, the way in */}
@@ -48,40 +47,7 @@ export function HeroChat({ demo }: { demo: ChatDemo }) {
       {/* the thread, in the same bubbles /chat uses */}
       <div className="dot-grid-soft absolute inset-x-0 top-[60px] bottom-0 overflow-hidden px-4 pt-3 md:px-6 md:pt-4">
         <div className="mx-auto grid max-w-[720px] gap-3">
-          <p className="text-[12.5px] text-dim">{modeLine(digest)}</p>
-
-          <div className="justify-self-end rounded-card bg-primary px-3.5 py-2 text-[13px] text-primary-fg md:max-w-[80%]">
-            {question}
-          </div>
-
-          <div className="justify-self-start rounded-card bg-surface px-3.5 py-2.5 text-[13px] text-body leading-relaxed shadow-soft md:max-w-[92%]">
-            {answer.map((line) => (
-              <p key={line} className="not-first:mt-2">
-                {line}
-              </p>
-            ))}
-          </div>
-
-          {/* what the question was answered from, stated rather than implied */}
-          <div className="flex flex-wrap items-center gap-1.5 justify-self-start">
-            {[
-              `${digest.total} tests`,
-              `${digest.contracts.length} contracts`,
-              `${digest.files.length} files`,
-            ].map((t) => (
-              <span
-                key={t}
-                className="rounded-full bg-raised px-2.5 py-1 font-mono text-[11px] text-muted"
-              >
-                {t}
-              </span>
-            ))}
-          </div>
-
-          {/* the prompt box's shape, not a working one: the hero does not call a model */}
-          <div className="mt-1 rounded-card bg-field px-3.5 py-2.5 text-[13px] text-dim">
-            Ask in your own words…
-          </div>
+          <ChatThread demo={demo} />
           <p className="flex items-center gap-1.5 text-[11.5px] text-dim">
             <Image
               src="/logos/chains/portaldot.png"
