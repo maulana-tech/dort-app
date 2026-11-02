@@ -23,6 +23,8 @@ export type ChatState = {
   send: (text: string) => void;
   stop: () => void;
   reset: () => void;
+  /** put a saved conversation back on screen (features/chat history) */
+  load: (turns: Turn[]) => void;
 };
 
 export function useChat(cfg: AiConfig, digest: RunDigest): ChatState {
@@ -42,6 +44,15 @@ export function useChat(cfg: AiConfig, digest: RunDigest): ChatState {
     setTurns([]);
     setError(null);
   }, [stop]);
+
+  const load = useCallback(
+    (saved: Turn[]) => {
+      stop();
+      setError(null);
+      setTurns(saved);
+    },
+    [stop],
+  );
 
   const send = useCallback(
     (text: string) => {
@@ -99,5 +110,5 @@ export function useChat(cfg: AiConfig, digest: RunDigest): ChatState {
     [busy, turns, cfg, digest],
   );
 
-  return { turns, busy, error, ready: aiReady(cfg), send, stop, reset };
+  return { turns, busy, error, ready: aiReady(cfg), send, stop, reset, load };
 }
