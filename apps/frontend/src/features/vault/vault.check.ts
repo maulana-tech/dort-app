@@ -1,15 +1,20 @@
 // node --experimental-strip-types src/features/vault/vault.check.ts
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import {
+  BASE_SEPOLIA_USDC,
+  firstDeployedChain,
   LOCAL_VAULT,
   LOCAL_VAULTS,
   OFFSET,
+  PORTALDOT_USDT,
   previewDeposit,
   previewRedeem,
   previewWithdraw,
   toAssets,
   toShares,
+  VAULT_PORTALDOT,
   VAULTS,
   vaultAction,
   vaultFor,
@@ -23,7 +28,7 @@ const sol = new URL(
   "../../../../../foundry/src/DortSafeVault.sol",
   import.meta.url,
 );
-const source = (await import("node:fs")).readFileSync(sol, "utf8");
+const source = readFileSync(sol, "utf8");
 const m = /uint8 private constant OFFSET = (\d+);/.exec(source);
 assert.ok(m, "DortSafeVault must declare OFFSET");
 assert.equal(
@@ -88,10 +93,143 @@ try {
   if ((e as { code?: string }).code !== "ENOENT") throw e;
 }
 
+// ── the chain and the asset, held against the files that own them ──────────────────────────
+// This file is pure and Node runs it without the `@/` alias, so vault.ts spells the chain id and
+// the asset address out. These pins are what stop that copy from drifting from the original.
+const chainsTs = readFileSync(
+  new URL("../bridge/chains.ts", import.meta.url),
+  "utf8",
+);
+const portaldotId = /export const PORTALDOT_ID = (\d+);/.exec(chainsTs);
+assert.ok(portaldotId, "features/bridge/chains.ts must declare PORTALDOT_ID");
+assert.equal(
+  Number(portaldotId[1]),
+  VAULT_PORTALDOT,
+  "the vault's Portaldot id is the bridge's",
+);
+
+const swapTs = readFileSync(
+  new URL("../swap/swap.ts", import.meta.url),
+  "utf8",
+);
+const pUsdt = /symbol: "pUSDT",\s*\n\s*address: "(0x[0-9a-fA-F]{40})"/.exec(
+  swapTs,
+);
+assert.ok(pUsdt, "features/swap/swap.ts must list pUSDT with an address");
+assert.equal(
+  pUsdt[1].toLowerCase(),
+  PORTALDOT_USDT.toLowerCase(),
+  "the vault's asset is the very token /swap trades, not a second guess at it",
+);
+
+// The local demo's anvil borrows a chain id; the page has to move to that id with the switch, so
+// the constant the page reads and the id the script starts must be the same number.
+const localChain = /export const LOCAL_VAULT_CHAIN: HomeChainId = (\d+);/.exec(
+  chainsTs,
+);
+assert.ok(
+  localChain,
+  "features/bridge/chains.ts must declare LOCAL_VAULT_CHAIN",
+);
+const demoSh = readFileSync(
+  new URL("../../../../../foundry/script/vault-local-demo.sh", import.meta.url),
+  "utf8",
+);
+const demoChain = /anvil --port 8545 --chain-id (\d+)/.exec(demoSh);
+assert.ok(demoChain, "vault-local-demo.sh must start anvil with a --chain-id");
+assert.equal(
+  demoChain[1],
+  localChain[1],
+  "the page's local-demo chain is the one the script actually starts",
+);
+
+// ── the chains a vault is offered on ───────────────────────────────────────────────────────
+// Two, and they are deliberately different kinds: Portaldot is the chain Dort is built for, and
+// Base Sepolia is reachable today without waiting on an admin to hand out gas. The vault is the
+// one on-chain feature with no second end, so the same contract on two chains is simply
+// available in two places.
+const onPortaldot = vaultsFor(VAULT_PORTALDOT, false);
+assert.equal(onPortaldot.length, 1, "one asset is offered on Portaldot");
+assert.equal(onPortaldot[0].asset, PORTALDOT_USDT);
+assert.equal(onPortaldot[0].decimals, 6, "pUSDT has six decimals on chain");
+
+const onBase = vaultsFor(84532, false);
+assert.equal(onBase.length, 1, "one asset is offered on Base Sepolia");
+assert.equal(onBase[0].asset, BASE_SEPOLIA_USDC);
+assert.equal(onBase[0].decimals, 6, "Circle's USDC has six decimals");
+
 // ── deployment gating ──────────────────────────────────────────────────────────────────────
-assert.deepEqual(VAULTS, {}, "nothing is claimed deployed before it is");
-assert.deepEqual(vaultsFor(84532, false), [], "and no chain offers one yet");
-assert.equal(vaultReady(vaultFor(84532, false)), false);
+// Structural, not a tally of which chains happen to be live: an address is either a real one or
+// null, and `vaultReady` must agree with which it is. That way filling in a deployed address is
+// a one-line change here and this check keeps meaning the same thing.
+const seen = new Set<string>();
+for (const [chain, deps] of Object.entries(VAULTS)) {
+  assert.ok(deps.length > 0, `chain ${chain} lists at least one asset`);
+  assert.equal(
+    new Set(deps.map((d) => d.symbol)).size,
+    deps.length,
+    `one vault per asset symbol on chain ${chain}`,
+  );
+  for (const d of deps) {
+    assert.match(
+      d.asset ?? "",
+      /^0x[0-9a-fA-F]{40}$/,
+      `the asset is a real address (chain ${chain})`,
+    );
+    if (d.vault !== null)
+      assert.match(
+        d.vault,
+        /^0x[0-9a-fA-F]{40}$/,
+        `a claimed vault is a real address (chain ${chain})`,
+      );
+    assert.equal(
+      vaultReady(d),
+      d.vault !== null,
+      `the page is told exactly whether the vault exists (chain ${chain})`,
+    );
+    assert.equal(
+      d.shareSymbol,
+      `d${d.symbol}`,
+      "the share's symbol is the one the deploy script would name",
+    );
+    for (const a of [d.asset, d.vault]) {
+      if (!a) continue;
+      const key = `${chain}:${a.toLowerCase()}`;
+      assert.ok(!seen.has(key), `no address is listed twice (${key})`);
+      seen.add(key);
+    }
+  }
+}
+
+// ── which chain the page opens on ──────────────────────────────────────────────────────────
+// It must be a chain that really has a vault, and the earliest such one in the picker's order —
+// otherwise the page opens on a dead form while a live one sits two pills away.
+const order = [VAULT_PORTALDOT, 84532];
+const openOn = firstDeployedChain(order);
+if (openOn === null) {
+  for (const id of order)
+    assert.ok(
+      !(VAULTS[id] ?? []).some(vaultReady),
+      "no chain is offered as the default while one is deployed",
+    );
+} else {
+  assert.ok(
+    (VAULTS[openOn] ?? []).some(vaultReady),
+    "the default chain has a vault",
+  );
+  for (const id of order.slice(0, order.indexOf(openOn)))
+    assert.ok(
+      !(VAULTS[id] ?? []).some(vaultReady),
+      "and it is the first such chain in the picker's order",
+    );
+}
+assert.equal(firstDeployedChain([]), null, "no chains, no default");
+assert.equal(
+  firstDeployedChain([999999]),
+  null,
+  "an unknown chain offers nothing",
+);
+
 assert.equal(vaultReady(LOCAL_VAULT), true);
 assert.equal(
   vaultReady(vaultFor(84532, true)),
