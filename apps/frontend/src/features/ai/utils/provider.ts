@@ -1,5 +1,49 @@
 import type { AiConfig, AiKind, AiQuestion, AskContext } from "../types";
 
+/**
+ * Amazon Bedrock, with the AUDITOR'S own AWS key — never ours. Dort hosts no model, so a Bedrock
+ * call made with a Dort-owned AWS account would put a client's unpublished contract source
+ * through our infrastructure, our logs and our bill. BYOK is the only shape allowed here.
+ *
+ * It speaks Anthropic's Messages API ("Claude in Amazon Bedrock"), so the request below is the
+ * Anthropic one with a different host and a bearer key in `x-api-key`; streaming is ordinary SSE,
+ * which is why `textOf` needs no Bedrock case. The older InvokeModel path is NOT used: it wants
+ * SigV4 and answers with the AWS binary event stream, neither of which belongs in a browser.
+ *
+ * Measured from a page on this app before it was written: the endpoint answers browser requests
+ * with CORS allowed and an Anthropic-shaped error body.
+ */
+export const BEDROCK_REGION = "us-east-1";
+
+/** The one host family a Bedrock key may ever be sent to. */
+const BEDROCK_HOST = /^bedrock-mantle\.[a-z0-9-]+\.api\.aws$/;
+const REGION = /^[a-z]{2}(-[a-z]+)+-\d$/;
+
+export const bedrockUrl = (region: string) =>
+  `https://bedrock-mantle.${region}.api.aws/anthropic/v1`;
+
+/**
+ * The endpoint for a saved Bedrock config.
+ *
+ * The region is the user's to choose, the host and path are not. An AWS key is a far wider
+ * credential than an `sk-…`, so a stale or tampered value in localStorage must never become the
+ * address it is posted to: anything that is not a plain region, or not this exact host over
+ * https, falls back to the default region. This is the same rule the other API providers get for
+ * free by ignoring `baseUrl` entirely.
+ */
+export function bedrockBase(value: string): string {
+  const v = value.trim().replace(/\/+$/, "");
+  if (REGION.test(v)) return bedrockUrl(v);
+  try {
+    const u = new URL(v);
+    if (u.protocol === "https:" && BEDROCK_HOST.test(u.hostname))
+      return `https://${u.hostname}/anthropic/v1`;
+  } catch {
+    /* not a URL either; fall through to the default */
+  }
+  return bedrockUrl(BEDROCK_REGION);
+}
+
 export const PROVIDERS: Record<
   AiKind,
   { label: string; baseUrl: string; model: string; keyHint?: string }
@@ -21,6 +65,13 @@ export const PROVIDERS: Record<
     baseUrl: "https://api.anthropic.com/v1",
     model: "claude-sonnet-5",
     keyHint: "sk-ant-…",
+  },
+  bedrock: {
+    label: "Amazon Bedrock",
+    /** the AWS region, not a URL: bedrockBase builds the host from it */
+    baseUrl: BEDROCK_REGION,
+    model: "anthropic.claude-sonnet-5",
+    keyHint: "your Bedrock API key",
   },
   openai: {
     label: "OpenAI",
@@ -100,12 +151,19 @@ export const configFor = (kind: AiKind): AiConfig => ({
   key: "",
 });
 
-/** Enough filled in to call: your Claude needs nothing; else a model, plus an endpoint (local) or a key (API providers). */
+/**
+ * Enough filled in to call: your Claude needs nothing; else a model, plus an endpoint (local), a
+ * key (API providers), or both (Bedrock, whose region picks the host).
+ */
 export const aiReady = (c: AiConfig) =>
   c.kind === "claude" ||
   (c.kind !== "none" &&
     c.model.trim() !== "" &&
-    (c.kind === "local" ? c.baseUrl.trim() !== "" : c.key.trim() !== ""));
+    (c.kind === "local"
+      ? c.baseUrl.trim() !== ""
+      : c.kind === "bedrock"
+        ? c.key.trim() !== "" && c.baseUrl.trim() !== ""
+        : c.key.trim() !== ""));
 
 export const SYSTEM_PROMPT = `You are the assistant inside Dort, a defensive review tool for smart-contract auditors and bug-bounty hunters.
 You get context from the user's project, either one piece of a Solidity contract (its source lines, the pieces connected to it and any open findings) or calls from one Foundry test's trace (the calls, their arguments, returns and gas, and the source lines they ran), or the map of a known DeFi protocol (its contracts, how they connect, its main flows step by step, and links to the code), and a question. Liquidations, flash loans, oracles and callbacks in a protocol are its intended features: explain how they work and what to check, never how to abuse them. You only ever do one of these three things:
@@ -176,17 +234,22 @@ export function chatRequest(
   )
     .trim()
     .replace(/\/+$/, "");
-  if (cfg.kind === "anthropic")
+  // Anthropic's Messages API, first-party or through the user's own Bedrock: one body, two hosts.
+  // Bedrock carries the key as a bearer token in the same header and needs no direct-browser
+  // opt-in, so the only differences are the host and that one header.
+  if (cfg.kind === "anthropic" || cfg.kind === "bedrock") {
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+      "x-api-key": cfg.key,
+      "anthropic-version": "2023-06-01",
+    };
+    if (cfg.kind === "anthropic")
+      headers["anthropic-dangerous-direct-browser-access"] = "true";
     return {
-      url: `${base}/messages`,
+      url: `${cfg.kind === "bedrock" ? bedrockBase(cfg.baseUrl) : base}/messages`,
       init: {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-api-key": cfg.key,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true",
-        },
+        headers,
         body: JSON.stringify({
           model: cfg.model,
           max_tokens: maxTokens,
@@ -196,6 +259,7 @@ export function chatRequest(
         }),
       },
     };
+  }
   const headers: Record<string, string> = {
     "content-type": "application/json",
   };
