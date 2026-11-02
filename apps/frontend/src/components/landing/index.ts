@@ -320,4 +320,5 @@ export { Compare, Faq, FinalCta, Finale, Footer } from "./Closing";
 export { Features } from "./Features";
 export { Hero, Product } from "./Hero";
 export { SmoothScroll } from "./motion";
-export { Findings, Run, Tests, Words } from "./Stages";
+export { OnChain } from "./OnChain";
+export { Run, Tests, Words } from "./Stages";
