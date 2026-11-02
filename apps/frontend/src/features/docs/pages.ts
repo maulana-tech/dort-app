@@ -108,7 +108,7 @@ export const GROUPS: DocGroup[] = [
           },
           { h2: "5. Optional: run tests from the page" },
           {
-            p: "Start the bridge in the same folder and open the link it prints. Start test, Test all and Reload trace then run forge on your computer. See [Run tests from the browser](/docs/bridge).",
+            p: "Start the bridge in the same folder and open the link it prints. Start test, Test all and Reload trace then run forge on your computer. See [Run tests from the browser](/docs/run-from-browser).",
           },
           { code: "node dort-bridge.mjs" },
           {
@@ -396,6 +396,177 @@ export const GROUPS: DocGroup[] = [
     ],
   },
   {
+    title: "On-chain",
+    pages: [
+      {
+        slug: "wallet",
+        title: "Connecting a wallet",
+        lead: "Vault, Bridge and Swap are the only pages that touch a wallet, and they never connect on their own.",
+        blocks: [
+          {
+            p: "Every other page in Dort reads files. These three send transactions, so they need a wallet — and Dort treats that as something you start, never something that happens to you. Nothing connects until you press the button, and no page holds a key of any kind.",
+          },
+          { h2: "Choosing between wallets" },
+          {
+            p: "With more than one extension installed, `window.ethereum` is a single slot that whichever loaded last wins — which is why a dapp so often opens the wrong wallet with no way to change it. Dort finds wallets through **EIP-6963** instead: each one announces itself, and the button opens a list of all of them by name.",
+          },
+          {
+            list: [
+              "One wallet installed: the button names it and connects in a single press.",
+              "Several: the button opens a picker. Your choice is remembered for next time.",
+              "None: the button offers somewhere to get one, instead of doing nothing.",
+              "A wallet too old to announce itself is still listed, last, as **Browser wallet**.",
+            ],
+          },
+          { h2: "Disconnecting" },
+          {
+            p: "Click your address in a panel's header and pick **Disconnect**. Dort forgets the account and the remembered wallet. It cannot revoke the extension's own permission — only the wallet can do that, in its own settings — and the page says so rather than implying otherwise.",
+          },
+          { h2: "When the chain id is right and the contracts are not" },
+          {
+            p: "The local demos run anvil under a real chain's id, so a wallet pointed at the real testnet reports the expected chain and is still looking at a different network: the contracts exist only on the node the page reads. Dort asks your wallet's own node what code is at the address, and if the answer is empty it locks the button rather than letting a transaction go nowhere.",
+          },
+          {
+            note: "There is no WalletConnect: Dort speaks only to an extension in front of you, with no relay in between.",
+            tone: "info",
+          },
+        ],
+      },
+      {
+        slug: "vault",
+        title: "Vault",
+        lead: "Deposit and withdraw against DortSafeVault — the vault written correctly, next to the flawed one Trace teaches on.",
+        blocks: [
+          {
+            p: "`foundry/src/DortVault.sol` is deliberately flawed; it is the contract the Trace and Atlas pages use to show what a bug looks like. `DortSafeVault.sol` is its twin, written the way the same vault should be. The Vault page drives the correct one, and shows the things that make it correct.",
+          },
+          { h2: "What the page shows before you sign" },
+          {
+            list: [
+              "The shares a deposit will mint, priced with the contract's own arithmetic.",
+              "What your holding is worth now, and the price of one share.",
+              "Which of the two exits you are taking, as an explicit choice rather than a hidden one.",
+            ],
+          },
+          { h2: "Two ways out, and why it matters" },
+          {
+            p: "The token picker on the **Withdraw** side chooses the unit, and each unit is a different call on the contract.",
+          },
+          {
+            table: {
+              head: ["Pick", "Call", "What it does"],
+              rows: [
+                [
+                  "the asset (USDC)",
+                  "`withdraw`",
+                  "takes an exact amount of the asset, burning however many shares that costs, rounded up",
+                ],
+                [
+                  "the share (dUSDC)",
+                  "`redeem`",
+                  "burns an exact number of shares",
+                ],
+              ],
+            },
+          },
+          {
+            p: "Only the second can empty a position completely. An exact withdraw of everything a holding is worth can cost one share more than you hold, because the value rounds down while the share cost rounds up. To leave entirely, pick the share and press **max**.",
+          },
+          { h2: "What makes it safe" },
+          {
+            list: [
+              "**Effects before the transfer.** Shares are burnt before any asset moves, and a reentrancy guard refuses a second entry, so a token that calls back mid-withdraw finds no stale state.",
+              "**Rounding goes the vault's way.** A deposit mints down, a withdraw burns up. A fuzz test proves no round trip can profit.",
+              "**No first-depositor trick.** A virtual offset prices the empty vault, so donating into it cannot round the next depositor down to nothing.",
+              "**What arrived, not what was asked.** Shares are priced on the balance delta, so a fee-on-transfer asset shortchanges nobody else.",
+            ],
+          },
+          { h2: "Try it without a testnet" },
+          {
+            p: "Nothing is deployed on a public testnet yet. The demo deploys two mock assets and a vault over each on a local anvil, then runs a deposit, a withdraw, a full exit and the first-depositor attack:",
+          },
+          {
+            code: "bash script/vault-local-demo.sh",
+          },
+          {
+            p: "Then open **Vault** and press **Use the local demo**.",
+          },
+          {
+            note: "That anvil runs under Base Sepolia's chain id so your wallet and the page agree on it. Point the wallet at `http://127.0.0.1:8545` or the page will lock the button — see [Connecting a wallet](/docs/wallet).",
+            tone: "warn",
+          },
+        ],
+      },
+      {
+        slug: "bridge",
+        title: "Cross-chain bridge",
+        lead: "Lock an asset on its home chain, use the wrapped copy on Portaldot V3, send it back.",
+        blocks: [
+          {
+            p: "Not to be confused with [Run tests from the browser](/docs/run-from-browser), which is also called a bridge and does something else entirely. This one moves tokens between chains.",
+          },
+          { h2: "How it works" },
+          {
+            steps: [
+              "**Lock.** `PortalBridgeEscrow` on the home chain holds the real asset and emits a message.",
+              "**Relay.** `dort-relayer.mjs` reads that message and calls the other chain. It is a separate process you run; this page cannot carry the message itself.",
+              "**Mint.** `PortalBridgeMinter` on Portaldot issues the wrapped copy, once per message.",
+              "**Back.** Burning the wrapped copy releases the original, by the same route.",
+            ],
+          },
+          { h2: "The invariant, shown" },
+          {
+            p: "Beside the form the page shows both chains' numbers side by side: what the escrow holds and what Portaldot has issued. A bridge is only honest while those match, so Dort puts them where you can see them rather than asking you to trust a badge.",
+          },
+          { h2: "What you are trusting" },
+          {
+            p: "This is a **trusted-relayer** design, and the relayer is the trust: an address the owner appoints, which reads one chain and calls the other. There is no light client. A stolen relayer key could move everything bridgeable. Testnet scope only.",
+          },
+          {
+            p: "What holds without trusting it: a message pays out at most once, a release can never exceed what is locked, transfers obey a per-message cap, and the owner can pause instantly.",
+          },
+          { h2: "Try it without a testnet" },
+          {
+            code: "bash script/bridge-local-demo.sh",
+          },
+          {
+            p: "It starts two anvil chains, deploys both sides, locks, relays, mints, burns, releases, and runs the relayer once more to show a repeat is a no-op. For the same round trip against the live chains (still no funds): `forge test --mc PortalBridgeCrossForkTest -vvv`.",
+          },
+        ],
+      },
+      {
+        slug: "swap",
+        title: "Swap",
+        lead: "Trade on PortalSwapRouter, Portaldot V3's own DEX — with the price impact these pools really charge.",
+        blocks: [
+          {
+            p: "PortalSwapRouter is a Uniswap V2 fork taking 0.30% per trade. Its factory holds a pool for every pair of its five tokens, so nothing here ever needs more than one hop. Unlike the Vault and the Bridge, this one needs nothing deployed: the DEX is already live on Portaldot, so the page works against the real chain today.",
+          },
+          { h2: "Price impact gets its own line" },
+          {
+            p: "These pools hold a few hundred tokens. A trade that looks ordinary can cost several percent, so the number is shown plainly rather than hidden behind a tooltip: past 1% the page warns, and past 15% the button refuses — on a pool this thin that is not a trade, it is a donation.",
+          },
+          { h2: "Where the quote comes from" },
+          {
+            p: "The quote is computed in the page from the pair's reserves, using the router's own arithmetic, so it answers while you type. A check pins that arithmetic against answers read from the live contract — change the fee or the rounding and it stops matching the chain. Before you sign, the router prices the trade again, and the floor you are protected by (`amountOutMin`) comes from that second number, not the first.",
+          },
+          { h2: "Native POT" },
+          {
+            p: "POT is routed through WPOT and needs no approval; every other token needs one, once. **Max** on POT leaves a little behind to pay for the transaction that spends it. POT to WPOT is wrapping rather than swapping, and the router has no pool for it, so the page says so instead of letting the transaction fail.",
+          },
+          { h2: "Slippage" },
+          {
+            p: "0.1%, 0.5% (the default), 1% or 3%. The page shows what you would receive at worst before you commit.",
+          },
+          {
+            note: "Testnet tokens on a testnet DEX. The pools are small enough that they are a good place to see what price impact actually means.",
+            tone: "info",
+          },
+        ],
+      },
+    ],
+  },
+  {
     title: "Running tests",
     pages: [
       {
@@ -432,7 +603,7 @@ export const GROUPS: DocGroup[] = [
                 ],
                 [
                   "dort-bridge.mjs",
-                  "Optional: lets the hosted app run the exporter ([bridge](/docs/bridge))",
+                  "Optional: lets the hosted app run the exporter ([run from the browser](/docs/run-from-browser))",
                 ],
               ],
             },
@@ -475,7 +646,7 @@ export const GROUPS: DocGroup[] = [
         ],
       },
       {
-        slug: "bridge",
+        slug: "run-from-browser",
         title: "Run tests from the browser",
         lead: "dort-bridge.mjs lets dort-app.vercel.app run forge on your computer.",
         blocks: [
@@ -553,7 +724,7 @@ export const GROUPS: DocGroup[] = [
                 ],
                 [
                   "Own API key",
-                  "Anthropic, OpenAI or OpenRouter",
+                  "Anthropic, Amazon Bedrock, OpenAI or OpenRouter",
                   "The prompt and key go from your browser straight to that provider",
                 ],
                 [
@@ -577,6 +748,20 @@ export const GROUPS: DocGroup[] = [
           },
           {
             p: "Then pick **Local model**, endpoint `http://localhost:11434/v1`, model `llama3.1`, and press Test connection. In LM Studio, turn on **Enable CORS** in the server settings.",
+          },
+          { h2: "Amazon Bedrock" },
+          {
+            p: "Bedrock is your own AWS account, with your own key: Dort holds no AWS credential and makes no call on anyone's behalf. Pick **Own API key**, then **Amazon Bedrock**, and give it a region, a model id and a Bedrock API key. It speaks Anthropic's Messages API, so the request is the same one the Anthropic option sends, to a different host.",
+          },
+          {
+            p: "An AWS credential is wider than an `sk-\u2026`, so scope it: an IAM role that can do nothing but `bedrock:CallWithBearerToken`, `bedrock:InvokeModel` and `bedrock:InvokeModelWithResponseStream` on the models you need, and a short-term key over a long-term one.",
+          },
+          {
+            list: [
+              "Bedrock does not store prompts or train on them by default.",
+              "**Model invocation logging**, if you have it on, writes them in full to your own CloudWatch or S3 \u2014 which for an audit means a client's unpublished source.",
+              "A **cross-region inference profile** can carry the prompt out of the region you picked.",
+            ],
           },
           {
             note: "Your API key is kept only in this browser's localStorage and sent only to the provider you picked. Use a key you can revoke, with a spend limit.",
