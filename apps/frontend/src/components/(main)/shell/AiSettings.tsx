@@ -28,7 +28,7 @@ import "./ai-settings.css";
 type Mode = "none" | "claude" | "local" | "key";
 const modeOf = (k: AiKind): Mode =>
   k === "none" || k === "claude" || k === "local" ? k : "key";
-const KEYED: AiKind[] = ["anthropic", "openai", "openrouter"];
+const KEYED: AiKind[] = ["anthropic", "bedrock", "openai", "openrouter"];
 
 const NOTE: Record<Mode, string> = {
   none: "Ask answers come from Dort's built-in text. Nothing leaves your machine.",
@@ -37,6 +37,16 @@ const NOTE: Record<Mode, string> = {
   local:
     "Ask sends the selected piece (its source lines, connected pieces and findings) and your question to the endpoint above, from your browser. Nothing goes to a Dort server.",
   key: "Ask sends the selected piece (its source lines, connected pieces and findings) and your question straight from your browser to the provider you picked. Your key is stored only in this browser's localStorage, is sent only to that provider and is never logged or sent to Dort.",
+};
+
+/**
+ * A provider that needs more said than its mode does. Bedrock is the user's own AWS account —
+ * Dort holds no AWS key and makes no call on anyone's behalf — but an AWS credential is wider
+ * than an `sk-…`, so the note says what to scope it to and where the prompts can end up.
+ */
+const KIND_NOTE: Partial<Record<AiKind, string>> = {
+  bedrock:
+    "Your own AWS account: the selected piece and your question go straight from your browser to Bedrock in the region above, and Dort never holds an AWS key. Bedrock does not store prompts or train on them by default — but model invocation logging, if you have it on, writes them in full to your CloudWatch or S3, and a cross-region inference profile can carry them out of this region. The key is stored in this browser's localStorage, so give it an IAM role that can do nothing but invoke the models you need, and prefer a short-term key.",
 };
 
 type Test = { state: "idle" | "busy" | "ok" | "bad"; text?: string };
@@ -254,13 +264,15 @@ export function AiSettings() {
                   />
                 </Row>
               )}
-              {mode === "local" && (
-                <Row label="Endpoint">
+              {(mode === "local" || draft.kind === "bedrock") && (
+                <Row label={draft.kind === "bedrock" ? "Region" : "Endpoint"}>
                   <Input
-                    aria-label="Endpoint"
+                    aria-label={
+                      draft.kind === "bedrock" ? "AWS region" : "Endpoint"
+                    }
                     value={draft.baseUrl}
                     onChange={(e) => edit({ baseUrl: e.target.value })}
-                    placeholder={PROVIDERS.local.baseUrl}
+                    placeholder={PROVIDERS[draft.kind].baseUrl}
                     spellCheck={false}
                     className="w-full font-mono text-[12px]"
                   />
@@ -342,7 +354,7 @@ export function AiSettings() {
             </div>
           )}
           <p className="text-[12.5px] text-muted leading-normal">
-            {NOTE[mode]}
+            {KIND_NOTE[draft.kind] ?? NOTE[mode]}
           </p>
           <div className="flex justify-end gap-1.5">
             {/* stop using the connected AI in Dort; for Your Claude it does not sign Claude Code out */}
