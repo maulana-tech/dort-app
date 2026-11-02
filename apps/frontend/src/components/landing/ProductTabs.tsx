@@ -2,20 +2,17 @@
 
 import dynamic from "next/dynamic";
 import { startTransition, useEffect, useRef, useState } from "react";
-import type { Frame } from "@/features/trace";
-import { useAtlas } from "./atlas";
-import type { LabDemo } from "./stats";
+import type { ChatDemo } from "./stats";
 import { Window } from "./Window";
 
-// the views (and the atlas code they run on) are their own chunk, fetched once the tabs come near
+// the views are their own chunk, fetched once the tabs come near
 const Views = dynamic(() => import("./ProductViews").then((m) => m.Views));
 
 const VIEWS = [
-  { id: "lab", route: "/atlas · Graph", label: "Graph" },
-  { id: "scenario", route: "/atlas · Scenarios", label: "Scenarios" },
-  { id: "trace", route: "/trace", label: "Trace" },
-  { id: "flow", route: "/atlas · Paths", label: "Paths" },
-  { id: "findings", route: "/atlas · Findings", label: "Findings" },
+  { id: "chat", route: "/chat", label: "Chat" },
+  { id: "vault", route: "/vault", label: "Vault" },
+  { id: "swap", route: "/swap", label: "Swap" },
+  { id: "bridge", route: "/bridge", label: "Bridge" },
 ] as const;
 export type ViewId = (typeof VIEWS)[number]["id"];
 const DWELL = 6000;
@@ -27,29 +24,21 @@ const WORLD = { w: 1440, h: 900 };
  * bar in the active pill; hovering or focusing a pill pauses it, reduced motion turns auto-advance off.
  *
  * R26 (pin 3870349674475850, Alfred workflow editor): the product as a large, crisp close-up,
- * turned and tilted in perspective (now only while it grows in, see ScatterGrow). Every view is the app's own component rendered live on the sample
- * data, at 1:1 (never an image): Lab = the contract graph (contractGraph → LabGraph), Scenario = the Lab's
- * 'Non-owner cannot setOracle' scenario run by runScenario (stats.ts scenarioDemo), Trace = TraceRow,
- * Flow = FlowView, Map = MapView, Findings = FindingsTab. The close-up is a picture of the app, so
- * it takes no pointer input (pan / zoom canvases would otherwise eat the page scroll).
+ * turned and tilted in perspective (now only while it grows in, see ScatterGrow). Every view is
+ * built from the app's own components at 1:1, never an image: Chat = the same thread the hero
+ * shows (ChatThread, answered from the sample run's numbers), and Vault / Swap / Bridge are
+ * assembled from the very pieces those pages use (ActionCard) on fixed, honest figures. The
+ * close-up is a picture of the app, so it takes no pointer input.
  * Crossfade without ghosting: the outgoing view is gone (200ms) before the incoming one starts.
  * Only views already shown (and the one after the active view, so it is ready) are mounted, and
  * none before the section comes near the screen: the server HTML carries the frame alone.
  */
-export function ProductTabs({
-  frames,
-  scenario,
-}: {
-  frames: Frame[];
-  /** the Lab's "Non-<role> cannot <fn>" scenario, laid out and run on the server */
-  scenario: LabDemo | null;
-}) {
+export function ProductTabs({ chat }: { chat: ChatDemo }) {
   const [at, setAt] = useState(0);
   const [paused, setPaused] = useState(false);
   const [auto, setAuto] = useState(false);
   const [tick, setTick] = useState(0);
   const tabs = useRef<HTMLDivElement>(null);
-  const atlas = useAtlas();
   const view = VIEWS[at];
   const [seen, setSeen] = useState<ReadonlySet<number>>(() => new Set());
   // the section sits below the fold (and its window starts clipped to a square): views mount once
@@ -172,16 +161,12 @@ export function ProductTabs({
               className="absolute top-0 left-0 origin-top-left max-md:scale-[0.6]"
               style={{ width: WORLD.w, height: WORLD.h }}
             >
-              {atlas && (
-                <Views
-                  ids={VIEWS.map((v) => v.id)}
-                  atlas={atlas}
-                  frames={frames}
-                  scenario={scenario}
-                  at={at}
-                  seen={seen}
-                />
-              )}
+              <Views
+                ids={VIEWS.map((v) => v.id)}
+                chat={chat}
+                at={at}
+                seen={seen}
+              />
             </div>
           </div>
         </Window>
