@@ -6,8 +6,7 @@ import { usePathname } from "next/navigation";
 import { SLIDE } from "@/components/ui";
 
 const ROUTES = [
-  { href: "/trace", label: "Trace" },
-  { href: "/atlas", label: "Atlas" },
+  { href: "/chat", label: "Chat" },
   { href: "/vault", label: "Vault" },
   { href: "/bridge", label: "Bridge" },
   { href: "/swap", label: "Swap" },
@@ -18,8 +17,8 @@ const ROUTES = [
 export function RouteTabs() {
   const path = usePathname();
   return (
-    // seven tabs do not fit a phone, and the app frame clips rather than scrolls: the row
-    // scrolls on its own instead, so the last tab is always reachable
+    // the row scrolls on its own, because the app frame clips rather than scrolls and the tabs
+    // stopped fitting a phone well before the last one was reachable
     <nav className="rail-x flex min-w-0 gap-1.5">
       {ROUTES.map((r) => {
         const on = path.startsWith(r.href);
