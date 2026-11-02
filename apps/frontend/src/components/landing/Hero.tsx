@@ -12,14 +12,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ChainLogo, LogoText, PH, PhIcon, SOLIDITY } from "@/components/ui";
-import { contractGraph } from "@/features/atlas/utils/lab-graph";
-import { createAtlasModel } from "@/features/atlas/utils/model";
 import { GitHubMark } from "./GitHubMark";
 import { HeroExit } from "./Haze";
-import { HeroLab } from "./HeroLab";
+import { HeroChat } from "./HeroChat";
 import { ProductTabs } from "./ProductTabs";
 import { ScatterGrow } from "./ScatterGrow";
-import { demoAtlas, scenarioDemo, traceFrames } from "./stats";
+import { chatDemo, scenarioDemo, traceFrames } from "./stats";
 import { XMark } from "./XMark";
 import "@/components/(main)/shell/header.css";
 import "./hero.css";
@@ -194,15 +192,7 @@ const TOOLS = [
  * (graph y < 900), so the page carries only what shows.
  */
 export async function Hero() {
-  const [atlas, scenario] = await Promise.all([demoAtlas(), scenarioDemo()]);
-  const full = contractGraph(createAtlasModel(atlas));
-  const shown = new Set(full.nodes.filter((n) => n.y < 900).map((n) => n.id));
-  const contract = {
-    nodes: full.nodes.filter((n) => shown.has(n.id)),
-    wires: full.wires.filter(
-      (w) => shown.has(w.from.node) && shown.has(w.to.node),
-    ),
-  };
+  const demo = await chatDemo();
   return (
     <HeroExit>
       <Nav />
@@ -245,10 +235,10 @@ export async function Hero() {
             </a>
           </div>
           <h1 className="mt-5 font-medium text-[clamp(22px,2.1vw,30px)] text-on-canvas leading-tight tracking-[-0.02em]">
-            See what your contract actually does.
+            Ask what your contract actually does.
           </h1>
           <p className="mt-1 text-[clamp(16px,1.5vw,20px)] text-on-canvas-dim leading-tight">
-            Contract graphs and scenario tests
+            Answered from your own test run, by your own AI
           </p>
           {/* the chains whose testnets the exporter forks (dort-export.mjs --forks), then the
               tools whose output Dort reads, on white tiles as they ship them */}
@@ -294,13 +284,14 @@ export async function Hero() {
           </div>
         </div>
 
-        {/* the Lab window, where HK had its chart; on phones it follows the stacked header in the
-            flow (their height depends on the width), from md it sits under the two-column header */}
+        {/* the Chat window, where the Lab stood while Trace and Atlas were the product; on phones
+            it follows the stacked header in the flow (their height depends on the width), from md
+            it sits under the two-column header */}
         <div
           className="lh-up relative mt-9 h-[440px] md:absolute md:inset-x-6 md:top-[250px] md:bottom-0 md:mt-0 md:h-auto"
           style={{ "--d": "0.35s" } as Delay}
         >
-          <HeroLab contract={contract} scenario={scenario} />
+          <HeroChat demo={demo} />
         </div>
       </div>
     </HeroExit>
