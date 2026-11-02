@@ -128,7 +128,7 @@ export function isHostedUrl(url: string | undefined): boolean {
 
 /**
  * This Dort runs on the auditor's own machine (NEXT_PUBLIC_URL empty or local). Only then can it
- * run forge (Start test), re-read dort-data.json from disk (Reload trace, DORT_DATA_PATH), pick
+ * run forge (Start test), re-read dort-data.json from disk (Reload run, DORT_DATA_PATH), pick
  * up MCP-proposed scenarios or run "Your Claude"; the hosted site (https://dort-app.vercel.app) hides
  * all of them, its API routes answering 404 anyway.
  */
