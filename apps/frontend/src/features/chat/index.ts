@@ -1,5 +1,6 @@
 export { type ChatState, useChat } from "./hooks/useChat";
 export { type ChatHistory, useChatHistory } from "./hooks/useChatHistory";
+export { builtinAnswer, type Intent, intentOf } from "./utils/builtin";
 export {
   canSend,
   contextBlock,
