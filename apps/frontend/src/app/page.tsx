@@ -4,8 +4,8 @@ import {
   Faq,
   Features,
   Finale,
-  Findings,
   Hero,
+  OnChain,
   Product,
   Run,
   SmoothScroll,
@@ -83,7 +83,7 @@ export default async function Home() {
         <Run />
         <Words />
         <Features />
-        <Findings />
+        <OnChain />
         <Tests />
         <Ask />
         <Compare />
