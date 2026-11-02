@@ -92,17 +92,19 @@ export function HeroLab({
             </button>
           ))}
         </div>
-        <span className="hidden font-mono text-[11.5px] text-on-canvas-dim md:block">
+        <span className="hidden font-mono text-[11.5px] text-dim md:block">
           /atlas · {TABS[tab]}
         </span>
-        {/* the app header's Connect AI capsule (header.css .hdr-pill.lit), the graph icon in front */}
-        <Link href="/atlas" className="group hdr-pill lit on-blue ml-auto">
+        {/* the app header's Connect AI capsule (header.css .hdr-pill.lit), the graph icon in
+            front. The canvas variant is deliberately not used: this row sits on the mock's own
+            white card, where white-on-blue text tokens render invisible. */}
+        <Link href="/atlas" className="group hdr-pill lit ml-auto">
           <PhIcon
             d={PH.graph}
             className="size-[15px] transition-transform duration-500 group-hover:scale-110 motion-reduce:transition-none"
           />
           Open the Atlas
-          <PhIcon d={PH.caretRight} className="size-3 text-on-canvas-dim" />
+          <PhIcon d={PH.caretRight} className="size-3 text-dim" />
         </Link>
       </div>
 
