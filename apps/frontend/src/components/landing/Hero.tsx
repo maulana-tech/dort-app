@@ -99,7 +99,7 @@ export function Nav({ active = "product" }: { active?: "product" | "docs" }) {
         )}
         {/* the app header's Connect AI capsule (header.css .hdr-pill.lit): the Dort starburst
             where it has its sparkle, a caret pointing on */}
-        <Link href="/trace" className="group hdr-pill lit on-blue">
+        <Link href="/chat" className="group hdr-pill lit on-blue">
           <svg
             aria-hidden="true"
             viewBox="-40 -40 80 80"
