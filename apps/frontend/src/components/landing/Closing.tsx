@@ -266,6 +266,14 @@ export function Footer() {
       ],
     },
     {
+      title: "On-chain",
+      links: [
+        ["Vault", "/vault"],
+        ["Bridge", "/bridge"],
+        ["Swap", "/swap"],
+      ],
+    },
+    {
       title: "Project",
       links: [
         ["GitHub", GITHUB],
@@ -278,7 +286,7 @@ export function Footer() {
   ];
   return (
     <footer className="relative isolate bg-[linear-gradient(to_bottom,transparent,rgba(3,28,78,.5)_40%)] before:absolute before:inset-x-0 before:bottom-0 before:top-0 before:-z-10 before:bg-[linear-gradient(to_bottom,transparent,rgba(6,71,179,.82)_38%,rgba(4,46,120,.94))]">
-      <div className="mx-auto grid max-w-[1240px] gap-10 px-4 py-14 md:grid-cols-[2fr_1fr_1fr] md:px-6">
+      <div className="mx-auto grid max-w-[1240px] gap-10 px-4 py-14 md:grid-cols-[2fr_1fr_1fr_1fr] md:px-6">
         <div>
           <span className="flex items-center gap-2.5">
             <LogoText height={28} />
