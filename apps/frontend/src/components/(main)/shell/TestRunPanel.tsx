@@ -74,7 +74,7 @@ export function commandOf(fork: string, scope?: RunScope | null) {
 const targetOf = (fork: string, forks: Record<string, unknown>) =>
   forks[fork] ? fork : "";
 
-/** Test all, beside Reload trace: every test, local (plus the fork on screen). */
+/** Test all, beside Reload run: every test, local (plus the fork on screen). */
 export function TestAllButton({
   run,
   fork,
