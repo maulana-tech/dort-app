@@ -126,9 +126,9 @@ function Welcome() {
   return (
     <>
       <Lead>
-        Dort turns your Foundry tests into pictures: every call a test made, the
-        source line it ran, your contract as a graph, and Slither / Aderyn
-        findings in one place. It only reads files on your machine.
+        Dort reads your Foundry test run — every call a test made, the source
+        line it ran, Slither and Aderyn findings — and lets you ask about it in
+        plain language. It only reads files on your machine.
       </Lead>
       <div className="mx-2 mb-3 rounded-inner border border-border bg-inner-grad p-3">
         <p className="mb-1 text-[12px] text-dim">What you are looking at now</p>
@@ -138,7 +138,7 @@ function Welcome() {
         {[
           ["Export", "Run one script in your Foundry project."],
           ["Load", "Drop the file it writes into Dort."],
-          ["Look", "Trace, contract graph, scenarios, findings."],
+          ["Ask", "Chat about it, in your own words."],
         ].map(([t, d], i) => (
           <li
             key={t}
@@ -196,7 +196,7 @@ function Export() {
               <code className="whitespace-nowrap font-mono">--slither=…</code>{" "}
               <code className="whitespace-nowrap font-mono">--aderyn=…</code>.{" "}
               <code className="font-mono">DORT_ATLAS=Contract</code> picks the
-              contract for Atlas. <code className="font-mono">--forks all</code>{" "}
+              contract to map. <code className="font-mono">--forks all</code>{" "}
               (or{" "}
               <code className="whitespace-nowrap font-mono">
                 --chain base-sepolia
@@ -253,24 +253,24 @@ function Look() {
     "flex flex-col gap-1 rounded-inner border border-border bg-inner-grad p-3 transition-colors hover:border-border-strong";
   const places: [string, string, string][] = [
     [
-      "/trace",
-      "Trace",
-      "Pick a test on the left and click any frame: the source panel jumps to the line it ran.",
+      "/chat",
+      "Chat",
+      "Ask about the run in your own words. The answer is grounded in it: the tests, the failures and their reasons, the contracts the calls went through.",
     ],
     [
-      "/atlas",
-      "Atlas · Lab",
-      "Your contract as a graph. Switch to Scenario, wire Actor › Call › Expect, press Run, then Export .t.sol.",
+      "/explore",
+      "Explore",
+      "How well-known protocols are meant to work: their contracts, how they connect, and their main flows as sequence diagrams.",
     ],
     [
-      "/atlas",
-      "Atlas · Findings",
-      "In the tray at the bottom: Slither and Aderyn merged, mark each Confirmed or False positive, export a report.",
+      "/exploits",
+      "Exploits",
+      "Past incidents as reports: what was intended, what happened, and how a reviewer catches that class of mistake.",
     ],
   ];
   return (
     <>
-      <Lead>Three places cover an audit. Each opens from the top bar.</Lead>
+      <Lead>Three places to start. Each opens from the top bar.</Lead>
       <div className="grid gap-2 px-2 sm:grid-cols-3">
         {places.map(([href, t, d]) => (
           <Link
