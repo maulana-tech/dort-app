@@ -13,7 +13,6 @@
   <img src="https://img.shields.io/badge/FORKS-7%20EVM%20TESTNETS-627EEA?style=flat-square&labelColor=555555" alt="Seven EVM testnets" />
   <img src="https://img.shields.io/badge/AI-BRING%20YOUR%20OWN-8B5CF6?style=flat-square&labelColor=555555" alt="Bring your own AI" />
   <img src="https://img.shields.io/badge/SCOPE-DEFENSIVE%20ONLY-16A34A?style=flat-square&labelColor=555555" alt="Defensive only" />
-  <a href="LICENSE"><img src="https://img.shields.io/badge/LICENSE-MIT-000000?style=flat-square&labelColor=555555" alt="MIT license" /></a>
 </p>
 
 ---
@@ -683,7 +682,6 @@ Portaldot Hacker House 2026.
 | **Transaction hash** | _written to `broadcast/DeployPortaldot.s.sol/420420777/run-latest.json` by that script_ |
 | **Website** | [dort-app.vercel.app](https://dort-app.vercel.app) |
 | **Source** | [github.com/maulana-tech/dort-app](https://github.com/maulana-tech/dort-app) |
-| **Team** | Bima Jadiva, developer |
 
 ### What Portaldot gives this project, and what it gives back
 
@@ -694,12 +692,6 @@ the same decoded traces an Ethereum auditor has — against contracts that reall
 defensive tool: a reviewer can fork Portaldot, replay a protocol's own Foundry tests against live
 state, and see every call next to the line of Solidity that ran, with Slither and Aderyn findings
 pinned to the same function.
-
----
-
-## License
-
-[MIT](LICENSE) © 2026 Bima Jadiva. The exporter scripts, the app and the sample project are all open source.
 
 ---
 
