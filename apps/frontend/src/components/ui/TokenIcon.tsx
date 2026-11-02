@@ -2,8 +2,9 @@
  * A token's own mark, for the amount field and balance rows.
  *
  * The files are from spothq/cryptocurrency-icons (public/logos/tokens), which is **CC0** — the
- * better-known Cryptofonts/cryptoicons set is GPL-3, and this repo is MIT, so bundling it would
- * put the whole project under terms it does not otherwise carry.
+ * better-known Cryptofonts/cryptoicons set is GPL-3, and bundling that would put terms on this
+ * whole project that it does not otherwise carry. CC0 imposes none, whatever licence the repo
+ * itself ends up under.
  *
  * Portaldot's own assets (POT, WPOT) use Portaldot's mark. A wrapped token (wUSDC) shows the mark
  * of what it wraps, since that is what a holder is really looking for. Anything unknown gets the
