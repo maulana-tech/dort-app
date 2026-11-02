@@ -4,6 +4,8 @@ import type { AskContext } from "../types.ts";
 import {
   aiReady,
   askPrompt,
+  BEDROCK_REGION,
+  bedrockBase,
   chatRequest,
   configFor,
   isHostedUrl,
@@ -109,6 +111,92 @@ assert.equal(o.url, "https://openrouter.ai/api/v1/chat/completions");
 assert.equal(
   (o.init.headers as Record<string, string>).authorization,
   "Bearer k",
+);
+
+// ── Amazon Bedrock: the user's own AWS account ─────────────────────────────────────────────
+// It needs a region as well as a key, since the region picks the host.
+assert.equal(aiReady(configFor("bedrock")), false, "a key is still required");
+assert.equal(aiReady({ ...configFor("bedrock"), key: "k" }), true);
+assert.equal(
+  aiReady({ ...configFor("bedrock"), key: "k", baseUrl: " " }),
+  false,
+  "and a region: without one there is no host to call",
+);
+assert.equal(configFor("bedrock").baseUrl, BEDROCK_REGION);
+
+// the region is the user's to choose; the host and path are not
+assert.equal(
+  bedrockBase("eu-central-1"),
+  "https://bedrock-mantle.eu-central-1.api.aws/anthropic/v1",
+);
+assert.equal(
+  bedrockBase("  ap-southeast-2  "),
+  "https://bedrock-mantle.ap-southeast-2.api.aws/anthropic/v1",
+  "whitespace is the user's, not an error",
+);
+assert.equal(
+  bedrockBase("https://bedrock-mantle.us-west-2.api.aws/anthropic/v1"),
+  "https://bedrock-mantle.us-west-2.api.aws/anthropic/v1",
+  "a pasted endpoint for the right host is kept",
+);
+const BACK = `https://bedrock-mantle.${BEDROCK_REGION}.api.aws/anthropic/v1`;
+for (const bad of [
+  "",
+  "   ",
+  "not a region",
+  "http://bedrock-mantle.us-east-1.api.aws/anthropic/v1", // plain http
+  "https://evil.test/anthropic/v1",
+  "https://bedrock-mantle.us-east-1.api.aws.evil.test/anthropic/v1",
+  "https://evil.test/?x=bedrock-mantle.us-east-1.api.aws",
+  "https://bedrock-mantle.us-east-1.api.aws@evil.test/v1",
+  "//evil.test",
+  "javascript:alert(1)",
+])
+  assert.equal(
+    bedrockBase(bad),
+    BACK,
+    `an AWS key must never be posted to ${bad || "(empty)"}`,
+  );
+
+// the path is pinned too: only the host survives from a pasted URL
+assert.equal(
+  bedrockBase("https://bedrock-mantle.us-west-2.api.aws/evil/path"),
+  "https://bedrock-mantle.us-west-2.api.aws/anthropic/v1",
+);
+
+// the request is Anthropic's, with the key as a bearer token and no direct-browser opt-in
+const bd = chatRequest(
+  { ...configFor("bedrock"), key: "bedrock-key", baseUrl: "eu-west-1" },
+  "hi",
+);
+const bh = bd.init.headers as Record<string, string>;
+assert.equal(
+  bd.url,
+  "https://bedrock-mantle.eu-west-1.api.aws/anthropic/v1/messages",
+);
+assert.equal(bh["x-api-key"], "bedrock-key");
+assert.equal(bh["anthropic-version"], "2023-06-01");
+assert.equal(
+  bh["anthropic-dangerous-direct-browser-access"],
+  undefined,
+  "that header is Anthropic's own; Bedrock neither needs nor knows it",
+);
+const bb = JSON.parse(bd.init.body as string);
+assert.equal(bb.system, SYSTEM_PROMPT);
+assert.equal(bb.model, "anthropic.claude-sonnet-5");
+assert.equal(bb.stream, true, "this endpoint streams ordinary SSE");
+assert.doesNotMatch(
+  bd.init.body as string,
+  /bedrock-key/,
+  "the key never travels in the body",
+);
+// a tampered region cannot redirect the key
+assert.equal(
+  chatRequest(
+    { ...configFor("bedrock"), key: "k", baseUrl: "https://evil.test" },
+    "hi",
+  ).url,
+  `${BACK}/messages`,
 );
 
 // response text, streamed or whole, either API shape
