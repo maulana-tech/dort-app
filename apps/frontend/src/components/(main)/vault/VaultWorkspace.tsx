@@ -19,16 +19,18 @@ import {
   shortAddress,
 } from "@/features/bridge/bridge";
 import {
+  type BridgeChainId,
   chainName,
-  DEFAULT_HOME,
   FAMILY,
-  HOME_CHAINS,
-  type HomeChainId,
+  LOCAL_VAULT_CHAIN,
+  PORTALDOT_ID,
   txUrl,
+  VAULT_CHAINS,
 } from "@/features/bridge/chains";
 import { useWallet } from "@/features/bridge/useWallet";
 import { useVault } from "@/features/vault/useVault";
 import {
+  firstDeployedChain,
   previewDeposit,
   previewRedeem,
   previewWithdraw,
@@ -55,13 +57,19 @@ import {
 export function VaultWorkspace() {
   const wallet = useWallet();
   const [useLocal, setUseLocal] = useState(false);
-  const [home, setHome] = useState<HomeChainId>(DEFAULT_HOME);
+  // open on the first chain that really has a vault, not on a dead form two pills away from a
+  // live one; Portaldot is the fallback, and becomes the answer again once it is deployed to
+  const [chain, setChain] = useState<BridgeChainId>(
+    () =>
+      (firstDeployedChain(VAULT_CHAINS.map((c) => c.id)) ??
+        PORTALDOT_ID) as BridgeChainId,
+  );
   const [side, setSide] = useState<Side>("deposit");
   const [token, setToken] = useState("");
   const [input, setInput] = useState("");
 
-  const all = useMemo(() => vaultsFor(home, useLocal), [home, useLocal]);
-  const fallback = vaultFor(home, useLocal);
+  const all = useMemo(() => vaultsFor(chain, useLocal), [chain, useLocal]);
+  const fallback = vaultFor(chain, useLocal);
   const dep = useMemo(
     () => all.find((v) => v.symbol === token) ?? fallback,
     [all, token, fallback],
@@ -70,7 +78,7 @@ export function VaultWorkspace() {
 
   // on the withdraw side the picker chooses the unit, which is a different call on the contract
   const unit: Unit = token === dep.shareSymbol ? "shares" : "assets";
-  const v = useVault(wallet, dep, home, useLocal);
+  const v = useVault(wallet, dep, chain, useLocal);
 
   // changing chain or demo changes which assets exist; a stale symbol would silently pick another
   useEffect(() => {
@@ -98,14 +106,14 @@ export function VaultWorkspace() {
   const act = vaultAction({
     connected: Boolean(wallet.account),
     deployed,
-    onRightChain: wallet.chainId === home,
+    onRightChain: wallet.chainId === chain,
     paused: v.paused,
     side,
     amount,
     balance,
     needsApproval,
     step: v.step,
-    chainName: chainName(home),
+    chainName: chainName(chain),
     unit,
     wrongNetwork: v.wrongNetwork,
   });
@@ -168,7 +176,7 @@ export function VaultWorkspace() {
 
   async function onPress() {
     if (!wallet.account) return wallet.connect();
-    if (wallet.chainId !== home) return wallet.switchTo(home);
+    if (wallet.chainId !== chain) return wallet.switchTo(chain);
     if (side === "deposit" && needsApproval) return v.approve();
     if (amount !== null) return v.submit(side, amount, unit);
   }
@@ -185,13 +193,13 @@ export function VaultWorkspace() {
               <span className="text-ui-xs text-dim">Chain</span>
               <PillTabs
                 label="Chain"
-                value={String(home)}
+                value={String(chain)}
                 disabled={busy}
                 onChange={(x) => {
-                  setHome(Number(x) as HomeChainId);
+                  setChain(Number(x) as BridgeChainId);
                   setInput("");
                 }}
-                options={HOME_CHAINS.map((c) => ({
+                options={VAULT_CHAINS.map((c) => ({
                   value: String(c.id),
                   label: (
                     <>
@@ -277,7 +285,7 @@ export function VaultWorkspace() {
                 value={
                   <span className="flex items-center gap-2">
                     <ChainLogo
-                      family={FAMILY[home] ?? "local"}
+                      family={FAMILY[chain] ?? "local"}
                       className="size-4"
                     />
                     <span className="font-mono text-ui-xs">
@@ -314,9 +322,9 @@ export function VaultWorkspace() {
               {v.step === "done" && <Note tone="ok">Done.</Note>}
               {v.txHash && (
                 <p className="text-ui-xs text-dim">
-                  {txUrl(home, v.txHash) ? (
+                  {txUrl(chain, v.txHash) ? (
                     <a
-                      href={txUrl(home, v.txHash) ?? "#"}
+                      href={txUrl(chain, v.txHash) ?? "#"}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-mono underline-offset-2 hover:text-fg hover:underline"
@@ -397,11 +405,24 @@ export function VaultWorkspace() {
                 asset shortchanges nobody else.
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <Chip dot tone="info">{`chain ${home}`}</Chip>
+                <Chip dot tone="info">{`chain ${chain}`}</Chip>
                 {dep.vault && <Chip>{shortAddress(dep.vault)}</Chip>}
                 <button
                   type="button"
-                  onClick={() => setUseLocal((x) => !x)}
+                  onClick={() => {
+                    // the demo's anvil runs under one borrowed chain id, and LOCAL_RPC maps
+                    // Portaldot's id to the *bridge* demo's second anvil, which holds no vaults.
+                    // Flipping the flag without moving the chain would read the wrong node.
+                    const next = !useLocal;
+                    setUseLocal(next);
+                    setChain(
+                      next
+                        ? LOCAL_VAULT_CHAIN
+                        : ((firstDeployedChain(VAULT_CHAINS.map((c) => c.id)) ??
+                            PORTALDOT_ID) as BridgeChainId),
+                    );
+                    setInput("");
+                  }}
                   className="text-ui-xs text-dim underline-offset-2 hover:text-fg hover:underline"
                 >
                   {useLocal ? "Use testnet addresses" : "Use the local demo"}
@@ -409,7 +430,7 @@ export function VaultWorkspace() {
               </div>
               {!deployed && (
                 <p className="mt-2 text-ui-xs text-dim">
-                  No vault on {chainName(home)} yet. Deploy one with{" "}
+                  No vault on {chainName(chain)} yet. Deploy one with{" "}
                   <code className="font-mono">script/DeployVault.s.sol</code>,
                   or run{" "}
                   <code className="font-mono">script/vault-local-demo.sh</code>{" "}
