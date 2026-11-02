@@ -17,7 +17,7 @@ import { HeroExit } from "./Haze";
 import { HeroChat } from "./HeroChat";
 import { ProductTabs } from "./ProductTabs";
 import { ScatterGrow } from "./ScatterGrow";
-import { chatDemo, scenarioDemo, traceFrames } from "./stats";
+import { chatDemo } from "./stats";
 import { XMark } from "./XMark";
 import "@/components/(main)/shell/header.css";
 import "./hero.css";
@@ -305,10 +305,7 @@ export async function Hero() {
  * Genie: these are the row of round icons that scatter before the product grows out of a square in the middle (ScatterGrow.tsx), with the live app tabs (ProductTabs).
  */
 export async function Product() {
-  const [trace, scenario] = await Promise.all([
-    traceFrames(14),
-    scenarioDemo(),
-  ]);
+  const demo = await chatDemo();
   const icon = (d: string) => (
     <svg
       viewBox="0 0 24 24"
@@ -343,7 +340,7 @@ export async function Product() {
   ];
   return (
     <ScatterGrow marks={marks}>
-      <ProductTabs frames={trace.frames} scenario={scenario} />
+      <ProductTabs chat={demo} />
     </ScatterGrow>
   );
 }
