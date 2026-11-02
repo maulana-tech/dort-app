@@ -231,10 +231,10 @@ export function FinalCta() {
           </p>
           <div className="relative mt-9 flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/atlas"
+              href="/chat"
               className="rounded-full bg-on-canvas px-5 py-2.5 font-medium text-[14px] text-primary transition-colors hover:bg-white"
             >
-              Open the Atlas
+              Open the Chat
             </Link>
             <a
               href={GITHUB}
@@ -259,10 +259,10 @@ export function Footer() {
     {
       title: "Product",
       links: [
-        ["Trace", "/trace"],
-        ["Atlas", "/atlas"],
-        ["Findings", "/#findings"],
-        ["Coverage", "/#coverage"],
+        ["Chat", "/chat"],
+        ["Explore", "/explore"],
+        ["Exploits", "/exploits"],
+        ["Docs", "/docs"],
       ],
     },
     {
