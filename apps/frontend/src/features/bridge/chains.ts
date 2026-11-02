@@ -124,6 +124,28 @@ export const FAMILY: Record<number, string> = {
   [PORTALDOT_ID]: "portaldot",
 };
 
+/**
+ * Where a vault can live. A vault is one contract on one chain — unlike the bridge it has no
+ * second end — so Portaldot itself is a candidate here, and the first one: it is the chain Dort
+ * is built for, and the chain /swap already trades on, so a single faucet covers both getting
+ * the asset and paying for the deposit. The home chains follow, for a vault deployed beside a
+ * bridge escrow.
+ */
+export const VAULT_CHAINS: {
+  id: BridgeChainId;
+  key: string;
+  name: string;
+  family: string;
+}[] = [
+  {
+    id: PORTALDOT_ID,
+    key: "portaldot-testnet",
+    name: "Portaldot V3 Testnet",
+    family: "portaldot",
+  },
+  ...HOME_CHAINS,
+];
+
 export const isHomeChain = (id: number | undefined): id is HomeChainId =>
   HOME.some((c) => c.id === id);
 
@@ -157,6 +179,14 @@ export function txUrl(id: BridgeChainId, hash: string): string | null {
  * the RPC too, not just the addresses, or the page would read the real testnets at addresses that
  * hold nothing there.
  */
+/**
+ * The chain id script/vault-local-demo.sh runs its anvil under. The demo borrows a real chain's
+ * id so the page and the wallet can agree on it, and LOCAL_RPC maps that id to the port anvil
+ * listens on — so selecting the local demo on the Vault page has to move the chain too, not
+ * merely flip a flag. vault.check.ts holds this against the script's own --chain-id.
+ */
+export const LOCAL_VAULT_CHAIN: HomeChainId = 84532;
+
 export const LOCAL_RPC: Record<number, string> = {
   84532: "http://127.0.0.1:8545",
   [PORTALDOT_ID]: "http://127.0.0.1:8546",
