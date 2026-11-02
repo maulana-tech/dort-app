@@ -1,5 +1,3 @@
-import type { HomeChainId } from "@/features/bridge/chains";
-
 /**
  * Deposit and withdraw against DortSafeVault (foundry/src/DortSafeVault.sol) — the vault written
  * correctly, not the deliberately flawed sample. The rules here mirror the contract's, so the
@@ -14,6 +12,33 @@ import type { HomeChainId } from "@/features/bridge/chains";
  */
 
 export const OFFSET = 3n;
+
+/**
+ * Portaldot V3, spelled out rather than imported from features/bridge for the same reason
+ * features/swap spells it out: this file is pure and Node runs it for vault.check.ts, which
+ * cannot resolve the `@/` alias. The check reads the bridge's own PORTALDOT_ID and fails if the
+ * two ever disagree.
+ */
+export const VAULT_PORTALDOT = 420420777;
+
+/**
+ * Portal USDT on Portaldot V3: a real 6-decimal ERC-20 already live on the chain — the same
+ * token /swap trades, read off the live deployment. It is the asset a vault here is built over,
+ * because it puts the whole demo on one chain: faucet POT, swap it for pUSDT, deposit. A vault
+ * on a home chain would need a second chain, a second faucet and a second native coin for gas.
+ * vault.check.ts pins this address against features/swap's own token list.
+ */
+export const PORTALDOT_USDT =
+  "0xe0114Adc0a2072B602C645f5a07EeFA1eaDBDbc2" as const;
+
+/**
+ * Circle's own USDC on Base Sepolia — six decimals, like pUSDT, and the asset a vault there is
+ * built over. Base Sepolia is the second chain because the vault is the one on-chain feature
+ * that has no second end: the same contract deployed twice is simply available in two places,
+ * which is worth having while Portaldot's own faucet is handed out by an admin.
+ */
+export const BASE_SEPOLIA_USDC =
+  "0x036CbD53842c5426634e7929541eC2318f3dCF7e" as const;
 
 export type VaultDeployment = {
   vault: `0x${string}` | null;
@@ -33,10 +58,34 @@ const NOT_DEPLOYED: VaultDeployment = {
 
 /**
  * The vaults on each chain — one per asset, which is what makes the token picker a real choice
- * rather than a label. None is deployed on a testnet yet, so the page says so rather than
- * guessing at an address.
+ * rather than a label.
+ *
+ * `vault: null` is the honest middle state: the asset is a real address on a real chain, the
+ * vault over it is not deployed. `vaultReady` reports that as unusable, so the page names the
+ * asset and says plainly that nothing is deployed instead of guessing at an address. Fill the
+ * `vault` field from what script/DeployVault.s.sol prints; nothing else here has to change.
  */
-export const VAULTS: Record<number, VaultDeployment[]> = {};
+export const VAULTS: Record<number, VaultDeployment[]> = {
+  [VAULT_PORTALDOT]: [
+    {
+      vault: null,
+      asset: PORTALDOT_USDT,
+      symbol: "pUSDT",
+      shareSymbol: "dpUSDT",
+      decimals: 6,
+    },
+  ],
+  84532: [
+    {
+      // deployed 2026-11-02, block 53482026, tx 0x2aafcfaa…04e8d
+      vault: "0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8",
+      asset: BASE_SEPOLIA_USDC,
+      symbol: "USDC",
+      shareSymbol: "dUSDC",
+      decimals: 6,
+    },
+  ],
+};
 
 /**
  * `bash script/vault-local-demo.sh` deploys exactly these, in this order, on a fresh anvil:
@@ -64,10 +113,8 @@ export const LOCAL_VAULTS: VaultDeployment[] = [
 export const LOCAL_VAULT: VaultDeployment = LOCAL_VAULTS[0];
 
 /** Every vault the page can offer on this chain, in the order the picker lists them. */
-export const vaultsFor = (
-  chain: HomeChainId | number,
-  local: boolean,
-): VaultDeployment[] => (local ? LOCAL_VAULTS : (VAULTS[chain] ?? []));
+export const vaultsFor = (chain: number, local: boolean): VaultDeployment[] =>
+  local ? LOCAL_VAULTS : (VAULTS[chain] ?? []);
 
 /**
  * The vault for one asset, or the first on the chain when no symbol is asked for. A chain with
@@ -75,7 +122,7 @@ export const vaultsFor = (
  * page then shows how to deploy one instead of a dead form.
  */
 export const vaultFor = (
-  chain: HomeChainId | number,
+  chain: number,
   local: boolean,
   symbol?: string,
 ): VaultDeployment => {
@@ -86,6 +133,16 @@ export const vaultFor = (
 
 export const vaultReady = (d: VaultDeployment): boolean =>
   Boolean(d.vault && d.asset);
+
+/**
+ * The chain the page should open on: the first one, in the order the picker lists them, that
+ * really has a vault. Without this the page would open on a chain whose form is dead while a
+ * live one sits two pills away — and hardcoding the answer would go stale the moment another
+ * chain is deployed to. The caller passes the picker's own order, because this file is pure and
+ * cannot import the chain list.
+ */
+export const firstDeployedChain = (order: number[]): number | null =>
+  order.find((id) => (VAULTS[id] ?? []).some(vaultReady)) ?? null;
 
 /** DortSafeVault._toShares, rounding down (a deposit) or up (a withdraw). */
 export function toShares(
