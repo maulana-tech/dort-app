@@ -60,7 +60,9 @@ export function LabGraph({
   );
   return (
     <div
-      className="absolute top-0 left-0"
+      // lab-on-surface: these cards are drawn on the mock's white panel, not on the blue page,
+      // so the card titles take the surface palette instead of the canvas one (lab.css)
+      className="lab-on-surface absolute top-0 left-0"
       style={{ transform: `translate(${-left}px, ${-top}px)` }}
     >
       <svg aria-hidden="true" className="lab-wires">
