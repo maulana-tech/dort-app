@@ -34,6 +34,12 @@ jobs:
         run: pnpm exec biome ci src
       - name: Typecheck
         run: pnpm exec tsc --noEmit
+      # The sibling *.check.ts files. Several read real files out of foundry/ — the fork picker
+      # against dort-chains.mjs, the vault's share offset against DortSafeVault.sol, the swap's
+      # chain id, the Lab fixtures against DortVault.sol, the exporter allow-list against the
+      # scripts on disk — so these are what keeps the two halves of the repo in step.
+      - name: Unit checks
+        run: pnpm check
       - name: Build
         run: pnpm build
 
@@ -53,5 +59,7 @@ jobs:
         run: forge build --sizes
       - name: Test (unit + invariant)
         run: forge test -vvv
+      - name: Exporter unit tests
+        run: node --test *.test.mjs
       - name: Dort export smoke test
         run: node dort-export.mjs --mt test_deposit
