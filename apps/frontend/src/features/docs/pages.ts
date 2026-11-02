@@ -39,38 +39,34 @@ export const GROUPS: DocGroup[] = [
         lead: "A one-minute pitch: what Dort shows, who it is for and when to reach for it.",
         blocks: [
           {
-            p: "Dort is a visual, defensive tool for smart contract auditors and bug bounty hunters. It reads what your Foundry project already produces (forge test traces, the compiler's AST and storage layout, Slither and Aderyn reports, coverage) and draws it: every call of a test on the source line it ran, your contract as a graph, findings on the pieces they touch, and scenario tests you wire and export as `.t.sol`.",
-          },
-          {
-            video: "/docs/trace.mp4",
-            caption:
-              "Trace: a forge test's calls, decoded, with the source line each one ran",
+            p: "Dort is a defensive tool for reading smart contracts — for auditors and bug bounty hunters, and for anyone who wants to understand a contract before trusting it with money. It reads what your Foundry project already produces (forge test traces, the compiler's AST and storage layout, Slither and Aderyn reports, coverage) and lets you ask about it in plain language, with the answer grounded in that run rather than in the model's memory.",
           },
           { h2: "When to use Dort" },
           {
             list: [
-              "A test passes or fails and you want to see exactly which calls ran, with which arguments, on which lines.",
-              "You start on an unfamiliar codebase and want its functions, storage and external calls as one map.",
-              "Slither and Aderyn report the same issue twice and you want one triaged list.",
-              "You want to pin intended behaviour (access control, accounting, pause) as Foundry tests without writing them by hand.",
+              "A test passes or fails and you want it explained against the run that actually happened, not guessed at.",
+              "You are new to a codebase, or to Solidity, and want to ask about it in your own words.",
+              "You want to know what to check before trusting a contract with money.",
+              "You want to see how a well-known protocol is meant to work, or read a past incident as a report.",
+              "You are moving value on Portaldot V3 and want the vault, bridge or swap to tell you what will happen before you sign.",
             ],
           },
           { h2: "Who it is for" },
           {
-            p: "Auditors, bug bounty hunters and Solidity developers who already use Foundry. Dort assumes you read code and judge findings yourself: AI explains, you decide.",
+            p: "Auditors, bug bounty hunters and Solidity developers who use Foundry — and newcomers, who can start in [Chat](/docs/chat) without knowing the vocabulary. Dort never judges for you: AI explains, you decide.",
           },
           { h2: "What Dort is not" },
           {
             list: [
               "**Not an exploit tool.** It never writes attack contracts, calldata or attack steps. Tests it helps you write check intended behaviour.",
               "**Not a hosted scanner.** Your code is never uploaded. The exporter runs on your machine and the app reads the file in your browser tab.",
-              "**Not a replacement for forge, Slither or Aderyn.** It reads their output and lays it over the contract.",
+              "**Not a replacement for forge, Slither or Aderyn.** It reads their output and answers from it.",
               "**Not an AI.** Dort hosts no model. Ask AI uses one you bring, or built-in text.",
             ],
           },
           { h2: "Next steps" },
           {
-            p: "Go to [Quick start](/docs/quick-start) to load your own project in a few minutes, or open the [sample vault](/trace) right away. Then read [Your first audit session](/docs/first-session).",
+            p: "Open [Chat](/chat) and press **Try the sample vault** to ask something right away, or go to [Quick start](/docs/quick-start) to load your own project. Then read [Your first session](/docs/first-session).",
           },
         ],
       },
@@ -104,53 +100,55 @@ export const GROUPS: DocGroup[] = [
           },
           { h2: "4. Load it" },
           {
-            p: "Open [dort-app.vercel.app/trace](/trace) and drop `dort-data.json` on the Start page. The file is read in that tab only and never uploaded.",
+            p: "Open [dort-app.vercel.app/chat](/chat) and drop `dort-data.json` onto the panel there. The file is read in that tab only and never uploaded, and the badge in the header then reads **Your run**.",
           },
           { h2: "5. Optional: run tests from the page" },
           {
-            p: "Start the bridge in the same folder and open the link it prints. Start test, Test all and Reload trace then run forge on your computer. See [Run tests from the browser](/docs/run-from-browser).",
+            p: "Start the bridge in the same folder and open the link it prints, and the hosted app can run `node dort-export.mjs` on your own machine. See [Run tests from the browser](/docs/run-from-browser).",
           },
           { code: "node dort-bridge.mjs" },
           {
-            note: "No Foundry project at hand? Press **Try the sample vault** on the Start page: DortVault, a small demo vault bundled with the app.",
+            note: "No Foundry project at hand? Press **Try the sample vault** in Chat: DortVault, a small demo vault bundled with the app. Dort says plainly that it is the sample and not your code.",
           },
         ],
       },
       {
         slug: "first-session",
-        title: "Your first audit session",
-        lead: "A short tour of where each part of an audit lives in Dort.",
+        title: "Your first session",
+        lead: "A short tour: ask, read, compare, then move something on-chain.",
         blocks: [
-          { h2: "1. Read a test in Trace" },
+          { h2: "1. Ask about a run" },
           {
             steps: [
-              "Pick a test in the list on the left. Failures show first in the run panel.",
-              "Click any call in the call trace: the source panel jumps to the line it ran, with its arguments and return value.",
-              "Switch to **Call graph** to see the same test as a graph of contracts, or open **Ask AI** on a call to have it explained.",
-            ],
-          },
-          { h2: "2. Map the contract in Atlas" },
-          {
-            steps: [
-              "Open **Atlas**. **Graph** shows every function with what it reads, writes, calls and emits.",
-              "**Paths** walks one function step by step, with replay.",
-              "The numbers in the header (coverage, untested, findings) open the summary.",
-            ],
-          },
-          { h2: "3. Triage findings" },
-          {
-            p: "The findings tray at the bottom of Atlas merges Slither, Aderyn and Dort's own checks into one finding per issue. Mark each one **Confirmed** or **False positive**, then download the confirmed ones as a Markdown report.",
-          },
-          { h2: "4. Pin intended behaviour with a scenario" },
-          {
-            steps: [
-              "Open **Scenarios** (Atlas, or the Scenario view in Trace).",
-              "Wire Actor → Call → Expect revert or Assert, or start from a template.",
-              "Press **Run** to check it against the run's values, then **Export .t.sol** (or Generate test) and add it to your suite.",
+              "Open **Chat**. With nothing loaded it answers generally — press **Try the sample vault** or drop your own `dort-data.json` to change that.",
+              "Connect your own AI with **Connect AI** in the header: your Claude Code, a local model, or your own key.",
+              "Start with one of the suggested questions, then follow up in your own words. The header badge always says whether you are reading your run, the sample, or nothing.",
             ],
           },
           {
-            note: "A failing assertion is a finding for you to review, not an attack. Scenarios only use the Lab's cards: actors, amounts, calls, expected reverts, asserts and snapshots.",
+            p: "What Chat sends is a summary of the run — the test counts, every failure with its revert reason, and the contracts and files involved. See [Chat](/docs/chat) for exactly what leaves the browser.",
+          },
+          { h2: "2. Read how a protocol is meant to work" },
+          {
+            steps: [
+              "Open **Explore** for Uniswap v3, Aave v3, Morpho or Compound v3.",
+              "Each one is a report: its contracts and how they connect, its main flows as sequence diagrams, and links to the code.",
+            ],
+          },
+          { h2: "3. Read what went wrong elsewhere" },
+          {
+            p: "**Exploits** holds post-mortems of closed, public incidents — what the protocol intended, what actually happened, and how a reviewer catches that class of mistake. No exploit code, and no attacker addresses: the build-time data check fails on any 40-hex string, so one cannot be added by accident.",
+          },
+          { h2: "4. Move something on-chain" },
+          {
+            steps: [
+              "**Vault** deposits into `DortSafeVault` and shows the shares it will mint before you sign.",
+              "**Swap** trades on PortalSwapRouter, Portaldot V3's own DEX, with the price impact those pools really charge.",
+              "**Bridge** locks an asset on its home chain and mints the wrapped copy on Portaldot.",
+            ],
+          },
+          {
+            note: "Every on-chain page tells you what will happen before it asks for a signature, and refuses to send when your wallet cannot see the contract it is pointed at. Start with [Connecting a wallet](/docs/wallet).",
           },
         ],
       },
@@ -160,191 +158,46 @@ export const GROUPS: DocGroup[] = [
     title: "Using Dort",
     pages: [
       {
-        slug: "trace",
-        title: "Trace",
-        lead: "Every call of a forge test, decoded, on the source line it ran.",
+        slug: "chat",
+        title: "Chat",
+        lead: "Ask about a contract in plain language, answered by your own AI.",
         blocks: [
           {
-            p: "Trace shows one test at a time. The exporter decodes each frame with your project's own ABIs and ties it to the exact source lines it executed, so you read calls instead of opcodes.",
+            p: "Chat is the way in when you are not an auditor. Ask in a sentence — *what does this project do?*, *did anything fail, and what does that mean?* — and get an answer back in plain language. No jargon required to start, and nothing to configure beyond your own model.",
           },
-          { h2: "The three views" },
+          { h2: "Two modes, one box" },
           {
             table: {
-              head: ["View", "Shows"],
+              head: ["When", "What it answers from"],
               rows: [
                 [
-                  "Call trace",
-                  "The calls in order with arguments, return values, events and gas; cheatcodes and events can be hidden",
+                  "a Foundry run is loaded",
+                  "**your project** — how many tests ran, which failed and why, which contracts the calls went through, which Solidity files exist",
                 ],
                 [
-                  "Call graph",
-                  "The same test as contracts and the calls between them",
-                ],
-                [
-                  "Scenario",
-                  "The Lab's scenario editor on this run's contract (see [Scenarios](/docs/scenarios))",
+                  "nothing is loaded",
+                  "**general knowledge** — Solidity, review practice, what to look for. It says so, rather than inventing a project it cannot see",
                 ],
               ],
             },
           },
           {
-            video: "/docs/graph.mp4",
-            caption:
-              "Call graph: the same test as contracts and the calls between them",
+            p: "Which mode is in force is written above the thread and on the badge in the panel's header, so it is never something you have to infer. See [Quick start](/docs/quick-start) for how to load a run.",
           },
-          { h2: "Panels" },
+          { h2: "What is sent, and what is not" },
           {
-            list: [
-              "**Tests** on the left, with pass, fail and the kind of test (unit, fuzz, invariant).",
-              "**Source** on the right: the line a selected call ran. **Ask AI** is the same panel's other tab.",
-              "**Token transfers** and **Net balance change** under the trace, for tests that move tokens.",
-              "The **fork picker** switches between the local run and the testnet forks of the same tests.",
-            ],
-          },
-          { h2: "Keyboard" },
-          {
-            table: {
-              head: ["Key", "Does"],
-              rows: [
-                ["↑ ↓", "Step through calls"],
-                ["← →", "Fold, unfold"],
-                ["/", "Search calls"],
-                ["A", "Ask AI about the selected call"],
-                ["1 2 3", "Call trace, Call graph, Scenario"],
-                ["[ ]", "Toggle the side panels"],
-                ["F", "Full screen"],
-                ["⌘R", "Reload trace (local Dort or a linked bridge)"],
-              ],
-            },
+            p: "Chat sends a **summary** of the run, not the run: the test counts, every failure with the revert reason the exporter captured, and the names of the contracts and files involved. Whole traces would be tens of thousands of tokens of mostly noise, and the useful part of a run is small. The summary is attached once, to your first message — nothing about the run changes mid-conversation, so re-sending it every turn would only cost you more.",
           },
           {
-            note: "Fuzz and invariant tests are listed with their runs, but only unit tests get line-by-line step data.",
+            note: "The bundled sample is never described as your project. Whether a run is loaded is decided by where the data came from, not by whether it looks empty — so an answer about *your* contracts only ever appears when there really are some.",
+            tone: "info",
           },
-        ],
-      },
-      {
-        slug: "atlas",
-        title: "Atlas",
-        lead: "Your contract as a graph of its functions, storage and calls.",
-        blocks: [
+          { h2: "Whose model answers" },
           {
-            p: "The atlas is built from `forge build --ast` and `forge inspect … storageLayout`. Each piece (function, modifier, storage slot, external call, event) keeps its source line, and findings and coverage sit on the pieces they touch.",
-          },
-          { h2: "Views" },
-          {
-            table: {
-              head: ["View", "Key", "Shows"],
-              rows: [
-                [
-                  "Graph",
-                  "1",
-                  "What each function reads, writes, calls and emits",
-                ],
-                ["Paths", "2", "Each function step by step, with replay"],
-                [
-                  "Scenarios",
-                  "3",
-                  "The Lab: write a Foundry test of intended behaviour",
-                ],
-              ],
-            },
+            p: "Yours. Press **Connect AI** in the header and pick your Claude Code, a local model, or your own API key — the same setting the rest of the app uses, described in [Ask AI providers](/docs/ai). Your question and your code go straight from the browser to the provider you chose. Dort never calls a model of its own, because a chat box is exactly where an auditor's unpublished source would otherwise end up in someone else's logs.",
           },
           {
-            video: "/docs/atlas.mp4",
-            caption:
-              "Graph: every function with what it reads, writes, calls and emits",
-          },
-          {
-            video: "/docs/paths.mp4",
-            caption: "Paths: one function step by step, with replay",
-          },
-          { h2: "Header" },
-          {
-            list: [
-              "The contract picker switches to other contracts the project deploys (mocks included).",
-              "Coverage, Untested and Findings open the summary in the inspector.",
-              "**Search** (/) finds a piece, **Ask AI** asks about the selection, **Inspector** shows its details.",
-            ],
-          },
-          {
-            p: "`DORT_ATLAS=MyVault node dort-export.mjs` picks which contract the atlas maps when a project has several.",
-          },
-        ],
-      },
-      {
-        slug: "scenarios",
-        title: "Scenarios",
-        lead: "Wire a test of intended behaviour as cards, run it, export it as a Foundry test.",
-        blocks: [
-          {
-            p: "A scenario is a small graph of cards: who acts, what they call with which amounts, what should revert, what should hold afterwards. Dort runs it against the values of your run and turns it into a `.t.sol` test.",
-          },
-          {
-            video: "/docs/scenario.mp4",
-            caption:
-              "Wiring a scenario, running it and generating the Foundry test",
-          },
-          { h2: "Cards" },
-          {
-            table: {
-              head: ["Card", "Does"],
-              rows: [
-                [
-                  "Actor",
-                  "A caller with a name, a role (owner, keeper, user…) and a balance",
-                ],
-                ["Amount", "A constant value wired into a call's argument"],
-                ["Call", "One entry point of the contract"],
-                ["Expect revert", "The call must revert with that reason"],
-                [
-                  "Assert",
-                  "A check after the calls: a == b, a ≥ b, only the owner can call, paused blocks a call…",
-                ],
-                [
-                  "Snapshot",
-                  "Reads a storage slot or a balance so an assert can compare it",
-                ],
-              ],
-            },
-          },
-          { h2: "Write one" },
-          {
-            steps: [
-              "Pick a template (New…) or start a blank scenario.",
-              "Drag from a port to wire it: actor → caller, amount → argument, call → next card.",
-              "Press **Run**. Each step shows pass or fail with the values it saw.",
-              "Press **Export .t.sol** (or **Generate test** in Atlas) and add the file to `test/`.",
-            ],
-          },
-          { h2: "Proposed by your AI client" },
-          {
-            p: "An AI client connected over [MCP](/docs/mcp) can propose scenarios. They appear in the scenario menu under *Proposed by your AI client*, checked against the Lab's cards first; invalid ones stay listed but disabled, with the reason.",
-          },
-        ],
-      },
-      {
-        slug: "findings",
-        title: "Findings & triage",
-        lead: "Slither, Aderyn and Dort's own checks as one finding per issue, triaged in place.",
-        blocks: [
-          {
-            p: "The exporter merges Slither and Aderyn JSON reports into the atlas and removes duplicates, so the same reentrancy reported by both tools is one finding with both sources. Dort adds a few checks of its own from the atlas.",
-          },
-          { h2: "Get the reports" },
-          {
-            code: "slither . --json reports/slither.json\naderyn . -o reports/aderyn.json\nnode dort-export.mjs",
-          },
-          {
-            p: "The exporter picks up `reports/slither.json` and `reports/aderyn.json` by itself, or pass `--slither=…` and `--aderyn=…`.",
-          },
-          { h2: "Triage" },
-          {
-            list: [
-              "Open the findings tray at the bottom of Atlas; filter by tool or severity.",
-              "Each finding links to the pieces and lines it touches.",
-              "Mark it **Confirmed** or **False positive**. Triage state stays in your browser, per contract.",
-              "Download the confirmed findings as a Markdown report.",
-            ],
+            p: "Like everywhere else in Dort, the assistant does defensive review only: it explains code and writes Foundry tests for intended behaviour, and refuses to write exploits or proof-of-concept attacks.",
           },
         ],
       },
@@ -435,10 +288,10 @@ export const GROUPS: DocGroup[] = [
       {
         slug: "vault",
         title: "Vault",
-        lead: "Deposit and withdraw against DortSafeVault — the vault written correctly, next to the flawed one Trace teaches on.",
+        lead: "Deposit and withdraw against DortSafeVault — the vault written correctly, next to a deliberately flawed twin.",
         blocks: [
           {
-            p: "`foundry/src/DortVault.sol` is deliberately flawed; it is the contract the Trace and Atlas pages use to show what a bug looks like. `DortSafeVault.sol` is its twin, written the way the same vault should be. The Vault page drives the correct one, and shows the things that make it correct.",
+            p: "`foundry/src/DortVault.sol` is deliberately flawed — it is the sample the exporter is developed against, and what Chat is answering about when you press *Try the sample vault*. `DortSafeVault.sol` is its twin, written the way the same vault should be. The Vault page drives the correct one, and shows the things that make it correct.",
           },
           { h2: "What the page shows before you sign" },
           {
@@ -656,7 +509,7 @@ export const GROUPS: DocGroup[] = [
         lead: "Run the same tests on copies of seven EVM testnets, Portaldot V3 first, read-only.",
         blocks: [
           {
-            p: "`--chain <key>` runs your tests on a fork of that chain at its latest block; `--forks all` adds one such run per chain next to the local one. Nothing is sent on-chain: no key, no gas. Trace and Atlas switch between the runs with the fork picker.",
+            p: "`--chain <key>` runs your tests on a fork of that chain at its latest block; `--forks all` adds one such run per chain next to the local one. Nothing is sent on-chain: no key, no gas. Chat names the forked runs in the summary it reads, so you can ask whether a test behaves differently against live state.",
           },
           {
             video: "/docs/fork.mp4",
@@ -854,7 +707,7 @@ export const GROUPS: DocGroup[] = [
           },
           { h2: "Proposals in the Lab" },
           {
-            p: "A proposal shows up in Atlas → Scenarios under *Proposed by your AI client*: in a local Dort, or on dort-app.vercel.app while `node dort-bridge.mjs` runs in the project (switch back to the tab to pick up a new one). Pick it, check it, Run, then export the `.t.sol`.",
+            p: "A proposal is written to `dort-scenarios.json` in your project, next to `dort-data.json`. This build has no scenario editor to review it in — that lives in the full version of the app — so treat the file as the record: read it, run the generated test yourself, and keep it in your suite only once you agree with it.",
           },
           {
             note: "The server runs on your machine over stdio, makes no network calls, reads dort-data.json and only writes dort-scenarios.json. Scenarios test intended behaviour only.",
@@ -928,7 +781,7 @@ export const GROUPS: DocGroup[] = [
           },
           { h2: "Phones" },
           {
-            p: "The landing page works on phones; Trace and Atlas are built for a desktop screen.",
+            p: "Every page here works on a phone. The exporter and the bridge need a desktop, because they run `forge` on your own machine.",
           },
           { h2: "Test data" },
           {
