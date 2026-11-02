@@ -1,4 +1,5 @@
 export { type ChatState, useChat } from "./hooks/useChat";
+export { type ChatHistory, useChatHistory } from "./hooks/useChatHistory";
 export {
   canSend,
   contextBlock,
@@ -13,3 +14,12 @@ export {
   type Turn,
   toMessages,
 } from "./utils/chat";
+export {
+  type Conversation,
+  HISTORY_KEY,
+  HISTORY_MAX,
+  parseHistory,
+  titleOf,
+  whenLabel,
+  worthSaving,
+} from "./utils/history";
