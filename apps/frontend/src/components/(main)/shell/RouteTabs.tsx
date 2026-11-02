@@ -8,6 +8,7 @@ import { SLIDE } from "@/components/ui";
 const ROUTES = [
   { href: "/trace", label: "Trace" },
   { href: "/atlas", label: "Atlas" },
+  { href: "/vault", label: "Vault" },
   { href: "/bridge", label: "Bridge" },
   { href: "/explore", label: "Explore" },
   { href: "/exploits", label: "Exploits" },
