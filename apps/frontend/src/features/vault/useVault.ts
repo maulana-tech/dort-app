@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type Address, encodeFunctionData, erc20Abi, maxUint256 } from "viem";
 import { ERC20_ABI } from "@/features/bridge/abi";
-import type { HomeChainId } from "@/features/bridge/chains";
+import type { BridgeChainId } from "@/features/bridge/chains";
 import { publicClient, reason, type Wallet } from "@/features/bridge/useWallet";
 import { codeMissing } from "@/features/bridge/wallet";
 import { VAULT_ABI } from "./abi";
@@ -43,7 +43,7 @@ export type VaultState = {
 export function useVault(
   wallet: Wallet,
   dep: VaultDeployment,
-  chain: HomeChainId,
+  chain: BridgeChainId,
   local = false,
 ): VaultState {
   const [assetBalance, setAssetBalance] = useState<bigint | null>(null);
