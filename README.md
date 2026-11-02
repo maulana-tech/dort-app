@@ -35,7 +35,8 @@ The docs live at **[dort-app.vercel.app/docs](https://dort-app.vercel.app/docs)*
 |---|---|
 | Start here | [What is Dort?](https://dort-app.vercel.app/docs) · [Quick start](https://dort-app.vercel.app/docs/quick-start) · [Your first audit session](https://dort-app.vercel.app/docs/first-session) |
 | Using Dort | [Trace](https://dort-app.vercel.app/docs/trace) · [Atlas](https://dort-app.vercel.app/docs/atlas) · [Scenarios](https://dort-app.vercel.app/docs/scenarios) · [Findings & triage](https://dort-app.vercel.app/docs/findings) · [Explore](https://dort-app.vercel.app/docs/explore) · [Exploits](https://dort-app.vercel.app/docs/exploits) |
-| Running tests | [The exporter](https://dort-app.vercel.app/docs/exporter) · [Testnet forks](https://dort-app.vercel.app/docs/forks) · [Run tests from the browser](https://dort-app.vercel.app/docs/bridge) |
+| On-chain | [Connecting a wallet](https://dort-app.vercel.app/docs/wallet) · [Vault](https://dort-app.vercel.app/docs/vault) · [Cross-chain bridge](https://dort-app.vercel.app/docs/bridge) · [Swap](https://dort-app.vercel.app/docs/swap) |
+| Running tests | [The exporter](https://dort-app.vercel.app/docs/exporter) · [Testnet forks](https://dort-app.vercel.app/docs/forks) · [Run tests from the browser](https://dort-app.vercel.app/docs/run-from-browser) |
 | AI | [Ask AI providers](https://dort-app.vercel.app/docs/ai) · [MCP server](https://dort-app.vercel.app/docs/mcp) |
 | More | [Run Dort locally](https://dort-app.vercel.app/docs/local) · [Privacy & security](https://dort-app.vercel.app/docs/privacy) · [Known limits](https://dort-app.vercel.app/docs/limits) |
 
@@ -137,8 +138,12 @@ node dort-export.mjs [--mt …] [--mc …] [--chain <key> | --forks all]
 - **Generate A Foundry Test**: every scenario exports a `.t.sol` file you run with `forge`
 - **Explore**: Uniswap v3, Aave v3.5, Morpho Blue and Compound III, every flow as a sequence diagram linked to the pinned source on GitHub
 - **Exploits**: Poly Network, Euler Finance, Nomad Bridge and Beanstalk as post-mortems with funds, root cause and the invariant that catches it
+- **Vault**: deposit and withdraw against `DortSafeVault`, the correct twin of the deliberately flawed sample — the shares a deposit mints shown before you sign, and both exits (exact assets, or exact shares) as an explicit choice
+- **Swap**: trade on PortalSwapRouter, Portaldot V3's own DEX, with the price impact these small pools really charge given its own line and a hard refusal past 15%
+- **Cross-Chain Bridge**: lock on a home chain, mint the wrapped copy on Portaldot, send it back — with both chains' numbers side by side, because a bridge is only honest while they match
+- **Any Wallet, Your Choice**: wallets are found through EIP-6963 and listed by name, so two extensions do not mean the wrong one opens; disconnect is real, and a wallet that cannot see the contract is refused rather than left to fail
 - **Ask AI**: explain a call, a function or a range of calls, with every `#n` in the answer selecting that call
-- **Bring Your Own AI**: your Claude Code and Claude plan, Ollama or LM Studio, or your own Anthropic, OpenAI or OpenRouter key
+- **Bring Your Own AI**: your Claude Code and Claude plan, Ollama or LM Studio, or your own Anthropic, Amazon Bedrock, OpenAI or OpenRouter key
 - **MCP Server**: your AI client reads a run and proposes scenarios, checked against the Lab's model
 - **Sample Vault**: try everything without a project, on the bundled DortVault
 - **Keyboard First**: arrows step through calls, `1` `2` `3` switch views, `A` asks AI, `F` goes full screen
@@ -157,7 +162,7 @@ node dort-export.mjs [--mt …] [--mc …] [--chain <key> | --forks all]
 | Smart contracts | Foundry (`forge build`, `forge test`, `forge coverage`, `forge inspect`), Solidity 0.8.20 |
 | Static analysis | Slither, Aderyn (JSON reports merged into the atlas) |
 | Chains | Seven EVM testnets (Portaldot V3 first) through public read-only RPCs, overridable per chain |
-| AI | Claude through the user's own Claude Code, Ollama / LM Studio, Anthropic, OpenAI, OpenRouter |
+| AI | Claude through the user's own Claude Code, Ollama / LM Studio, Anthropic, Amazon Bedrock, OpenAI, OpenRouter |
 | AI tooling | MCP server over stdio (JSON-RPC 2.0) |
 | Tests | Node built-in test runner (8 exporter test files), 17 `*.check.ts` self-checks in the app, Foundry unit, fork and invariant tests |
 | Lint / Format | Biome |
@@ -207,7 +212,7 @@ Dort hosts no AI and calls no model by default. The user picks one in **Connect 
 | **None** (default) | Dort's built-in text | Nothing. No network call is made |
 | **Your Claude** | Your own Claude Code, signed in with your own Claude plan | The prompt goes through the app's local route to the `claude` program on your laptop |
 | **Local model** | Ollama, LM Studio or any OpenAI-compatible server you run | The prompt goes to the endpoint you typed, normally `localhost` |
-| **Own API key** | Anthropic, OpenAI or OpenRouter | The prompt and your key go from your browser straight to that provider |
+| **Own API key** | Anthropic, Amazon Bedrock, OpenAI or OpenRouter | The prompt and your key go from your browser straight to that provider |
 
 Only the selected piece is sent: its name, its own source lines (at most 120), the pieces connected to it, open findings on it, a built-in checklist and the question. A fixed system prompt keeps the model defensive: explain behaviour, list what an auditor should check, write a Foundry test that pins **intended** behaviour, and refuse to write exploits. Details in [docs/ai-provider.md](docs/ai-provider.md).
 
@@ -287,6 +292,26 @@ forge script script/DeployPortaldot.s.sol \
 makes one real deposit so the chain holds an interaction and not only bytecode, and refuses to run
 on any chain other than 420420777. Addresses and transaction hashes are written to
 `broadcast/DeployPortaldot.s.sol/420420777/run-latest.json`.
+
+### PortalSwapRouter (the chain's own DEX)
+
+Portaldot V3 ships a Uniswap V2 fork, and `/swap` trades on it directly — the one on-chain page
+that needs nothing deployed first. Everything below was read off the live chain rather than
+assumed from the V2 interface:
+
+| | |
+|---|---|
+| Router | `0xc17510Df29ae5E4C6C2A46CCB03197edd0963f2B` |
+| Factory | `0xC631805C297c4233B33c30aF91245058902C1D18` |
+| Fee | 30 bps exactly — the local quote reproduces `getAmountsOut` to the wei |
+| Wrapped native | `WPOT()`, not `WETH()`, which reverts |
+| Pools | 10 pairs over 5 tokens (WPOT, pUSDT, pDAI, pWBTC, pLINK): every combination, so a path is always one hop |
+| Not available | no `…SupportingFeeOnTransferTokens`, so no fee-on-transfer token belongs here |
+
+`swap.check.ts` pins the quote arithmetic against answers recorded from the live router, so
+changing the fee or the rounding stops matching the chain and fails the build. The page prices a
+trade locally while you type, then asks the router again before signing and takes `amountOutMin`
+from that second number.
 
 ---
 
