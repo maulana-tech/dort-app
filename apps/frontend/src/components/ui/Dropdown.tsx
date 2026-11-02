@@ -46,8 +46,11 @@ const TRIGGER = {
     "inline-flex h-9 items-center gap-2 rounded-tile border border-border bg-inset px-3 text-[13px] text-fg transition-colors hover:border-border-strong",
   /** a Lab card widget (lab.css .dd-card) */
   card: "dd-card",
+  /** the token picker inside an amount field (components/(main)/action/TokenSelect) */
+  token:
+    "inline-flex items-center gap-2 rounded-chip border border-border bg-raised py-1.5 pr-2.5 pl-1.5 text-ui-sm text-text transition-colors hover:border-border-strong hover:bg-hover",
   /** a small capsule in a composer's footer (the chat's model chip) */
-  chip: "inline-flex h-7 items-center gap-1.5 rounded-full border border-white/[.08] px-2.5 text-[12px] text-body transition-colors hover:text-fg",
+  chip: "inline-flex h-7 items-center gap-1.5 rounded-full border border-border px-2.5 text-[12px] text-body transition-colors hover:text-fg",
 } as const;
 
 export function Dropdown<T extends string>({
@@ -243,7 +246,7 @@ export function Dropdown<T extends string>({
                   return (
                     <div key={o.value}>
                       {head && (
-                        <p className="mt-1.5 border-white/[.06] border-t px-2.5 pt-2 pb-1 text-[11.5px] text-dim">
+                        <p className="mt-1.5 border-border border-t px-2.5 pt-2 pb-1 text-[11.5px] text-dim">
                           {head}
                         </p>
                       )}
@@ -273,7 +276,7 @@ export function Dropdown<T extends string>({
                               stiffness: 700,
                               damping: 45,
                             }}
-                            className="absolute inset-0 rounded-[9px] bg-white/[.07] shadow-[inset_2px_0_0_rgba(255,255,255,.75)]"
+                            className="absolute inset-0 rounded-[9px] bg-primary/[.08] shadow-[inset_2px_0_0_var(--primary)]"
                           />
                         )}
                         {o.icon && <span className="relative">{o.icon}</span>}
