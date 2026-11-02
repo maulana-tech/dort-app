@@ -19,7 +19,7 @@ import {
  */
 const agentPrompt = (
   origin: string,
-) => `Set up Dort for this Foundry project. Dort is a local, read-only viewer for Foundry test runs (traces, a contract graph, findings).
+) => `Set up Dort for this Foundry project. Dort is a local, read-only reader for Foundry test runs (traces, findings) that answers questions about them.
 
 1. Check that \`forge --version\` and \`node --version\` (Node 20 or newer) work. If Foundry is missing, ask me first, then install it with \`curl -L https://foundry.paradigm.xyz | bash\` and \`foundryup\`.
 2. In the project root (the folder with foundry.toml), download the Dort exporter from the Dort app:
@@ -38,7 +38,7 @@ Optional, only if I ask to run tests from the browser: in the project root, star
 Only read files and run these commands. Do not edit my contracts, tests or foundry.toml.`;
 
 /**
- * What Trace and Atlas show while nothing is loaded: the way in from zero, as four steps (tools,
+ * The way in from zero, shown while nothing is loaded, as four steps (tools,
  * exporter, export, load) ending in the drop zone, plus the sample for anyone without a Foundry
  * project at hand. Loading a run hands over to the first session's "Where to look" step.
  */
