@@ -268,6 +268,9 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
           >
             {modeBadge(digest)}
           </Chip>
+          <span className="text-[12px] text-dim">
+            {chat.builtin ? "Built-in answers" : "Your model"}
+          </span>
           {!empty && (
             <button
               type="button"
@@ -288,11 +291,13 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
                   {digest.loaded ? "this run" : "smart contracts"}. Plain
                   language is fine.
                 </p>
-                {!chat.ready && (
+                {chat.builtin && (
                   <p className="mt-2 text-[12.5px] text-dim leading-relaxed">
-                    Press <strong className="text-fg">Connect AI</strong> in the
-                    header first and pick your Claude Code, a local model, or
-                    your own key. Dort never calls a model of its own.
+                    Right now Dort answers from the run&rsquo;s own figures,
+                    with no model and nothing leaving this machine. For anything
+                    that needs the code read, press{" "}
+                    <strong className="text-fg">Connect AI</strong> and bring
+                    your own — Dort hosts none.
                   </p>
                 )}
               </div>
@@ -447,10 +452,11 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
               )}
 
               <p className="pt-2 text-[11.5px] text-dim leading-relaxed">
+                {chat.builtin
+                  ? "Answers come from Dort's own built-in text, composed from the figures above — no model, no request, nothing leaves this machine. Connect AI to have your own model read the code."
+                  : "Your question goes straight from this browser to the model you chose. Dort hosts none of its own."}{" "}
                 Defensive review only: Dort explains code and writes Foundry
                 tests for intended behaviour, and refuses to write exploits.
-                Your question goes straight from this browser to the model you
-                chose.
               </p>
             </div>
           ) : (
