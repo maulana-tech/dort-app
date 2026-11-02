@@ -36,7 +36,7 @@ type RunState = {
   /** the forked chain Trace and Atlas show ("" = the local run), remembered in this browser */
   fork: string;
   setFork: (key: string) => void;
-  /** the local bridge (dort-bridge.mjs) this tab is linked to: Start test and Reload trace go
+  /** the local bridge (dort-bridge.mjs) this tab is linked to: Start test and Reload run go
    *  through it on the hosted site */
   bridge: Bridge | null;
   /** why the bridge link could not connect, until a retry or a reset */
@@ -68,7 +68,7 @@ export function RunProvider({ children }: { children: ReactNode }) {
   const [fork, setForkState] = useState("");
   const [bridge, setBridge] = useState<Bridge | null>(null);
   const [bridgeError, setBridgeError] = useState<string | null>(null);
-  // bumped to (re)connect: a new link in the address bar, Retry, Reload trace
+  // bumped to (re)connect: a new link in the address bar, Retry, Reload run
   const [link, setLink] = useState(0);
   const [bridgeScenarios, setBridgeScenarios] = useState<unknown[]>([]);
   useEffect(() => {
