@@ -32,6 +32,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Biome
         run: pnpm exec biome ci src
+      # Next generates the PageProps / LayoutProps globals that every route file is typed
+      # against. Without this step tsc runs before they exist and fails on every route — which
+      # it had been doing on every commit, because Typecheck runs before Build.
+      - name: Route types
+        run: pnpm exec next typegen
       - name: Typecheck
         run: pnpm exec tsc --noEmit
       # The sibling *.check.ts files. Several read real files out of foundry/ — the fork picker
