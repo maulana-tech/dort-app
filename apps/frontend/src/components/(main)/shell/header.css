@@ -122,14 +122,27 @@ a.hdr-pill:focus-visible,
   padding: 0 11px;
   gap: 6px;
 }
+/* Pressed is this family's "active", and a plain .hdr-pill sits on --raised, a light fill — so
+   active is the strongest on-surface text and idle is a muted one. These were --on-canvas when
+   the app was dark and a pill always sat on the blue; after the theme turned blue-on-white that
+   left white text on a near-white pill. --on-canvas is only correct under .on-blue, which keeps
+   the translucent fill those tokens were measured against, so that case is restored below. */
 .hdr-pill[aria-pressed="true"],
 .hdr-pill.split > button[aria-pressed="true"] {
-  color: var(--on-canvas);
+  color: var(--fg);
 }
 .hdr-pill[aria-pressed="false"] {
-  color: var(--on-canvas-dim);
+  color: var(--muted);
 }
 .hdr-pill.split > button[aria-pressed="false"] {
+  color: var(--muted);
+}
+.hdr-pill.on-blue[aria-pressed="true"],
+.hdr-pill.on-blue.split > button[aria-pressed="true"] {
+  color: var(--on-canvas);
+}
+.hdr-pill.on-blue[aria-pressed="false"],
+.hdr-pill.on-blue.split > button[aria-pressed="false"] {
   color: var(--on-canvas-dim);
 }
 .hdr-pill.split > button.mid {
