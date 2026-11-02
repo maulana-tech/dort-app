@@ -19,6 +19,7 @@ import {
   templates,
 } from "@/features/atlas/utils/lab-scenario";
 import { createAtlasModel } from "@/features/atlas/utils/model";
+import { digestOf, type RunDigest } from "@/features/chat";
 import sample from "@/features/trace/fixtures/sample-trace.json";
 import type { DortData, Frame, TestResult } from "@/features/trace/types";
 
@@ -310,5 +311,47 @@ export async function scenarioDemo(): Promise<LabDemo | null> {
       ]),
     ),
     fields,
+  };
+}
+
+export type ChatDemo = {
+  digest: RunDigest;
+  question: string;
+  /**
+   * What Dort itself can say about the run without a model: the counts, the contracts the calls
+   * went through, and either the failures or the fact that there were none. The landing shows an
+   * answer in the assistant's place, so it had better be one that is true of this run — the real
+   * page sends exactly these facts to the model the reader brings, and nothing here is invented.
+   */
+  answer: string[];
+};
+
+/** The hero's conversation, composed from the sample run rather than written as copy. */
+export async function chatDemo(): Promise<ChatDemo> {
+  "use cache";
+  cacheLife("max");
+  const data = await readRun();
+  // "sample", not "local": whatever run was baked in at build time, the reader is not looking at
+  // their own project — and the badge beside it says Sample, so the two must not disagree
+  const digest = digestOf(data, "sample");
+  const where = digest.contracts.slice(0, 3);
+  const answer = [
+    `This run has ${digest.total} tests${
+      digest.failed
+        ? `, and ${digest.failed} of them fail`
+        : " and all of them pass"
+    }. The calls went through ${where.join(", ")}${
+      digest.contracts.length > where.length
+        ? ` and ${digest.contracts.length - where.length} more`
+        : ""
+    }.`,
+    digest.failures.length
+      ? `The first failure is ${digest.failures[0].name}: ${digest.failures[0].reason}`
+      : "Nothing reverted, so there is no failure to explain — the useful question is what the passing tests actually prove, and what they leave untested.",
+  ];
+  return {
+    digest,
+    question: "What does this project do, in plain language?",
+    answer,
   };
 }
