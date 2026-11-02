@@ -148,6 +148,16 @@
   border-radius: 50%;
   background: var(--on-canvas);
 }
+/* The landing renders these very cards inside a white mock panel (landing/LabGraph), where the
+   canvas tokens invert: a title row meant to float on the blue page becomes white on white, and
+   its dot disappears with it. This scope puts that row back on the surface palette; the app's
+   own canvas, where the title really does sit on blue, is untouched. */
+.lab-on-surface .lab-card header {
+  color: var(--fg);
+}
+.lab-on-surface .lab-card header .kdot {
+  background: var(--primary);
+}
 .lab-card header b {
   flex: 1;
   min-width: 0;
