@@ -549,7 +549,7 @@ export const GROUPS: DocGroup[] = [
               "Download it with the exporter (see [Quick start](/docs/quick-start)).",
               "In the project root, run `node dort-bridge.mjs` and keep that terminal open.",
               "Open the link it prints. The header says **Live** with your project's name.",
-              "**Start test**, **Choose**, **Test all** and **Reload trace** now run on your computer.",
+              "**Start test**, **Choose**, **Test all** and **Reload run** now run on your computer.",
             ],
           },
           {
@@ -731,7 +731,7 @@ export const GROUPS: DocGroup[] = [
             code: "git clone https://github.com/maulana-tech/dort-app.git\ncd dort/apps/frontend\npnpm install\nDORT_DATA_PATH=/abs/path/to/your-project/dort-data.json pnpm dev",
           },
           {
-            p: "Open http://localhost:3000/trace. Start test runs the exporter next to that file, and Reload trace (⌘R) re-reads it after every export.",
+            p: "Open http://localhost:3000/chat. Start test runs the exporter next to that file, and Reload run (⌘R) re-reads it after every export.",
           },
         ],
       },
