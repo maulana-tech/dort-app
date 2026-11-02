@@ -21,6 +21,17 @@ K=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 A=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 R=http://127.0.0.1:8545
 
+# a genuine Base Sepolia deploy writes to the same broadcast/ path this demo is about to use;
+# park it somewhere safe for the duration rather than letting the demo overwrite it
+KEEP=""
+if [ -d broadcast/DeployVault.s.sol/84532 ] && \
+   find broadcast/DeployVault.s.sol/84532 -maxdepth 1 -name 'run-latest.json' | grep -q .; then
+  KEEP="$(mktemp -d)/84532"
+  mkdir -p "$(dirname "$KEEP")"
+  mv broadcast/DeployVault.s.sol/84532 "$KEEP"
+  echo "catatan deploy sungguhan diamankan sementara ke $KEEP"
+fi
+
 pkill -f "anvil --port 8545" 2>/dev/null || true; sleep 1
 (anvil --port 8545 --chain-id 84532 --silent >/dev/null 2>&1 &)
 sleep 3
@@ -97,9 +108,19 @@ cast send $VUSDT "deposit(uint256,address)" 100000000 0x70997970C51812dc3A010C7d
 echo "share korban       : $(bal $VUSDT 0x70997970C51812dc3A010C7d01b50e0d17dc79C8)  (bukan nol: offset virtual)"
 echo "nilai korban       : $(val $VUSDT 0x70997970C51812dc3A010C7d01b50e0d17dc79C8)  (dari 100000000)"
 
-# this anvil only pretends to be 84532, so its receipts are not a record of a real deploy — and
-# leaving them here would clobber a genuine Base Sepolia run's broadcast/ later
-rm -rf broadcast/DeployVault.s.sol/84532
+# This anvil only pretends to be 84532, so its receipts are not a record of a real deploy and must
+# not be left behind. The first version of this deleted the whole 84532 directory, which did the
+# opposite of what its comment claimed: run after a genuine Base Sepolia deploy, it destroyed that
+# deploy's record. So move a pre-existing record aside first and put it back afterwards; only what
+# this run itself wrote is removed.
+if [ -d broadcast/DeployVault.s.sol/84532 ]; then
+  rm -rf broadcast/DeployVault.s.sol/84532
+fi
+if [ -d "$KEEP" ]; then
+  mkdir -p broadcast/DeployVault.s.sol
+  mv "$KEEP" broadcast/DeployVault.s.sol/84532
+  echo "catatan deploy sungguhan dikembalikan ke broadcast/DeployVault.s.sol/84532"
+fi
 
 echo
 echo "anvil masih jalan di $R — buka http://localhost:3000/vault, tekan \"Use the local demo\"."
