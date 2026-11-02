@@ -183,6 +183,28 @@ assert.equal(
   false,
 );
 
+// the same chain id with no vault behind it: the local demo's trap, and it must block the button
+assert.equal(
+  vaultAction({ ...base, wrongNetwork: true }).disabled,
+  true,
+  "a wallet that cannot see the vault must not be allowed to send to it",
+);
+assert.match(
+  vaultAction({ ...base, wrongNetwork: true }).why ?? "",
+  /127\.0\.0\.1:8545/,
+  "and the reason says where to point the wallet",
+);
+assert.equal(
+  vaultAction({ ...base, connected: false, wrongNetwork: true }).label,
+  "Connect wallet",
+  "still nothing outranks connecting",
+);
+assert.equal(
+  vaultAction({ ...base, onRightChain: false, wrongNetwork: true }).label,
+  "Switch to Base Sepolia",
+  "a wrong chain is the plainer problem, and the one to say first",
+);
+
 // the unit is a different call, so it has to be a different label
 assert.equal(
   vaultAction({ ...base, side: "withdraw", unit: "shares" }).label,
