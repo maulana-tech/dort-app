@@ -293,6 +293,41 @@ makes one real deposit so the chain holds an interaction and not only bytecode, 
 on any chain other than 420420777. Addresses and transaction hashes are written to
 `broadcast/DeployPortaldot.s.sol/420420777/run-latest.json`.
 
+### DortSafeVault, on two chains
+
+`/vault` drives `DortSafeVault` — the correct twin of the flawed sample. The vault is the one
+on-chain feature with no second end, so the same contract on two chains is simply available in
+two places, and the page opens on whichever of them really has one.
+
+| Chain | Asset | Vault |
+|---|---|---|
+| Base Sepolia (`84532`) | USDC `0x036CbD53…cF7e` (Circle's) | [`0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8`](https://sepolia.basescan.org/address/0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8) |
+| Portaldot V3 (`420420777`) | pUSDT `0xe0114Adc…Dbc2` (the token `/swap` trades) | pending tPOT |
+
+Portaldot is the better home and stays first in the picker: one chain and one faucet would cover
+the whole loop — POT from the faucet, swapped for pUSDT on PortalSwapRouter, deposited into the
+vault. Its testnet gas is handed out by an admin rather than a faucet, so Base Sepolia went first.
+
+```bash
+# Base Sepolia, over Circle's USDC
+export VAULT_ASSET=0x036CbD53842c5426634e7929541eC2318f3dCF7e
+export VAULT_NAME="Dort USDC Vault" VAULT_SYMBOL=dUSDC VAULT_DECIMALS=6
+forge script script/DeployVault.s.sol --sig "run()" \
+  --rpc-url https://sepolia.base.org --account dort --sender $ME --broadcast
+
+# Portaldot V3, over pUSDT
+export VAULT_ASSET=0xe0114Adc0a2072B602C645f5a07EeFA1eaDBDbc2
+export VAULT_NAME="Dort pUSDT Vault" VAULT_SYMBOL=dpUSDT VAULT_DECIMALS=6
+forge script script/DeployVault.s.sol --sig "run()" \
+  --rpc-url https://test-evm-rpc-v3.portaldot.dev --account dort --sender $ME --broadcast
+```
+
+About 3.0M gas each. `VAULTS` in
+[`vault.ts`](apps/frontend/src/features/vault/vault.ts) names the asset for both chains; a
+`vault: null` there is read as *not deployed*, and the page says so rather than guessing at an
+address. `firstDeployedChain()` picks the chain the page opens on, so filling in the Portaldot
+address later moves the default back there on its own.
+
 ### PortalSwapRouter (the chain's own DEX)
 
 Portaldot V3 ships a Uniswap V2 fork, and `/swap` trades on it directly — the one on-chain page
@@ -703,8 +738,9 @@ Portaldot Hacker House 2026.
 | **Track** | Node Operations & Tooling — network security analysis tooling for the Portaldot ecosystem |
 | **Chain** | Portaldot V3 Testnet, chain id `420420777`, EVM RPC `https://test-evm-rpc-v3.portaldot.dev` |
 | **Other chains** | Ethereum, Arbitrum, Base, Robinhood Chain, Hyperliquid, Tempo (testnet forks) |
-| **Contract address** | _not deployed yet — run [`script/DeployPortaldot.s.sol`](foundry/script/DeployPortaldot.s.sol) with a POT-funded testnet key_ |
-| **Transaction hash** | _written to `broadcast/DeployPortaldot.s.sol/420420777/run-latest.json` by that script_ |
+| **Contract address** | `DortSafeVault` on Base Sepolia: [`0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8`](https://sepolia.basescan.org/address/0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8) — over Circle's USDC, block 53482026 |
+| **Transaction hash** | [`0x2aafcfaa81d24ed15d4c5412da0458f952c2288351467a161184d27d69904e8d`](https://sepolia.basescan.org/tx/0x2aafcfaa81d24ed15d4c5412da0458f952c2288351467a161184d27d69904e8d) |
+| **On Portaldot V3** | _pending testnet tPOT: distribution is handed out by an admin, not a faucet. [`script/DeployVault.s.sol`](foundry/script/DeployVault.s.sol) and [`script/DeployPortaldot.s.sol`](foundry/script/DeployPortaldot.s.sol) are both simulated clean against the live chain (3.0M and 5.2M gas, ~0.0000004 POT in total) and `VAULTS` already names pUSDT as the asset — only the gas is missing._ |
 | **Website** | [dort-app.vercel.app](https://dort-app.vercel.app) |
 | **Source** | [github.com/maulana-tech/dort-app](https://github.com/maulana-tech/dort-app) |
 
