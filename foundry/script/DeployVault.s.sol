@@ -9,13 +9,15 @@ import {MockToken} from "../src/mocks/Mocks.sol";
 /// Deploys DortSafeVault over an existing asset, or — on a local chain only — a mock asset and a
 /// vault over it.
 ///
-///   # over a real token (its decimals must match what you pass)
-///   export VAULT_ASSET=0x…
-///   export VAULT_NAME="Dort USDC Vault"
-///   export VAULT_SYMBOL=dUSDC
+///   # over a real token (its decimals must match what you pass).
+///   # pUSDT on Portaldot V3 is the asset the app offers: it is already live on the chain, the
+///   # same token /swap trades, so one faucet of POT covers buying it and paying for the deposit.
+///   export VAULT_ASSET=0xe0114Adc0a2072B602C645f5a07EeFA1eaDBDbc2
+///   export VAULT_NAME="Dort pUSDT Vault"
+///   export VAULT_SYMBOL=dpUSDT
 ///   export VAULT_DECIMALS=6
 ///   forge script script/DeployVault.s.sol --sig "run()" \
-///     --rpc-url https://sepolia.base.org --private-key $KEY --broadcast
+///     --rpc-url https://test-evm-rpc-v3.portaldot.dev --account dort --sender $ME --broadcast
 ///
 ///   # asset and vault together, for a local anvil
 ///   forge script script/DeployVault.s.sol --sig "withMock(string,uint8)" "USDC" 6 \
@@ -26,8 +28,9 @@ import {MockToken} from "../src/mocks/Mocks.sol";
 /// chain's own id so the app and the wallet agree on it, so it sets VAULT_ALLOW_MOCK=1 to say the
 /// chain is a throwaway. Never set that against a chain whose state anyone else shares.
 ///
-/// The addresses printed here are the ones that go into VAULTS in
-/// apps/frontend/src/features/vault/vault.ts.
+/// VAULTS in apps/frontend/src/features/vault/vault.ts already names the asset with
+/// `vault: null`, meaning "not deployed yet". Paste the DortSafeVault address printed here into
+/// that field and the page is live; nothing else there has to change.
 contract DeployVault is Script {
     /// A vault over an asset that already exists.
     function run() external {
