@@ -2,18 +2,25 @@ import type { AiQuestion } from "../atlas/types";
 
 /** "none" = the built-in canned answers; everything else is the user's own provider. */
 /** "claude" = the user's own Claude Code and its subscription login, through the local bridge (app/api/claude). */
+/** "bedrock" = the user's OWN AWS account, with their own Bedrock API key. Dort holds no AWS key: a
+ *  hosted Bedrock call would put an auditor's unpublished contract source through our account. */
 export type AiKind =
   | "none"
   | "local"
   | "claude"
   | "anthropic"
+  | "bedrock"
   | "openai"
   | "openrouter";
 
 /** Kept only in this browser's localStorage (`dort.ai`). */
 export type AiConfig = {
   kind: AiKind;
-  /** OpenAI-compatible base, e.g. http://localhost:11434/v1 (local only; API providers use their fixed URL) */
+  /**
+   * `local`: the OpenAI-compatible base, e.g. http://localhost:11434/v1.
+   * `bedrock`: the AWS region, e.g. us-east-1 — the host is built from it, never taken whole.
+   * Every other provider ignores this and uses its own fixed URL.
+   */
   baseUrl: string;
   model: string;
   key: string;
