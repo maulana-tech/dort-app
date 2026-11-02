@@ -12,7 +12,7 @@ export function Sidebar({
   action,
 }: {
   children: ReactNode;
-  /** beside Reload trace: Test all */
+  /** beside Reload run: Test all */
   action?: ReactNode;
 }) {
   const { bridge, bridgeError, reloadBridge } = useRun();
@@ -36,7 +36,7 @@ export function Sidebar({
         </p>
         <p className="mb-3 text-[12.5px] text-dim leading-normal">
           {live
-            ? "In your Foundry project, then press Reload trace."
+            ? "In your Foundry project, then press Reload run."
             : "In your Foundry project, then drop the new dort-data.json from Get started."}
         </p>
         <div className="flex flex-col gap-1.5">
@@ -53,8 +53,8 @@ export function Sidebar({
           </p>
           <p className="mb-3 text-[12.5px] text-dim leading-normal">
             Start the bridge in the same folder and open the link it prints.
-            Start test, Test all and Reload trace then run forge on your
-            computer; nothing is uploaded.
+            Start test, Test all and Reload run then run forge on your computer;
+            nothing is uploaded.
           </p>
           <CopyPill text="node dort-bridge.mjs" />
           <p className="mt-2 text-[12px] text-dim leading-normal">
