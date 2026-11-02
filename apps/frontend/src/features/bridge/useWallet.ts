@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   type Address,
   type Chain,
@@ -17,12 +17,26 @@ import {
   isBridgeChain,
   LOCAL_RPC,
 } from "./chains";
+import {
+  type DiscoveredWallet,
+  INJECTED,
+  mergeWallet,
+  orderWallets,
+  pickWallet,
+  WALLET_KEY,
+} from "./wallet";
 
 /**
- * The wallet, with no wallet library: Dort talks to whatever injected EIP-1193 provider the
- * browser has (MetaMask, Rabby, Brave). That keeps the one dependency this page added — viem, for
+ * The wallet, with no wallet library: Dort talks to the EIP-1193 providers the browser has
+ * (MetaMask, Rabby, Brave, …). That keeps the one dependency this page added — viem, for
  * encoding — and nothing else. There is no WalletConnect and no hosted relay: the page only ever
- * speaks to the extension in front of the user.
+ * speaks to an extension in front of the user.
+ *
+ * Wallets are found by EIP-6963, not by reading `window.ethereum`. That slot holds one provider
+ * and every extension overwrites it, so with two wallets installed the single slot connects
+ * whichever loaded last and the user cannot choose. Under EIP-6963 each wallet announces itself
+ * and the page lists them all. `window.ethereum` is kept only as a last resort, for a wallet too
+ * old to announce.
  *
  * Reads go over each chain's public RPC with viem, so balances show before a wallet is connected
  * and never depend on which chain the wallet happens to be on.
@@ -34,8 +48,10 @@ declare global {
   }
 }
 
-const provider = (): EIP1193Provider | undefined =>
-  typeof window === "undefined" ? undefined : window.ethereum;
+type AnnounceEvent = CustomEvent<{
+  info: DiscoveredWallet["info"];
+  provider: EIP1193Provider;
+}>;
 
 /**
  * A read-only client per chain, memoised. `local` points it at the anvil pair that
@@ -64,9 +80,18 @@ export type Wallet = {
   chainId: number | null;
   /** an injected wallet exists at all */
   available: boolean;
+  /** every wallet that announced itself, the remembered one first */
+  wallets: DiscoveredWallet[];
+  /** the one currently connected, so the header can name it */
+  connected: DiscoveredWallet | null;
   connecting: boolean;
   error: string | null;
-  connect: () => Promise<void>;
+  /** `rdns` picks one of `wallets`; without it the remembered or first wallet is used */
+  connect: (rdns?: string) => Promise<void>;
+  /** forget the account and the remembered wallet; the extension keeps its own permission */
+  disconnect: () => void;
+  /** the code at an address as THIS wallet's node sees it, for the local-demo mismatch check */
+  codeAt: (address: Address) => Promise<string | null>;
   /** switch, adding the chain first when the wallet has never heard of it */
   switchTo: (id: BridgeChainId) => Promise<void>;
   /** send one transaction and return its hash */
@@ -78,28 +103,87 @@ export type Wallet = {
 };
 
 export function useWallet(): Wallet {
+  const [wallets, setWallets] = useState<DiscoveredWallet[]>([]);
+  const [chosen, setChosen] = useState<DiscoveredWallet | null>(null);
   const [account, setAccount] = useState<Address | null>(null);
   const [chainId, setChainId] = useState<number | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [available, setAvailable] = useState(false);
+  /** the rdns remembered from last time; read once, then kept in step with `chosen` */
+  const preferred = useRef<string | null>(null);
+  /**
+   * The silent reconnect is allowed once per page load. Without this, pressing Disconnect would
+   * clear `chosen`, the effect below would see a wallet that is still authorised and reconnect
+   * it on the next render, and the button would do nothing at all.
+   */
+  const autoTried = useRef(false);
 
-  // the provider only exists in the browser, and only after hydration
+  // ── find the wallets ────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const p = provider();
-    setAvailable(Boolean(p));
-    if (!p) return;
+    preferred.current = safeGet(WALLET_KEY);
 
-    // an already-authorised wallet reconnects silently; a fresh one stays disconnected
-    p.request({ method: "eth_accounts" })
-      .then((a) => setAccount(((a as Address[])[0] as Address) ?? null))
+    const onAnnounce = (e: Event) => {
+      const { info, provider } = (e as AnnounceEvent).detail;
+      if (!info?.rdns || !provider) return;
+      setWallets((list) => mergeWallet(list, { info, provider }));
+    };
+    window.addEventListener("eip6963:announceProvider", onAnnounce);
+    window.dispatchEvent(new Event("eip6963:requestProvider"));
+
+    // a wallet too old for EIP-6963 only exists in the single slot; list it last, and only if
+    // nothing has claimed that slot's identity already
+    const legacy = window.ethereum;
+    if (legacy)
+      setWallets((list) =>
+        list.some((w) => w.provider === legacy)
+          ? list
+          : mergeWallet(list, { info: INJECTED, provider: legacy }),
+      );
+
+    return () =>
+      window.removeEventListener("eip6963:announceProvider", onAnnounce);
+  }, []);
+
+  // ── reconnect silently to the wallet that was already authorised ────────────────────────
+  useEffect(() => {
+    if (autoTried.current || chosen || wallets.length === 0) return;
+    const want = pickWallet(wallets, null, preferred.current);
+    if (!want) return;
+    autoTried.current = true;
+    let live = true;
+    want.provider
+      .request({ method: "eth_accounts" })
+      .then((a) => {
+        const first = (a as Address[])[0];
+        // no account means the user never authorised this wallet: stay disconnected, silently
+        if (!live || !first) return;
+        setChosen(want);
+        setAccount(first);
+      })
       .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [wallets, chosen]);
+
+  // ── follow the connected wallet ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    const p = chosen?.provider;
+    if (!p) {
+      setChainId(null);
+      return;
+    }
     p.request({ method: "eth_chainId" })
       .then((c) => setChainId(Number(BigInt(c as string))))
       .catch(() => {});
 
-    const onAccounts = (a: unknown) =>
-      setAccount(((a as Address[])?.[0] as Address) ?? null);
+    const onAccounts = (a: unknown) => {
+      const next = (a as Address[])?.[0] ?? null;
+      setAccount(next);
+      // the user disconnected the site from inside the wallet; let the page go back to its
+      // disconnected state rather than showing an account that is no longer authorised
+      if (!next) setChosen(null);
+    };
     const onChain = (c: unknown) => setChainId(Number(BigInt(c as string)));
     p.on?.("accountsChanged", onAccounts);
     p.on?.("chainChanged", onChain);
@@ -107,57 +191,115 @@ export function useWallet(): Wallet {
       p.removeListener?.("accountsChanged", onAccounts);
       p.removeListener?.("chainChanged", onChain);
     };
-  }, []);
+  }, [chosen]);
 
-  const connect = useCallback(async () => {
-    const p = provider();
-    if (!p) {
-      setError("No wallet extension found in this browser.");
-      return;
-    }
-    setConnecting(true);
-    setError(null);
-    try {
-      const a = (await p.request({
-        method: "eth_requestAccounts",
-      })) as Address[];
-      setAccount(a[0] ?? null);
-      const c = (await p.request({ method: "eth_chainId" })) as string;
-      setChainId(Number(BigInt(c)));
-    } catch (e) {
-      setError(reason(e));
-    } finally {
-      setConnecting(false);
-    }
-  }, []);
-
-  const switchTo = useCallback(async (id: BridgeChainId) => {
-    const p = provider();
-    if (!p) return;
-    setError(null);
-    const hex = `0x${id.toString(16)}`;
-    try {
-      await p.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: hex }],
-      });
-    } catch (e) {
-      // 4902: the wallet does not know this chain yet — Portaldot is new to every wallet
-      if ((e as { code?: number }).code === 4902) {
-        try {
-          await p.request({
-            method: "wallet_addEthereumChain",
-            params: [addChainParams(id)],
-          });
-          return;
-        } catch (addErr) {
-          setError(reason(addErr));
-          return;
-        }
+  const connect = useCallback(
+    async (rdns?: string) => {
+      const want = pickWallet(wallets, rdns ?? null, preferred.current);
+      if (!want) {
+        setError(
+          wallets.length === 0
+            ? "No wallet extension found in this browser."
+            : "That wallet is no longer available.",
+        );
+        return;
       }
-      setError(reason(e));
-    }
+      setConnecting(true);
+      setError(null);
+      try {
+        const a = (await want.provider.request({
+          method: "eth_requestAccounts",
+        })) as Address[];
+        if (!a[0]) throw new Error("The wallet returned no account.");
+        setChosen(want);
+        setAccount(a[0]);
+        const c = (await want.provider.request({
+          method: "eth_chainId",
+        })) as string;
+        setChainId(Number(BigInt(c)));
+        preferred.current = want.info.rdns;
+        safeSet(WALLET_KEY, want.info.rdns);
+      } catch (e) {
+        setError(reason(e));
+      } finally {
+        setConnecting(false);
+      }
+    },
+    [wallets],
+  );
+
+  /**
+   * Let go of the wallet here. The extension's own permission survives — only it can revoke
+   * that — so this is honest about what it does: the page forgets, the wallet does not.
+   */
+  const disconnect = useCallback(() => {
+    autoTried.current = true;
+    setChosen(null);
+    setAccount(null);
+    setChainId(null);
+    setError(null);
+    preferred.current = null;
+    safeSet(WALLET_KEY, null);
   }, []);
+
+  const switchTo = useCallback(
+    async (id: BridgeChainId) => {
+      const p = chosen?.provider;
+      if (!p) return;
+      setError(null);
+      const hex = `0x${id.toString(16)}`;
+      try {
+        await p.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: hex }],
+        });
+      } catch (e) {
+        // 4902: the wallet does not know this chain yet — Portaldot is new to every wallet
+        if ((e as { code?: number }).code === 4902) {
+          try {
+            await p.request({
+              method: "wallet_addEthereumChain",
+              params: [addChainParams(id)],
+            });
+            // adding does not always switch, and some wallets answer the second call silently
+            await p
+              .request({
+                method: "wallet_switchEthereumChain",
+                params: [{ chainId: hex }],
+              })
+              .catch(() => {});
+            return;
+          } catch (addErr) {
+            setError(reason(addErr));
+            return;
+          }
+        }
+        setError(reason(e));
+      }
+    },
+    [chosen],
+  );
+
+  /**
+   * What the wallet's own node has at an address. The page reads chains over its public RPCs,
+   * so this is the only way to tell whether the wallet is looking at the same chain the page is
+   * — which the local demo, running anvil under a real chain's id, makes easy to get wrong.
+   */
+  const codeAt = useCallback(
+    async (address: Address): Promise<string | null> => {
+      const p = chosen?.provider;
+      if (!p) return null;
+      try {
+        return (await p.request({
+          method: "eth_getCode",
+          params: [address, "latest"],
+        } as never)) as string;
+      } catch {
+        return null;
+      }
+    },
+    [chosen],
+  );
 
   const send = useCallback(
     async (tx: {
@@ -165,7 +307,7 @@ export function useWallet(): Wallet {
       data: `0x${string}`;
       chainId: BridgeChainId;
     }) => {
-      const p = provider();
+      const p = chosen?.provider;
       if (!p || !account) throw new Error("Connect a wallet first.");
       const chain = isBridgeChain(tx.chainId) ? CHAINS[tx.chainId] : undefined;
       if (!chain) throw new Error("Unknown chain.");
@@ -176,19 +318,41 @@ export function useWallet(): Wallet {
       });
       return wallet.sendTransaction({ to: tx.to, data: tx.data, chain });
     },
-    [account],
+    [account, chosen],
   );
 
   return {
     account,
     chainId,
-    available,
+    available: wallets.length > 0,
+    wallets: orderWallets(wallets, preferred.current),
+    connected: chosen,
     connecting,
     error,
     connect,
+    disconnect,
+    codeAt,
     switchTo,
     send,
   };
+}
+
+/** localStorage throws in a locked-down browser; a remembered wallet is never worth a crash. */
+function safeGet(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSet(key: string, value: string | null) {
+  try {
+    if (value === null) window.localStorage.removeItem(key);
+    else window.localStorage.setItem(key, value);
+  } catch {
+    /* a wallet the page cannot remember still works; it just asks again next time */
+  }
 }
 
 /** Wallet errors are deep and noisy; the user only needs the sentence. */
