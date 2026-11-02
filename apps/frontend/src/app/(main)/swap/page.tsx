@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { ActionSkeleton } from "@/components/(main)";
 import { SwapWorkspace } from "@/components/(main)/swap/SwapWorkspace";
 
 export const metadata = {
@@ -8,5 +10,9 @@ export const metadata = {
 };
 
 export default function SwapPage() {
-  return <SwapWorkspace />;
+  return (
+    <Suspense fallback={<ActionSkeleton rows={2} />}>
+      <SwapWorkspace />
+    </Suspense>
+  );
 }

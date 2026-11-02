@@ -338,3 +338,52 @@ export function RunSkeleton({
   if (!local && !ctx?.run && !ctx?.sample) return <StartSkeleton />;
   return view === "trace" ? <TraceSkeleton /> : <AtlasSkeleton />;
 }
+
+/**
+ * The shape every on-chain page shares while its client code loads: the action card on the left
+ * with a header, two fields and one wide button, and the two reference panels beside it.
+ *
+ * Those pages read chains over the network before they can show a number, so without this the
+ * route went from nothing to a finished card in one jump. The columns match
+ * components/(main)/action/ActionCard, so the real card lands where the bones were.
+ */
+export function ActionSkeleton({ rows = 2 }: { rows?: number }) {
+  return (
+    <div className="dot-grid min-h-0 flex-1 animate-pulse overflow-hidden p-4 md:p-6">
+      <div className="mx-auto grid w-full max-w-5xl grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <div className={`flex flex-col gap-4 p-4 ${CARD}`}>
+          <div className="flex items-center justify-between">
+            <Bone className="h-4 w-20" />
+            <Bone className="h-7 w-28 rounded-chip" />
+          </div>
+          {keys(rows, "field").map((k) => (
+            <div
+              key={k}
+              className="rounded-inner border border-border bg-inner-grad p-4"
+            >
+              <Bone className="h-3 w-16" />
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <Bone className="h-8 w-28" />
+                <Bone className="h-8 w-24 rounded-chip" />
+              </div>
+            </div>
+          ))}
+          <Bone className="h-12 w-full rounded-chip" />
+        </div>
+        <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-4">
+          {keys(2, "panel").map((k) => (
+            <div key={k} className={`flex flex-col gap-3 p-4 ${CARD}`}>
+              <Bone className="h-4 w-24" />
+              {keys(4, `${k}-row`).map((r) => (
+                <div key={r} className="flex items-center justify-between">
+                  <Bone className="h-3 w-24" />
+                  <Bone className="h-3 w-16" />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

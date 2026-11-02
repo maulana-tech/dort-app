@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { ActionSkeleton } from "@/components/(main)";
 import { VaultWorkspace } from "@/components/(main)/vault/VaultWorkspace";
 
 export const metadata = {
@@ -8,5 +10,9 @@ export const metadata = {
 };
 
 export default function VaultPage() {
-  return <VaultWorkspace />;
+  return (
+    <Suspense fallback={<ActionSkeleton rows={2} />}>
+      <VaultWorkspace />
+    </Suspense>
+  );
 }

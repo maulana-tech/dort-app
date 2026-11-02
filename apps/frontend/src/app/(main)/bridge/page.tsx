@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { ActionSkeleton } from "@/components/(main)";
 import { BridgeWorkspace } from "@/components/(main)/bridge/BridgeWorkspace";
 
 export const metadata = {
@@ -8,5 +10,9 @@ export const metadata = {
 };
 
 export default function BridgePage() {
-  return <BridgeWorkspace />;
+  return (
+    <Suspense fallback={<ActionSkeleton rows={1} />}>
+      <BridgeWorkspace />
+    </Suspense>
+  );
 }

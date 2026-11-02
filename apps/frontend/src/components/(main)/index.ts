@@ -7,6 +7,7 @@ export { ProtocolWorkspace } from "./explore/ProtocolWorkspace";
 export { CallGraph } from "./graph/CallGraph";
 export { MainShell } from "./shell/MainShell";
 export {
+  ActionSkeleton,
   AtlasSkeleton,
   ExploreSkeleton,
   ProtocolSkeleton,
