@@ -16,3 +16,4 @@ export {
 } from "./shell/Skeletons";
 export { SourcePanel } from "./source/SourcePanel";
 export { TraceWorkspace } from "./trace/TraceWorkspace";
+export { VaultWorkspace } from "./vault/VaultWorkspace";
