@@ -12,8 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   });
   return [
     page("", 1),
-    page("/trace", 0.8),
-    page("/atlas", 0.8),
+    page("/chat", 0.8),
     page("/vault", 0.7),
     page("/bridge", 0.7),
     page("/swap", 0.7),
