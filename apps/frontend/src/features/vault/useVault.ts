@@ -5,6 +5,7 @@ import { type Address, encodeFunctionData, erc20Abi, maxUint256 } from "viem";
 import { ERC20_ABI } from "@/features/bridge/abi";
 import type { HomeChainId } from "@/features/bridge/chains";
 import { publicClient, reason, type Wallet } from "@/features/bridge/useWallet";
+import { codeMissing } from "@/features/bridge/wallet";
 import { VAULT_ABI } from "./abi";
 import type { Side, Unit, VaultDeployment, VaultStep } from "./vault";
 
@@ -28,6 +29,8 @@ export type VaultState = {
   totalSupply: bigint | null;
   allowance: bigint | null;
   paused: boolean;
+  /** the wallet reports the right chain but cannot see the vault: it is on a different network */
+  wrongNetwork: boolean;
   step: VaultStep;
   error: string | null;
   txHash: `0x${string}` | null;
@@ -50,6 +53,7 @@ export function useVault(
   const [totalSupply, setTotalSupply] = useState<bigint | null>(null);
   const [allowance, setAllowance] = useState<bigint | null>(null);
   const [paused, setPaused] = useState(false);
+  const [walletCode, setWalletCode] = useState<string | null>(null);
   const [step, setStep] = useState<VaultStep>("idle");
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
@@ -132,6 +136,29 @@ export function useVault(
     };
   }, [refresh]);
 
+  /**
+   * Ask the wallet's own node what it has at the vault. The page reads chains over their public
+   * RPCs, so a wallet pointed somewhere else still reports the expected chain id — the local
+   * demo, which runs anvil under a real chain's id, makes that the normal case rather than an
+   * exotic one. An empty answer means a transaction would be sent into nothing.
+   */
+  const { codeAt, chainId: walletChain } = wallet;
+  useEffect(() => {
+    if (!vault || !account || walletChain === null) {
+      setWalletCode(null);
+      return;
+    }
+    let live = true;
+    codeAt(vault)
+      .then((c) => {
+        if (live) setWalletCode(c);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [vault, account, codeAt, walletChain]);
+
   const approve = useCallback(async () => {
     if (!vault || !asset) return;
     setError(null);
@@ -197,6 +224,7 @@ export function useVault(
     totalSupply,
     allowance,
     paused,
+    wrongNetwork: codeMissing(walletCode),
     step,
     error,
     txHash,
