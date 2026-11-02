@@ -98,12 +98,12 @@ export function HeroLab({
         {/* the app header's Connect AI capsule (header.css .hdr-pill.lit), the graph icon in
             front. The canvas variant is deliberately not used: this row sits on the mock's own
             white card, where white-on-blue text tokens render invisible. */}
-        <Link href="/atlas" className="group hdr-pill lit ml-auto">
+        <Link href="/chat" className="group hdr-pill lit ml-auto">
           <PhIcon
             d={PH.graph}
             className="size-[15px] transition-transform duration-500 group-hover:scale-110 motion-reduce:transition-none"
           />
-          Open the Atlas
+          Open the Chat
           <PhIcon d={PH.caretRight} className="size-3 text-dim" />
         </Link>
       </div>
