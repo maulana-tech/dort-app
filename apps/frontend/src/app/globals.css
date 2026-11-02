@@ -148,6 +148,22 @@
 }
 
 /* faint dot grid; pan/zoom canvases override background-size/position inline */
+/**
+ * A row that scrolls sideways when it runs out of room, with no scrollbar drawn.
+ *
+ * The app frame clips its overflow, so a row that does not fit is a row whose far end cannot be
+ * reached at all — which is what happened to the route tabs once there were seven of them.
+ */
+@utility rail-x {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior-x: contain;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @utility dot-grid {
   background-color: var(--canvas);
   background-image: radial-gradient(circle, var(--dot) 1px, transparent 1.4px);

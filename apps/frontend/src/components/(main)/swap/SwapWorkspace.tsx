@@ -125,10 +125,10 @@ export function SwapWorkspace() {
 
   return (
     <div className="dot-grid min-h-[calc(100dvh-64px)] w-full overflow-y-auto p-4 md:p-6">
-      <div className="mx-auto grid w-full max-w-5xl items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <div className="mx-auto grid w-full max-w-5xl grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         {/* ── the action ───────────────────────────────────────────────── */}
         <Panel label="Swap" aside={<WalletButton wallet={wallet} />}>
-          <div className="grid gap-3 px-4 pb-4">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-3 px-4 pb-4">
             <AmountField
               id="swap-amount"
               label="You pay"
@@ -302,7 +302,7 @@ export function SwapWorkspace() {
         </Panel>
 
         {/* ── the pool, and what it costs to trade in it ───────────────── */}
-        <div className="grid content-start gap-4">
+        <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-4">
           <Panel
             label="The pool"
             aside={

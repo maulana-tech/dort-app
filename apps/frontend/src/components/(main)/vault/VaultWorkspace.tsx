@@ -175,10 +175,12 @@ export function VaultWorkspace() {
 
   return (
     <div className="dot-grid min-h-[calc(100dvh-64px)] w-full overflow-y-auto p-4 md:p-6">
-      <div className="mx-auto grid w-full max-w-5xl items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      {/* grid-cols-[minmax(0,1fr)]: a grid column is min-content wide by default, so on a phone
+          the card grew past the screen instead of letting its own rows wrap */}
+      <div className="mx-auto grid w-full max-w-5xl grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         {/* ── the action ───────────────────────────────────────────────── */}
         <Panel label="Vault" aside={<WalletButton wallet={wallet} />}>
-          <div className="grid gap-5 px-4 pb-4">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-5 px-4 pb-4">
             <div className="grid gap-2">
               <span className="text-ui-xs text-dim">Chain</span>
               <PillTabs
@@ -331,7 +333,7 @@ export function VaultWorkspace() {
         </Panel>
 
         {/* ── what the numbers are ─────────────────────────────────────── */}
-        <div className="grid content-start gap-4">
+        <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-4">
           <Panel
             label="The vault"
             aside={
