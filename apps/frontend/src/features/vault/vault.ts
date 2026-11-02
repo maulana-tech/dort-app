@@ -169,6 +169,8 @@ export function vaultAction(s: {
   chainName: string;
   /** withdraw only; "shares" burns an exact number of them instead of taking exact assets */
   unit?: Unit;
+  /** the wallet reports the right chain id but has no code at the vault: a different network */
+  wrongNetwork?: boolean;
 }): { label: string; disabled: boolean; why?: string } {
   if (!s.connected) return { label: "Connect wallet", disabled: false };
   if (!s.deployed)
@@ -179,6 +181,14 @@ export function vaultAction(s: {
     };
   if (!s.onRightChain)
     return { label: `Switch to ${s.chainName}`, disabled: false };
+  // the id matches and the vault is still not there, which the local demo makes easy to hit:
+  // anvil runs under a real chain's id, so a wallet on the real testnet looks correct and is not
+  if (s.wrongNetwork)
+    return {
+      label: "Wallet is on another network",
+      disabled: true,
+      why: `Your wallet says ${s.chainName}, but it cannot see the vault. Point it at the node this page is reading — for the local demo, the RPC is http://127.0.0.1:8545.`,
+    };
   if (s.paused)
     return {
       label: "Vault paused",
