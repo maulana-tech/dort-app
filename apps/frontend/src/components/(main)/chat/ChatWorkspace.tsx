@@ -107,6 +107,18 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
   const frames = test?.frames ?? [];
   const _maxGas = Math.max(1, ...frames.map((f) => f.gas ?? 0));
 
+  // put back the thread this browser was in. Once only, and only into an empty chat: a resume
+  // that fired again after the list settled would wipe whatever had been typed since.
+  const resumed = useRef(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the saved list arriving is the trigger
+  useEffect(() => {
+    if (resumed.current) return;
+    const saved = history.resume();
+    if (!saved?.length) return;
+    resumed.current = true;
+    chat.load(saved);
+  }, [history.list]);
+
   // keep the open thread saved as it grows; an unanswered question is not kept (worthSaving)
   // biome-ignore lint/correctness/useExhaustiveDependencies: the turns' content is the trigger
   useEffect(() => {
@@ -223,6 +235,8 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
     dropSubject();
   };
   const empty = chat.turns.length === 0;
+  // the answer the Context panel describes: the last one the assistant gave
+  const last = [...chat.turns].reverse().find((t) => t.role === "assistant");
 
   return (
     <div className="flex min-h-0 flex-1 gap-3 px-3 pb-3">
@@ -510,11 +524,22 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
                       : "max-w-[92%] justify-self-start rounded-card bg-raised px-3.5 py-2.5 text-[13px] text-body leading-relaxed"
                   }
                 >
-                  <span className="whitespace-pre-wrap break-words">
-                    {t.content}
-                  </span>
+                  {/* nothing said yet: three dots rather than an empty bubble or a spinner —
+                      the reader is waiting for a reply, not for the app */}
+                  {t.role === "assistant" && !t.content && chat.busy ? (
+                    <span className="ai-dots text-muted" aria-label="Thinking">
+                      <i />
+                      <i />
+                      <i />
+                    </span>
+                  ) : (
+                    <span className="whitespace-pre-wrap break-words">
+                      {t.content}
+                    </span>
+                  )}
                   {t.role === "assistant" &&
                     chat.busy &&
+                    t.content &&
                     t === chat.turns[chat.turns.length - 1] && (
                       <span className="ml-1 text-dim">▍</span>
                     )}
@@ -703,6 +728,62 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
 
           {right === "context" ? (
             <div className="min-h-0 flex-1 overflow-auto px-3 pb-3">
+              {/* What the last answer cost and how it got there. The working comes before the
+                  grounding on purpose: a reader deciding whether to believe a reading of their
+                  contract is better served by the reasoning than by the conclusion, and this is
+                  the only place either is visible. */}
+              {last && (
+                <section className="mb-3 rounded-inner border border-border bg-inner-grad p-3">
+                  <p className="mb-2 flex items-center gap-2 text-[13px] text-fg">
+                    <PhIcon d={PH.sparkle} className="size-[15px] text-muted" />
+                    How this answer was made
+                  </p>
+                  <dl className="mb-2 grid gap-1">
+                    {[
+                      ["Answered by", chat.hosted ? "this Dort" : "your model"],
+                      ...(last.usage
+                        ? ([
+                            [
+                              "Tokens in",
+                              last.usage.sent.toLocaleString("en-US"),
+                            ],
+                            [
+                              "Tokens back",
+                              last.usage.back.toLocaleString("en-US"),
+                            ],
+                          ] as [string, string][])
+                        : []),
+                    ].map(([k, v]) => (
+                      <div
+                        key={k}
+                        className="flex items-baseline justify-between"
+                      >
+                        <dt className="text-[12px] text-muted">{k}</dt>
+                        <dd className="font-mono text-[12.5px] text-fg tabular-nums">
+                          {v}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                  {last.thinking ? (
+                    <>
+                      <p className="mt-2.5 mb-1 text-[12px] text-muted">
+                        Its working
+                      </p>
+                      <p className="max-h-[260px] overflow-auto whitespace-pre-wrap break-words rounded-tile bg-raised px-2.5 py-2 text-[12px] text-body leading-relaxed">
+                        {last.thinking}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="mt-2 text-[12px] text-dim leading-normal">
+                      This model did not send its working — some do and some do
+                      not, and an empty box here would read as a failure rather
+                      than a difference between models.
+                    </p>
+                  )}
+                </section>
+              )}
+
               <p className="mb-1 flex items-center gap-2 text-[13px] text-fg">
                 <PhIcon d={PH.code} className="size-[15px] text-muted" />
                 What it answers from

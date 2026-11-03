@@ -259,3 +259,44 @@ body {
     cursor: not-allowed;
   }
 }
+
+/* "working on it", in the assistant's own bubble: three dots, while the answer has no text yet.
+   A spinner says the app is busy; these say someone is composing a reply, which is the truer
+   thing and the one a reader is waiting for. */
+.ai-dots {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  height: 1.1em;
+}
+.ai-dots > i {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.3;
+  animation: ai-dots 1.05s ease-in-out infinite;
+}
+.ai-dots > i:nth-child(2) {
+  animation-delay: 0.16s;
+}
+.ai-dots > i:nth-child(3) {
+  animation-delay: 0.32s;
+}
+@keyframes ai-dots {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 0.85;
+    transform: translateY(-2px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-dots > i {
+    animation: none;
+    opacity: 0.55;
+  }
+}

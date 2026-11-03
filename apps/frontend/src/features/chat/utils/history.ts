@@ -12,6 +12,16 @@ import type { Turn } from "./chat";
 
 export const HISTORY_KEY = "dort.chat";
 
+/**
+ * Which saved conversation is the one on screen.
+ *
+ * The threads themselves were already kept; what a refresh lost was *which* of them you were in,
+ * so the page came back empty with your work one tab away. A key of its own rather than a field
+ * in the list: it changes on every send, and rewriting the whole history to record a cursor is
+ * both wasteful and a good way to lose the history to a failed write.
+ */
+export const OPEN_KEY = "dort.chat.open";
+
 /** How many conversations are kept; the oldest fall off the end. */
 export const HISTORY_MAX = 30;
 

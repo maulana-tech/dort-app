@@ -36,6 +36,18 @@ export type Turn = {
    * digest is never prefixed onto it, and never onto the turns after it either.
    */
   sent?: string;
+  /**
+   * The model's own working, when it sends any. Kept beside the answer rather than inside it:
+   * a reader deciding whether to trust a reading of their contract is better served by the
+   * reasoning than by the conclusion, but the conclusion is what they asked for.
+   *
+   * Not every model sends it. Probed on the hosted route: minimax streams `reasoning`, while
+   * qwen, zai and deepseek send none at all — so the panel has to say "this model did not show
+   * its working" rather than leave an empty box that reads as a failure.
+   */
+  thinking?: string;
+  /** what the reply cost, when the provider reports it */
+  usage?: { sent: number; back: number };
 };
 
 /**

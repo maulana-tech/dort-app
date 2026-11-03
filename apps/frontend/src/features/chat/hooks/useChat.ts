@@ -109,10 +109,29 @@ export function useChat(cfg: AiConfig, digest: RunDigest): ChatState {
 
       void (async () => {
         try {
+          // the working and the cost land on the same turn as the answer, so the panel beside
+          // it is always describing the reply it is next to and never the one before
+          const onLast = (edit: (t: Turn) => Turn) =>
+            setTurns((prev) => {
+              const copy = [...prev];
+              const last = copy[copy.length - 1];
+              if (last?.role === "assistant")
+                copy[copy.length - 1] = edit(last);
+              return copy;
+            });
+
           for await (const piece of askStream(
             cfg,
             toMessages(digest, next),
             ctrl.signal,
+            {
+              onThinking: (t) =>
+                onLast((last) => ({
+                  ...last,
+                  thinking: (last.thinking ?? "") + t,
+                })),
+              onUsage: (u) => onLast((last) => ({ ...last, usage: u })),
+            },
           )) {
             setTurns((prev) => {
               const copy = [...prev];

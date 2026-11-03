@@ -361,24 +361,80 @@ export function chatRequest(
 
 type Json = Record<string, unknown> & {
   error?: { message?: string } | string;
-  delta?: { text?: string };
+  delta?: { text?: string; thinking?: string };
   content?: { text?: string }[];
-  choices?: { delta?: { content?: string }; message?: { content?: string } }[];
+  choices?: {
+    delta?: {
+      content?: string;
+      reasoning?: string;
+      reasoning_content?: string;
+    };
+    message?: { content?: string; reasoning?: string };
+  }[];
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    input_tokens?: number;
+    output_tokens?: number;
+  };
+  message?: {
+    usage?: {
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      input_tokens?: number;
+      output_tokens?: number;
+    };
+  };
 };
 
-/** Text from one SSE `data:` payload or a whole non-streamed reply (either API shape); throws on an error payload. */
-export function textOf(raw: string): string {
-  if (raw === "[DONE]") return "";
+/** What one reply cost, in the two shapes' two spellings. */
+export type Usage = { sent: number; back: number };
+
+/**
+ * One SSE payload, split into what the model is saying and what it is thinking.
+ *
+ * Both shapes carry the second separately from the first: Anthropic streams `delta.thinking`,
+ * and the OpenAI-shaped route `delta.reasoning` (`reasoning_content` on DeepSeek). It was being
+ * dropped on the floor, which is a shame — a reader deciding whether to trust an answer about
+ * their money is better served by the working than by the conclusion.
+ */
+export function partOf(raw: string): {
+  text: string;
+  thinking: string;
+  usage: Usage | null;
+} {
+  if (raw === "[DONE]") return { text: "", thinking: "", usage: null };
   const j = JSON.parse(raw) as Json;
   if (j.error)
     throw new Error(
       typeof j.error === "string" ? j.error : (j.error.message ?? "error"),
     );
-  return (
-    j.delta?.text ??
-    j.choices?.[0]?.delta?.content ??
-    j.choices?.[0]?.message?.content ??
-    j.content?.map((b) => b.text ?? "").join("") ??
-    ""
-  );
+  const c = j.choices?.[0];
+  // Anthropic reports the two halves in two different frames (message_start, then
+  // message_delta); the OpenAI shape sends both at the end, and only when the request asked
+  // for them. Either way a number that arrives is kept and a missing one stays missing.
+  const u = j.usage ?? j.message?.usage;
+  const sent = u?.prompt_tokens ?? u?.input_tokens;
+  const back = u?.completion_tokens ?? u?.output_tokens;
+  return {
+    usage:
+      sent === undefined && back === undefined
+        ? null
+        : { sent: sent ?? 0, back: back ?? 0 },
+    text:
+      j.delta?.text ??
+      c?.delta?.content ??
+      c?.message?.content ??
+      j.content?.map((b) => b.text ?? "").join("") ??
+      "",
+    thinking:
+      j.delta?.thinking ??
+      c?.delta?.reasoning ??
+      c?.delta?.reasoning_content ??
+      c?.message?.reasoning ??
+      "",
+  };
 }
+
+/** Text from one SSE `data:` payload or a whole non-streamed reply (either API shape); throws on an error payload. */
+export const textOf = (raw: string): string => partOf(raw).text;

@@ -68,5 +68,8 @@ export const upstreamBody = (
         model,
         max_tokens: maxTokens,
         stream: true,
+        // without this the OpenAI-shaped stream never reports what the reply cost; probed
+        // against the live host, which accepts the field and sends usage in the last frame
+        stream_options: { include_usage: true },
         messages: [{ role: "system", content: system }, ...messages],
       };

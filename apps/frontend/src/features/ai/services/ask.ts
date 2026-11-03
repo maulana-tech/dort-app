@@ -1,5 +1,11 @@
 import type { AiConfig } from "../types";
-import { type ChatMessage, chatRequest, textOf } from "../utils/provider";
+import {
+  type ChatMessage,
+  chatRequest,
+  partOf,
+  textOf,
+  type Usage,
+} from "../utils/provider";
 
 /** Readable error from a failed call; never echoes the request (it carries the key). */
 async function failure(res: Response): Promise<Error> {
@@ -25,11 +31,23 @@ function reach(cfg: AiConfig, e: unknown): Error {
   );
 }
 
+/**
+ * What a stream tells us besides the answer: the model's own working, and what the reply cost.
+ *
+ * A callback rather than a second thing to yield, so every existing caller is untouched and a
+ * page that wants to show the working opts in by passing one.
+ */
+export type StreamMeta = {
+  onThinking?: (piece: string) => void;
+  onUsage?: (usage: Usage) => void;
+};
+
 /** Streams the answer text, browser → provider directly (your Claude: through this app's own local bridge). */
 export async function* askStream(
   cfg: AiConfig,
   user: string | ChatMessage[],
   signal?: AbortSignal,
+  meta?: StreamMeta,
 ): AsyncGenerator<string> {
   const { url, init } = chatRequest(cfg, user);
   let res: Response;
@@ -49,8 +67,10 @@ export async function* askStream(
     buf = lines.pop() ?? "";
     for (const l of lines) {
       if (!l.startsWith("data:")) continue;
-      const t = textOf(l.slice(5).trim());
-      if (t) yield t;
+      const part = partOf(l.slice(5).trim());
+      if (part.thinking) meta?.onThinking?.(part.thinking);
+      if (part.usage) meta?.onUsage?.(part.usage);
+      if (part.text) yield part.text;
     }
   }
 }

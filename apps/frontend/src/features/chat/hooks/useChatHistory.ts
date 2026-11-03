@@ -5,6 +5,7 @@ import type { Turn } from "../utils/chat";
 import {
   type Conversation,
   HISTORY_KEY,
+  OPEN_KEY,
   parseHistory,
   remove as removeOne,
   titleOf,
@@ -30,6 +31,8 @@ export type ChatHistory = {
   /** start a new thread: the next save writes a new row rather than editing this one */
   fresh: () => void;
   open: (id: string) => Turn[] | null;
+  /** the thread this browser was in when it last left, once the list has loaded */
+  resume: () => Turn[] | null;
   remove: (id: string) => void;
   clear: () => void;
 };
@@ -45,9 +48,22 @@ export function useChatHistory(): ChatHistory {
   useEffect(() => {
     try {
       setList(parseHistory(localStorage.getItem(HISTORY_KEY)));
+      const open = localStorage.getItem(OPEN_KEY);
+      if (open) {
+        id.current = open;
+        setCurrent(open);
+      }
     } catch {
       /* private window, blocked site data: start empty rather than fail */
     }
+  }, []);
+
+  /** remembering the cursor must never be able to take the page down with it */
+  const mark = useCallback((value: string | null) => {
+    try {
+      if (value) localStorage.setItem(OPEN_KEY, value);
+      else localStorage.removeItem(OPEN_KEY);
+    } catch {}
   }, []);
 
   const write = useCallback((next: Conversation[]) => {
@@ -69,6 +85,7 @@ export function useChatHistory(): ChatHistory {
       turns,
     };
     setCurrent(row.id);
+    mark(row.id);
     setList((prev) => {
       const next = upsert(prev, row);
       try {
@@ -81,7 +98,8 @@ export function useChatHistory(): ChatHistory {
   const fresh = useCallback(() => {
     id.current = newId();
     setCurrent(null);
-  }, []);
+    mark(null);
+  }, [mark]);
 
   const open = useCallback(
     (openId: string) => {
@@ -89,9 +107,20 @@ export function useChatHistory(): ChatHistory {
       if (!found) return null;
       id.current = found.id;
       setCurrent(found.id);
+      mark(found.id);
       return found.turns;
     },
-    [list],
+    [list, mark],
+  );
+
+  /**
+   * The thread to put back on screen after a refresh, or null when there is none to put back.
+   * Reads from `list`, so it only answers once storage has been read — the caller waits for it.
+   */
+  const resume = useCallback(
+    () =>
+      current ? (list.find((c) => c.id === current)?.turns ?? null) : null,
+    [current, list],
   );
 
   const remove = useCallback(
@@ -107,5 +136,5 @@ export function useChatHistory(): ChatHistory {
     fresh();
   }, [write, fresh]);
 
-  return { list, current, save, fresh, open, remove, clear };
+  return { list, current, save, fresh, open, resume, remove, clear };
 }
