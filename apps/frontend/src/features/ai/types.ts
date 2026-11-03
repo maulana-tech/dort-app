@@ -4,8 +4,10 @@ import type { AiQuestion } from "../atlas/types";
 /** "claude" = the user's own Claude Code and its subscription login, through the local bridge (app/api/claude). */
 /** "bedrock" = the user's OWN AWS account, with their own Bedrock API key. Dort holds no AWS key: a
  *  hosted Bedrock call would put an auditor's unpublished contract source through our account. */
+/** "dort" = this deployment's own Bedrock, paid for by whoever runs it (app/api/bedrock). */
 export type AiKind =
   | "none"
+  | "dort"
   | "local"
   | "claude"
   | "anthropic"
