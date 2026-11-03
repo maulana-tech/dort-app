@@ -231,7 +231,10 @@ export function BigWords({
               {/* every slide is the same card: one height for all three, so the row does not
                   change shape as it moves and nothing is taller than the window that clips it.
                   Sized off the viewport, since that window is exactly one screen tall. */}
-              <article className="grid items-center gap-8 rounded-[32px] bg-white p-6 shadow-float md:h-[min(78svh,720px)] md:grid-cols-[minmax(0,clamp(260px,26vw,380px))_1fr] md:gap-12 md:p-14">
+              <article
+                data-nav="light"
+                className="grid items-center gap-8 rounded-[32px] bg-white p-6 shadow-float md:h-[min(78svh,720px)] md:grid-cols-[minmax(0,clamp(260px,26vw,380px))_1fr] md:gap-12 md:p-14"
+              >
                 <div data-lp="head" className="min-w-0">
                   <p className="mb-4 font-mono text-[12px] text-primary/55 tracking-[0.08em]">
                     {`${String(i + 1).padStart(2, "0")} / ${String(words.length).padStart(2, "0")}`}

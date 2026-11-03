@@ -156,6 +156,7 @@ export function ProductTabs({ chat }: { chat: ChatDemo }) {
         role="tabpanel"
         data-lp="frame"
         aria-label={`${view.label}: the ${view.label} view of the sample DortVault audit, live`}
+        data-nav="light"
         className="lp-shot pointer-events-none relative h-[440px] w-full max-w-[1180px] select-none md:h-[620px]"
       >
         <Window

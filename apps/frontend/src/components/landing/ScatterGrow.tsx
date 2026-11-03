@@ -177,7 +177,7 @@ export function ScatterGrow({
             reads that file and draws it — it never runs analysis of its own, so
             there is nothing of ours between you and what Foundry said.
           </p>
-          <p className="mt-4 self-start rounded-full border border-white/[.12] bg-white/[.06] px-3.5 py-1.5 font-mono text-[12.5px] text-on-canvas">
+          <p className="lp-bento-cmd mt-4 self-start rounded-full border border-white/[.12] bg-white/[.06] px-3.5 py-1.5 font-mono text-[12.5px] text-on-canvas">
             node dort-export.mjs
           </p>
         </article>

@@ -15,6 +15,7 @@ import { ChainLogo, LogoText, PH, PhIcon, SOLIDITY } from "@/components/ui";
 import { GitHubMark } from "./GitHubMark";
 import { HeroExit } from "./Haze";
 import { HeroChat } from "./HeroChat";
+import { NavTone } from "./NavTone";
 import { ProductTabs } from "./ProductTabs";
 import { ScatterGrow } from "./ScatterGrow";
 import { chatDemo } from "./stats";
@@ -47,7 +48,8 @@ export function Nav({ active = "product" }: { active?: "product" | "docs" }) {
     // across the page, and this one is meant to float. The cost is that the white wordmark has
     // nothing behind it over the landing's white slides; a gradient scrim here is the fix if
     // that ever matters more than the seam does.
-    <nav className="lh-up lh-nav-neg sticky top-0 z-50 flex h-[76px] items-center px-4 md:px-6">
+    <nav className="lh-up lh-nav sticky top-0 z-50 flex h-[76px] items-center px-4 md:px-6">
+      <NavTone />
       {/* the bar spans the viewport so it reads as one edge; its contents stay on the 1240
           column, and the hairline and the two '+' marks hang off that column, not the window */}
       <div className="relative mx-auto flex h-full w-full max-w-[1240px] items-center justify-between">
@@ -63,10 +65,10 @@ export function Nav({ active = "product" }: { active?: "product" | "docs" }) {
               <a
                 href={i.href}
                 aria-current={i.on ? "page" : undefined}
-                className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] transition-colors ${
+                className={`lh-nav-link flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] ${
                   i.on
-                    ? "bg-white/[.1] text-on-canvas shadow-[inset_0_1px_0_rgba(255,255,255,.1)]"
-                    : "text-on-canvas-muted hover:text-on-canvas"
+                    ? "bg-white/[.1] shadow-[inset_0_1px_0_rgba(255,255,255,.1)]"
+                    : ""
                 }`}
               >
                 {i.mark && <GitHubMark className="size-3.5" />}
@@ -112,14 +114,14 @@ export function Nav({ active = "product" }: { active?: "product" | "docs" }) {
         </div>
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/[.08] to-transparent"
+          className="lh-nav-rule pointer-events-none absolute inset-x-0 bottom-0 h-px"
         />
         {[0, 1].map((k) => (
           <svg
             key={k}
             aria-hidden="true"
             viewBox="0 0 11 11"
-            className={`pointer-events-none absolute -bottom-[5px] hidden size-[11px] text-white/30 md:block ${k ? "right-0 translate-x-1/2" : "left-0 -translate-x-1/2"}`}
+            className={`lh-nav-plus pointer-events-none absolute -bottom-[5px] hidden size-[11px] md:block ${k ? "right-0 translate-x-1/2" : "left-0 -translate-x-1/2"}`}
             stroke="currentColor"
           >
             <path d="M0 5.5h11M5.5 0v11" />

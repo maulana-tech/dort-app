@@ -16,7 +16,10 @@ export default function DocsLayout({ children }: LayoutProps<"/docs">) {
         <DocsSidebar />
         {/* The article is a reading surface, so it is a white panel on the blue page; the sidebar
             stays on the blue and uses the on-canvas tones. */}
-        <main className="min-w-0 flex-1 rounded-card border border-border bg-surface px-5 py-6 shadow-soft md:px-8 md:py-8">
+        <main
+          data-nav="light"
+          className="min-w-0 flex-1 rounded-card border border-border bg-surface px-5 py-6 shadow-soft md:px-8 md:py-8"
+        >
           {children}
         </main>
       </div>

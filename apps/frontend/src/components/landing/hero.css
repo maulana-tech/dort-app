@@ -108,18 +108,37 @@
   }
 }
 
-/* The landing nav has no bar behind it, so it crosses the page's white cards as well as its
-   blue. `difference` paints every pixel of it as the exact inverse of whatever is underneath:
-   over the blue canvas it comes out warm, over a white slide it comes out dark, and there is no
-   backdrop it can vanish into. That is the effect, not a side effect — the nav is never simply
-   white any more.
+/* The nav carries no bar, so it crosses the page's light panels as well as its blue. It swaps
+   the two text tokens this app already has rather than inverting anything: --on-canvas is the
+   colour for text on the blue, --fg the colour for text on a light panel, and NavTone says
+   which is underneath. (mix-blend-mode: difference was tried and does guarantee contrast, but
+   what it guarantees is the inverse of the backdrop — and the inverse of #0647b3 is amber.) */
+.lh-nav {
+  --nav-fg: var(--on-canvas);
+  --nav-muted: var(--on-canvas-dim);
+  --nav-rule: rgb(255 255 255 / 0.08);
+}
 
-   It has to sit on the <nav> itself. An element blends with what is painted beneath it inside
-   its PARENT stacking context, and position:sticky always makes one: put the blend on the links
-   instead and they would blend against the nav's own transparent background, which changes
-   nothing at all.
+html[data-nav-light] .lh-nav {
+  --nav-fg: var(--fg);
+  --nav-muted: var(--muted);
+  --nav-rule: rgb(3 28 78 / 0.12);
+}
 
-   Unconditional: this is a contrast trick, not decoration, and nothing about it moves. */
-.lh-nav-neg {
-  mix-blend-mode: difference;
+.lh-nav-link {
+  color: var(--nav-muted);
+  transition: color 0.25s;
+}
+.lh-nav-link:hover,
+.lh-nav-link[aria-current] {
+  color: var(--nav-fg);
+}
+
+/* the hairline and the two '+' marks follow the same pair, so the bar's furniture does not
+   outlive its text over a white panel */
+.lh-nav-rule {
+  background: linear-gradient(90deg, transparent, var(--nav-rule), transparent);
+}
+.lh-nav-plus {
+  color: var(--nav-rule);
 }
