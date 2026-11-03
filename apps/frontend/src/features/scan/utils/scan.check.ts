@@ -311,6 +311,18 @@ assert.match(
   /carrying 1000 wei/,
 );
 assert.match(tx, /CALL .*\.swapExactTokensForTokens/);
+// the address goes in whole. It was abbreviated once; a reviewer shown "0x0000…0001" guessed
+// which precompile it was and named the wrong one, and built a finding on top of that.
+assert.match(
+  tx,
+  /CALL 0xrouter\./,
+  "no ellipsis in the address the model reasons about",
+);
+assert.doesNotMatch(tx, /0x\w{0,6}…/, "nothing in the call lines is elided");
+// and the gas figures are labelled as the chain's own. Portaldot's are weight-based and huge;
+// a reviewer read them as Ethereum gas and reported "implausibly high" as a candidate finding.
+assert.match(tx, /Gas is in this chain's own units/);
+assert.match(tx, /not comparable to mainnet costs/);
 assert.match(tx, /\n {2}STATICCALL/, "depth is indentation the model can read");
 assert.match(tx, /\[ERC20: transfer amount exceeds balance\]/);
 

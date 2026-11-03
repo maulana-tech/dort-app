@@ -93,9 +93,6 @@ const hex = (v: string | undefined): number | null => {
 const selectorOf = (input: string | undefined): string =>
   input && input.length >= 10 ? input.slice(0, 10).toLowerCase() : "";
 
-const short = (a: string | undefined) =>
-  a && a.length > 10 ? `${a.slice(0, 6)}…${a.slice(-4)}` : (a ?? "");
-
 /**
  * The tracer's tree as the flat, depth-tagged rows the app already draws (TraceRow).
  *
@@ -213,7 +210,10 @@ const frameLines = (frames: Frame[], events: number[] = [], max = 120) => {
     .slice(0, max)
     .map((f, i) => {
       const n = events[i] ?? 0;
-      return `${"  ".repeat(f.d)}${f.kind} ${short(f.to)}.${f.fn}${
+      // the address goes in whole. Abbreviating it saved about thirty characters and cost a
+      // reviewer a guess: shown `0x0000…0001`, a model inferred which precompile it was and
+      // named the wrong one. Four honest bytes beat a guessed function name for the same reason.
+      return `${"  ".repeat(f.d)}${f.kind} ${f.to || "(none)"}.${f.fn}${
         f.ok ? "" : ` [${f.status}]`
       }${f.gas ? ` (${f.gas} gas)` : ""}${n ? ` emitted ${n}` : ""}`;
     })
@@ -258,6 +258,10 @@ export function scanPrompt(input: ScanInput, facts: ScanFacts): string {
       "",
       "The calls it actually made, indented by depth, with the number of events each emitted (from the node's own tracer):",
       frameLines(facts.frames ?? [], facts.events),
+      "",
+      // measured, not theorised: a reviewer handed this trace reported Portaldot's weight-based
+      // figures as "implausibly high gas" and ranked it as a finding. The units are the chain's.
+      "Gas is in this chain's own units, which are not Ethereum's and are not comparable to mainnet costs. Treat a figure as evidence only against another figure in this same trace.",
     );
   }
   head.push(
