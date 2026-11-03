@@ -55,46 +55,55 @@ const WORDS_MQ =
 function bigWords(root: HTMLElement, gsap: Gsap) {
   const q = gsap.utils.selector(root);
   const [track] = q("[data-lp=track]");
-  const slides = q("[data-lp=slide]");
+  const slides = q("[data-lp=slide]") as HTMLElement[];
   const n = slides.length;
   if (!track || n < 2) return;
 
-  // the distance is (n-1) stage widths. Measured, not expressed as a percentage: xPercent is a
-  // share of the element's OWN width, and this track is one stage wide with its slides
-  // overflowing it — so the usual -100*(n-1)/n would have moved two thirds of one screen
-  // instead of two whole ones. offsetWidth is re-read on every refresh (invalidateOnRefresh),
-  // so a resize cannot leave the row between slides.
+  // one step is a slide plus the gap, read off the slides themselves rather than computed from
+  // a width — the gap is part of the distance, and the two cannot drift apart this way
+  const step = () => slides[1].offsetLeft - slides[0].offsetLeft;
+
+  // Each slide moves for one beat and then holds still for one. Without the hold the row never
+  // stops: a card is level for an instant on the way past and there is no moment at which it
+  // can be read, which is the whole point of putting it there.
+  const MOVE = 1;
+  const HOLD = 1;
+  const total = n * HOLD + (n - 1) * MOVE;
+  // where each hold sits, as a share of the timeline — the places the scroll should settle
+  const stops = slides.map((_, k) => (k * (HOLD + MOVE) + HOLD / 2) / total);
+
   const tl = gsap.timeline({
+    defaults: { ease: "none" },
     scrollTrigger: {
       trigger: root,
       start: "top top",
-      // one screen of scrolling per slide change: enough that a flick cannot skip one
-      end: () => `+=${(n - 1) * 100}%`,
+      // roughly a screen of scrolling per slide, holds included, so the section is read at the
+      // pace of the page rather than demanding a long drag to get through three cards
+      end: () => `+=${n * 110}%`,
       pin: true,
       scrub: 1,
       invalidateOnRefresh: true,
       anticipatePin: 1,
+      // and it comes to rest on a card, never between two
+      snap: {
+        snapTo: stops,
+        duration: { min: 0.15, max: 0.45 },
+        delay: 0.06,
+        ease: "power1.inOut",
+      },
     },
   });
-  // one time unit per slide change, so a letter tween can be placed at the moment its slide
-  // arrives rather than at a fraction nobody can read
-  tl.to(
-    track,
-    {
-      x: () => -(n - 1) * (track as HTMLElement).offsetWidth,
-      ease: "none",
-      duration: n - 1,
-    },
-    0,
-  );
 
-  // each word's letters tumble in as its slide comes level. The first slide is already on
-  // screen when the pin takes hold, so its letters are left alone: a fromTo would hide them at
-  // setup and the scrub's catch-up would show a wordless card for a beat.
-  slides.forEach((_, i) => {
-    if (i === 0) return;
+  slides.forEach((_, k) => {
+    // the hold: the card stands still and can be read
+    tl.to({}, { duration: HOLD });
+    if (k === n - 1) return;
+    // then the row steps one slide along. The distance is measured at every refresh
+    // (invalidateOnRefresh), so a resize cannot leave it between two cards.
+    tl.to(track, { x: () => -(k + 1) * step(), duration: MOVE });
+    // the next word's letters tumble in as its card comes level
     tl.fromTo(
-      q(`[data-lp=slide]:nth-child(${i + 1}) [data-lp=letter]`),
+      q(`[data-lp=slide]:nth-child(${k + 2}) [data-lp=letter]`),
       {
         yPercent: -120,
         rotate: (j: number) => TILT[j % TILT.length],
@@ -106,9 +115,9 @@ function bigWords(root: HTMLElement, gsap: Gsap) {
         autoAlpha: 1,
         ease: "bounce.out",
         stagger: 0.08,
-        duration: 0.5,
+        duration: MOVE * 0.75,
       },
-      Math.max(0, i - 0.45),
+      "<0.25",
     );
   });
 
@@ -128,7 +137,7 @@ function bigWords(root: HTMLElement, gsap: Gsap) {
           easeEach: "sine.inOut",
         },
         rotate: i % 2 ? -30 : 30,
-        duration: tl.duration() || 1,
+        duration: total,
         ease: "none",
       },
       0,

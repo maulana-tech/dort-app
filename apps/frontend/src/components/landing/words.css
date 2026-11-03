@@ -31,12 +31,15 @@
     flex-direction: row;
     flex-wrap: nowrap;
     width: 100%;
-    gap: 0;
+    gap: 1.5rem;
     will-change: transform;
   }
 
+  /* a shade narrower than the window, so the next card shows 2.5rem of itself at the right
+     edge: the gap is then visible at rest, not only while the row is moving, and "there is
+     more over here" is told by the layout instead of having to be discovered */
   .lp-words-slide {
-    flex: 0 0 100%;
+    flex: 0 0 calc(100% - 4rem);
     min-width: 0;
   }
 }
