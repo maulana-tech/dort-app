@@ -206,14 +206,19 @@ export function ScatterGrow({
           </ul>
         </article>
 
+        {/* no mark: the Solidity one sat here while this card was about source lines, and a
+            logo that no longer matches its card is worse than none */}
         <article data-lp="card" className="lp-bento lg:col-span-2">
-          <span className="lp-bento-mark">{marks[1]?.node}</span>
-          <h3 className="mt-4 font-medium text-[18px] text-on-canvas">
-            Back to the line
+          <h3 className="font-medium text-[18px] text-on-canvas">
+            Or a transaction that already happened
           </h3>
           <p className="mt-2 text-[13.5px] text-on-canvas-muted leading-relaxed">
-            solc source maps put every call back on the line of Solidity that
-            made it, so a trace reads as your code and not as addresses.
+            Paste a hash and Dort asks the node for the call tree —{" "}
+            <code className="font-mono text-[12.5px]">
+              debug_traceTransaction
+            </code>{" "}
+            on Portaldot V3 — then reads what the transaction actually did,
+            rather than guessing from a function name.
           </p>
         </article>
 
