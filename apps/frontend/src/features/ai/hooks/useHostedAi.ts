@@ -14,26 +14,42 @@ import { useEffect, useState } from "react";
  * dozen requests. Until the answer arrives the offer is not made, so a Dort without a key never
  * flashes a provider it does not have.
  */
-let cached: Promise<boolean> | null = null;
+export type HostedAi = {
+  ready: boolean;
+  /** the models the operator will pay for, their default first; empty when not offered */
+  models: string[];
+};
 
-const probe = (): Promise<boolean> => {
+const OFF: HostedAi = { ready: false, models: [] };
+let cached: Promise<HostedAi> | null = null;
+
+const probe = (): Promise<HostedAi> => {
   cached ??= fetch("/api/bedrock", { method: "GET" })
-    .then((r) => (r.ok ? r.json() : { ready: false }))
-    .then((j: { ready?: unknown }) => j.ready === true)
-    .catch(() => false);
+    .then((r) => (r.ok ? r.json() : OFF))
+    .then((j: { ready?: unknown; models?: unknown }) =>
+      j.ready === true
+        ? {
+            ready: true,
+            models: Array.isArray(j.models)
+              ? j.models.filter((m): m is string => typeof m === "string")
+              : [],
+          }
+        : OFF,
+    )
+    .catch(() => OFF);
   return cached;
 };
 
-export function useHostedAi(): boolean {
-  const [ready, setReady] = useState(false);
+export function useHostedAi(): HostedAi {
+  const [state, setState] = useState<HostedAi>(OFF);
   useEffect(() => {
     let live = true;
     void probe().then((r) => {
-      if (live) setReady(r);
+      if (live) setState(r);
     });
     return () => {
       live = false;
     };
   }, []);
-  return ready;
+  return state;
 }
