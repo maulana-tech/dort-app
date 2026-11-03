@@ -3,10 +3,10 @@
 import { erc20Abi } from "viem";
 import { CHAINS, chainName } from "@/features/bridge/chains";
 import { publicClient } from "@/features/bridge/useWallet";
-import { knownSelectors } from "./selectors";
+import { knownEvents, knownSelectors } from "./selectors";
 import {
   type CallNode,
-  readTrace,
+  flattenTrace,
   type ScanFacts,
   type ScanInput,
 } from "./utils/scan";
@@ -108,10 +108,8 @@ export async function gatherFacts(
       hash,
       { tracer: "callTracer" },
     ]);
-    const { frames, events } = readTrace(root, knownSelectors());
-    facts.frames = frames;
-    facts.events = events;
-    if (!frames.length) traceNote = "The node returned an empty trace.";
+    facts.frames = flattenTrace(root, knownSelectors(), knownEvents());
+    if (!facts.frames.length) traceNote = "The node returned an empty trace.";
   } catch (e) {
     traceNote = `No call tree: this chain's RPC refused debug_traceTransaction (${(e as Error).message}). The review below reads the transaction's envelope only.`;
   }

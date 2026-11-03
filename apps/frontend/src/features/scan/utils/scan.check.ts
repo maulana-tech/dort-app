@@ -1,16 +1,18 @@
 // node --experimental-strip-types src/features/scan/utils/scan.check.ts
 import assert from "node:assert/strict";
 import {
+  addressesIn,
   type CallNode,
   detect,
+  displayFrames,
   EXAMPLES,
   flattenTrace,
   joinSources,
   MAX_SOURCE,
   NOT_CHECKED,
-  readTrace,
   type ScanInput,
   scanPrompt,
+  shortAddr,
   traceSummary,
   whyNot,
 } from "./scan.ts";
@@ -164,16 +166,26 @@ assert.equal(
   "an unknown type degrades to CALL rather than breaking the row",
 );
 
-// ── the events each call emitted ───────────────────────────────────────────────────────────
-// Portaldot's node returns them per call. A transfer that emitted nothing is a finding on its
-// own, and it is invisible in a trace that lists only the calls — so the count rides along.
-// It is kept beside the rows, not inside them: Frame mirrors the exporter's shape.
-const withLogs = readTrace(
+// ── events are rows, not a count ───────────────────────────────────────────────────────────
+// The tracer returns the logs each call emitted. A count beside the call answered "how many"
+// while hiding the only interesting part: which. A token movement with no Transfer event is a
+// finding, and it is invisible unless the events are in the trace. So they become EVENT rows
+// nested under the call that emitted them — exactly what the exporter does.
+const TRANSFER =
+  "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+const withLogs = flattenTrace(
   {
     type: "CALL",
     to: "0xvault",
     input: "0xb6b55f25",
-    logs: [{ address: "0xvault", topics: ["0xdcbc"] }],
+    logs: [
+      {
+        address: "0xvault",
+        topics: [
+          "0xdcbc1c05240f31ff3ad067ef1ee35ce4997762752e3a095284754544f4c709d7",
+        ],
+      },
+    ],
     calls: [
       { type: "CALL", to: "0xtoken", input: "0x23b872dd" },
       {
@@ -181,42 +193,142 @@ const withLogs = readTrace(
         to: "0xtoken",
         input: "0xa9059cbb",
         logs: [
-          { address: "0xtoken", topics: ["0xddf2"] },
-          { address: "0xtoken", topics: ["0x8c5b"] },
+          {
+            address: "0xtoken",
+            topics: [TRANSFER, "0x01", "0x02"],
+            data: `0x${"ab".repeat(32)}`,
+          },
+          {
+            address: "0xtoken",
+            topics: [
+              "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+            ],
+          },
         ],
       },
     ],
   },
   known,
+  { [TRANSFER]: "Transfer(address,address,uint256)" },
 );
-assert.deepEqual(withLogs.events, [1, 0, 2], "one walk, in frame order");
-assert.equal(
-  withLogs.events.length,
-  withLogs.frames.length,
-  "the two can never fall out of step",
-);
-assert.deepEqual(readTrace(null).events, []);
-assert.deepEqual(
-  readTrace({ to: "0x1" }).events,
-  [0],
-  "no logs field is zero, not undefined",
-);
-// and flattenTrace stays the rows alone, for callers that only draw them
-assert.deepEqual(flattenTrace({ to: "0x1" }), readTrace({ to: "0x1" }).frames);
 
-const evented = scanPrompt(must(detect(HASH)), {
-  chain: "x",
-  frames: withLogs.frames,
-  events: withLogs.events,
-});
-assert.match(evented, /emitted 1/);
-assert.match(evented, /emitted 2/);
-assert.match(
-  evented,
-  /0x23b872dd$/m,
-  "a call that emitted nothing says nothing, not 'emitted 0'",
+assert.deepEqual(
+  withLogs.map((f) => [f.kind, f.d]),
+  [
+    ["CALL", 0],
+    ["EVENT", 1],
+    ["CALL", 1],
+    ["CALL", 1],
+    ["EVENT", 2],
+    ["EVENT", 2],
+  ],
+  "each event sits one level under the call that emitted it, before its nested calls",
 );
-assert.match(evented, /number of events each emitted/);
+const ev = withLogs.filter((f) => f.kind === "EVENT");
+assert.equal(
+  ev[1].fn,
+  "Transfer(address,address,uint256)",
+  "a known topic reads as its event",
+);
+assert.match(
+  ev[0].fn,
+  /^0xdcbc1c05…$/,
+  "and an unknown one keeps its hash, shortened",
+);
+assert.equal(ev[1].args, "indexed=2, data=32 bytes");
+assert.equal(
+  ev[0].args,
+  "data=0 bytes",
+  "no indexed parameters is not 'indexed=0'",
+);
+assert.equal(
+  ev[0].to,
+  "0xvault",
+  "the event is attributed to the contract that logged it",
+);
+assert.equal(ev[0].gas, null, "an event costs no gas of its own");
+assert.ok(
+  ev.every((f) => f.ok),
+  "an event cannot have reverted; the call that emitted it either did or did not",
+);
+assert.deepEqual(
+  flattenTrace({ to: "0x1" }),
+  flattenTrace({ to: "0x1", logs: [] }),
+);
+
+// the summary counts them apart: six rows is three calls and three events
+assert.match(traceSummary(withLogs), /3 calls/);
+assert.match(traceSummary(withLogs), /3 events/);
+assert.match(
+  traceSummary(withLogs),
+  /2 levels deep/,
+  "depth is the calls' depth; the events sit a level below and must not inflate it",
+);
+assert.match(traceSummary(frames), /no events/);
+
+// and the prompt shows them with their arguments
+const evPrompt = scanPrompt(must(detect(HASH)), {
+  chain: "x",
+  frames: withLogs,
+});
+assert.match(
+  evPrompt,
+  /EVENT 0xtoken\.Transfer\(address,address,uint256\)\(indexed=2, data=32 bytes\)/,
+);
+assert.match(evPrompt, /and the events they emitted/);
+
+// ── whole for the model, abbreviated for the row ───────────────────────────────────────────
+// 42 characters truncates the call itself out of a trace row; the model must still see all of
+// it, since the one time it was handed 0x0000…0001 it named the wrong precompile.
+const ADDR_LOWER = ADDR.toLowerCase();
+assert.equal(shortAddr(ADDR_LOWER), "0x162d…5aF8".toLowerCase());
+assert.equal(
+  shortAddr("DortVault"),
+  "DortVault",
+  "a contract name is left alone",
+);
+assert.equal(
+  shortAddr("0x1"),
+  "0x1",
+  "and so is anything that is not an address",
+);
+
+const oneCall = flattenTrace({
+  type: "CALL",
+  to: ADDR_LOWER,
+  input: "0xa9059cbb",
+});
+assert.equal(oneCall[0].to, ADDR_LOWER, "the row data keeps the whole address");
+assert.equal(
+  displayFrames(oneCall)[0].to,
+  shortAddr(ADDR_LOWER),
+  "only the drawing abbreviates",
+);
+assert.match(
+  scanPrompt(must(detect(HASH)), { chain: "x", frames: oneCall }),
+  new RegExp(ADDR_LOWER),
+  "the model is sent the address it will reason about",
+);
+assert.deepEqual(
+  displayFrames(oneCall).map((f) => [f.kind, f.fn, f.gas]),
+  oneCall.map((f) => [f.kind, f.fn, f.gas]),
+  "nothing but the address changes",
+);
+
+// the legend, so no address is only ever seen cut short
+assert.deepEqual(addressesIn(withLogs), [
+  { full: "0xvault", short: "0xvault" },
+  { full: "0xtoken", short: "0xtoken" },
+]);
+assert.deepEqual(addressesIn(oneCall), [
+  { full: ADDR_LOWER, short: shortAddr(ADDR_LOWER) },
+]);
+assert.deepEqual(addressesIn([]), []);
+assert.deepEqual(
+  addressesIn(flattenTrace({ type: "CREATE" })),
+  [],
+  "a deployment has no target",
+);
 
 // the heading above the trace
 assert.match(traceSummary(frames), /3 calls/);

@@ -93,29 +93,42 @@ const hex = (v: string | undefined): number | null => {
 const selectorOf = (input: string | undefined): string =>
   input && input.length >= 10 ? input.slice(0, 10).toLowerCase() : "";
 
+/** A 42-character address is unreadable in a trace row; it is kept whole wherever it is data. */
+export const shortAddr = (a: string): string =>
+  /^0x[0-9a-fA-F]{40}$/.test(a) ? `${a.slice(0, 6)}…${a.slice(-4)}` : a;
+
+const bytesOf = (data: string | undefined, from: number) =>
+  Math.max(0, Math.ceil(((data ?? "").length - from) / 2));
+
 /**
  * The tracer's tree as the flat, depth-tagged rows the app already draws (TraceRow).
  *
  * `known` maps a 4-byte selector to a signature, so a call into a contract the app has an ABI for
- * reads as `transfer(address,uint256)` rather than `0xa9059cbb`. Everything else keeps its
- * selector: an honest four bytes beats a guessed name.
+ * reads as `transfer(address,uint256)` rather than `0xa9059cbb`. `knownEvents` does the same for
+ * a log's first topic. Everything else keeps its raw hash: an honest four bytes beats a guessed
+ * name, and a reviewer handed a guess builds on it.
  *
- * `events` counts what each call emitted, in the same order as `frames`. It is kept beside the
- * rows rather than inside them because `Frame` mirrors the exporter's own shape (CLAUDE.md: a
- * section's shape changes in both halves or neither), and the exporter does not produce this.
- * One walk fills both, so the two can never fall out of step.
+ * Events become rows of their own, nested under the call that emitted them, because that is what
+ * the exporter does (`kind: "EVENT"`) and the drawing code already knows how to render it. The
+ * alternative — a count beside each call — was what this did first, and it answered "how many"
+ * while hiding the only interesting part: *which*. A token movement with no Transfer event is a
+ * finding, and it is invisible unless the events are in the trace.
+ *
+ * `args` is never raw calldata. The rows are drawn by splitting `name=value` pairs, so a 64-digit
+ * hex blob came out as both the name and the value of one unreadable pair; undecodable calldata
+ * is honestly reported as its length instead.
  */
-export function readTrace(
+export function flattenTrace(
   root: CallNode | null | undefined,
   known: Record<string, string> = {},
-): { frames: Frame[]; events: number[] } {
+  knownEvents: Record<string, string> = {},
+): Frame[] {
   const out: Frame[] = [];
-  const events: number[] = [];
   const walk = (n: CallNode, d: number) => {
-    events.push(n.logs?.length ?? 0);
     const sel = selectorOf(n.input);
     const sig = known[sel];
     const failed = Boolean(n.error || n.revertReason);
+    const data = bytesOf(n.input, 10);
     out.push({
       d,
       kind: KINDS[(n.type ?? "CALL").toUpperCase()] ?? "CALL",
@@ -123,33 +136,74 @@ export function readTrace(
       contract: null,
       file: null,
       fn: sig ?? (sel || (n.type === "CREATE" ? "constructor" : "fallback")),
-      args: sig ? "" : (n.input ?? "").slice(10, 74),
+      args: data ? `calldata=${data} bytes` : "",
       ret: n.revertReason ?? n.error ?? (n.output ?? "").slice(0, 66),
       ok: !failed,
       ...(failed ? { status: n.revertReason ?? n.error ?? "reverted" } : {}),
       gas: hex(n.gasUsed),
     });
+    // the call's own events, before the calls it went on to make
+    for (const log of n.logs ?? []) {
+      const topic = (log.topics?.[0] ?? "").toLowerCase();
+      out.push({
+        d: d + 1,
+        kind: "EVENT",
+        to: log.address ?? n.to ?? "",
+        contract: null,
+        file: null,
+        fn: knownEvents[topic] ?? (topic ? `${topic.slice(0, 10)}…` : "log"),
+        args: [
+          (log.topics?.length ?? 0) > 1
+            ? `indexed=${(log.topics?.length ?? 1) - 1}`
+            : null,
+          `data=${bytesOf(log.data, 2)} bytes`,
+        ]
+          .filter(Boolean)
+          .join(", "),
+        ret: "",
+        ok: true,
+        gas: null,
+      });
+    }
     for (const c of n.calls ?? []) walk(c, d + 1);
   };
   if (root) walk(root, 0);
-  return { frames: out, events };
+  return out;
 }
 
-/** The rows alone, for callers that only draw them. */
-export const flattenTrace = (
-  root: CallNode | null | undefined,
-  known: Record<string, string> = {},
-): Frame[] => readTrace(root, known).frames;
+/**
+ * The same rows with their addresses abbreviated, for drawing only.
+ *
+ * Two shapes on purpose: the model is sent the whole address (it guessed which precompile
+ * `0x0000…0001` was, and named the wrong one), while a row 42 characters wide truncates the call
+ * itself out of the line. `addressesIn` then gives the panel a legend, so nothing is only ever
+ * shown abbreviated.
+ */
+export const displayFrames = (frames: Frame[]): Frame[] =>
+  frames.map((f) => ({ ...f, to: shortAddr(f.to) }));
+
+/** Every address the transaction touched, first seen first — the legend under the trace. */
+export function addressesIn(
+  frames: Frame[],
+): { short: string; full: string }[] {
+  const seen = new Map<string, string>();
+  for (const f of frames)
+    if (f.to && !seen.has(f.to)) seen.set(f.to, shortAddr(f.to));
+  return [...seen].map(([full, short]) => ({ full, short }));
+}
 
 /** A one-line summary of what the trace did, for the heading above it. */
 export function traceSummary(frames: Frame[]): string {
   if (!frames.length) return "No calls recorded.";
+  const calls = frames.filter((f) => f.kind !== "EVENT");
+  const events = frames.length - calls.length;
   const failed = frames.filter((f) => !f.ok).length;
-  const depth = Math.max(...frames.map((f) => f.d)) + 1;
+  const depth = Math.max(...calls.map((f) => f.d)) + 1;
   const gas = frames[0]?.gas;
   return [
-    `${frames.length} ${frames.length === 1 ? "call" : "calls"}`,
+    `${calls.length} ${calls.length === 1 ? "call" : "calls"}`,
     `${depth} ${depth === 1 ? "level" : "levels"} deep`,
+    events ? `${events} ${events === 1 ? "event" : "events"}` : "no events",
     gas ? `${gas.toLocaleString("en-US")} gas` : null,
     failed ? `${failed} reverted` : "none reverted",
   ]
@@ -173,8 +227,6 @@ export type ScanFacts = {
   status?: "success" | "reverted";
   block?: number;
   frames?: Frame[];
-  /** how many events each frame emitted, in frame order (readTrace) */
-  events?: number[];
 };
 
 /**
@@ -205,18 +257,18 @@ export const NOT_CHECKED: Record<ScanKind, string[]> = {
 
 const bullets = (xs: string[]) => xs.map((x) => `- ${x}`).join("\n");
 
-const frameLines = (frames: Frame[], events: number[] = [], max = 120) => {
+const frameLines = (frames: Frame[], max = 120) => {
   const lines = frames
     .slice(0, max)
-    .map((f, i) => {
-      const n = events[i] ?? 0;
-      // the address goes in whole. Abbreviating it saved about thirty characters and cost a
-      // reviewer a guess: shown `0x0000…0001`, a model inferred which precompile it was and
-      // named the wrong one. Four honest bytes beat a guessed function name for the same reason.
-      return `${"  ".repeat(f.d)}${f.kind} ${f.to || "(none)"}.${f.fn}${
-        f.ok ? "" : ` [${f.status}]`
-      }${f.gas ? ` (${f.gas} gas)` : ""}${n ? ` emitted ${n}` : ""}`;
-    })
+    .map(
+      (f) =>
+        // the address goes in whole. Abbreviating it saved about thirty characters and cost a
+        // reviewer a guess: shown `0x0000…0001`, a model inferred which precompile it was and
+        // named the wrong one. Four honest bytes beat a guessed function name for the same reason.
+        `${"  ".repeat(f.d)}${f.kind} ${f.to || "(none)"}.${f.fn}${
+          f.args ? `(${f.args})` : ""
+        }${f.ok ? "" : ` [${f.status}]`}${f.gas ? ` (${f.gas} gas)` : ""}`,
+    )
     .join("\n");
   // a truncated trace says so: a model reasoning over "every call" when it has 120 of 400 would
   // be confidently wrong about what the transaction did not do
@@ -256,8 +308,8 @@ export function scanPrompt(input: ScanInput, facts: ScanFacts): string {
       `From ${facts.from} to ${facts.to}${facts.value && facts.value !== "0" ? `, carrying ${facts.value} wei` : ""}`,
       `Status: ${facts.status ?? "unknown"}${facts.block ? `, block ${facts.block}` : ""}`,
       "",
-      "The calls it actually made, indented by depth, with the number of events each emitted (from the node's own tracer):",
-      frameLines(facts.frames ?? [], facts.events),
+      "The calls it actually made and the events they emitted, indented by depth (from the node's own tracer):",
+      frameLines(facts.frames ?? []),
       "",
       // measured, not theorised: a reviewer handed this trace reported Portaldot's weight-based
       // figures as "implausibly high gas" and ranked it as a finding. The units are the chain's.

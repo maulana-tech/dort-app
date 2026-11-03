@@ -8,7 +8,9 @@ import { useHostedAi } from "@/features/ai/hooks/useHostedAi";
 import { DORT_AI } from "@/features/ai/utils/provider";
 import { PORTALDOT_ID, VAULT_CHAINS } from "@/features/bridge/chains";
 import {
+  addressesIn,
   detect,
+  displayFrames,
   EXAMPLES,
   joinSources,
   MAX_SOURCE,
@@ -66,6 +68,10 @@ export function ScanWorkspace() {
   );
   const frames = scan.facts?.frames ?? [];
   const maxGas = Math.max(1, ...frames.map((f) => f.gas ?? 0));
+  // the rows are drawn with abbreviated addresses, which a 42-character one needs; the legend
+  // below them carries every address whole, so nothing is only ever shown cut short
+  const rows = useMemo(() => displayFrames(frames), [frames]);
+  const touched = useMemo(() => addressesIn(frames), [frames]);
 
   async function take(list: FileList | null) {
     if (!list?.length) return;
@@ -448,7 +454,7 @@ export function ScanWorkspace() {
                   {/* the rows want a full-width panel: let them keep their real width and
                       scroll sideways rather than crushing the call out of the line */}
                   <div className="min-w-[620px]">
-                    {frames.map((f, i) => (
+                    {rows.map((f, i) => (
                       <TraceRow
                         key={`${i}-${f.fn}`}
                         index={i}
@@ -457,13 +463,32 @@ export function ScanWorkspace() {
                         selected={false}
                         inRange={false}
                         onSelect={() => {}}
-                        fold={(frames[i + 1]?.d ?? -1) > f.d ? "open" : null}
+                        fold={(rows[i + 1]?.d ?? -1) > f.d ? "open" : null}
                         onFold={() => {}}
                         ask={null}
                         onAsk={() => {}}
                       />
                     ))}
                   </div>
+                  {touched.length > 0 && (
+                    <section className="mt-3 rounded-inner border border-border bg-inner-grad p-3">
+                      <p className="mb-2 text-[12.5px] text-fg">
+                        Addresses in this trace
+                      </p>
+                      <ul className="flex flex-col gap-1.5">
+                        {touched.map((a) => (
+                          <li key={a.full} className="min-w-0">
+                            <span className="block font-mono text-[11.5px] text-dim">
+                              {a.short}
+                            </span>
+                            <span className="block break-all font-mono text-[11.5px] text-body">
+                              {a.full}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
                 </>
               )}
             </div>
