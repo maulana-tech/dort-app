@@ -5,7 +5,6 @@ import {
   SITE_NAME,
   SITE_TITLE,
   SITE_URL,
-  X_HANDLE,
 } from "@/config/site";
 import "./globals.css";
 
@@ -26,7 +25,6 @@ export const metadata: Metadata = {
   applicationName: SITE_NAME,
   keywords: [
     "Dort",
-    "dort",
     "smart contract audit",
     "Foundry",
     "forge test traces",
@@ -49,8 +47,6 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    site: X_HANDLE,
-    creator: X_HANDLE,
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
   },
