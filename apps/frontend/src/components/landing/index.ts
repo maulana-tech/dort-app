@@ -315,10 +315,9 @@
  * on findings.
  */
 
-export { Ask } from "./Ask";
 export { Compare, Faq, FinalCta, Finale, Footer } from "./Closing";
 export { Features } from "./Features";
 export { Hero, Product } from "./Hero";
 export { SmoothScroll } from "./motion";
 export { OnChain } from "./OnChain";
-export { Run, Tests, Words } from "./Stages";
+export { Tests, Words } from "./Stages";
