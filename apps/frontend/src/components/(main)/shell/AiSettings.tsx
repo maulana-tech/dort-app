@@ -48,7 +48,7 @@ const NOTE: Record<Mode, string> = {
  */
 const KIND_NOTE: Partial<Record<AiKind, string>> = {
   bedrock:
-    "Your own AWS account: the selected piece and your question go straight from your browser to Bedrock in the region above, and Dort never holds an AWS key. Bedrock does not store prompts or train on them by default — but model invocation logging, if you have it on, writes them in full to your CloudWatch or S3, and a cross-region inference profile can carry them out of this region. The key is stored in this browser's localStorage, so give it an IAM role that can do nothing but invoke the models you need, and prefer a short-term key.",
+    "Your own AWS account, and any model it can invoke — not only Anthropic's. minimax.minimax-m2.5, zai.glm-4.7-flash, qwen.qwen3-coder-next, moonshotai.kimi-k2.5 and deepseek.deepseek-v3.2 all work; the id decides which of Bedrock's two APIs answers. Your question goes straight from your browser to Bedrock in the region above, and Dort never holds an AWS key. Bedrock does not store prompts or train on them by default — but model invocation logging, if you have it on, writes them in full to your CloudWatch or S3, and a cross-region inference profile can carry them out of this region. The key is stored in this browser's localStorage, so give it an IAM role that can do nothing but invoke the models you need, and prefer a short-term key.",
 };
 
 type Test = { state: "idle" | "busy" | "ok" | "bad"; text?: string };
@@ -73,7 +73,7 @@ const OPEN = "dort-ai-settings";
 export const openAiSettings = () => dispatchEvent(new Event(OPEN));
 
 /** "AI provider" settings: none (canned answers), a local model, or the user's own API key. */
-export function AiSettings() {
+export function AiSettings({ asPage = false }: { asPage?: boolean } = {}) {
   const { ready: hostedAi, models: hostedModels } = useHostedAi();
   const saved = useAiConfig();
   const dialog = useRef<HTMLDialogElement>(null);
@@ -174,6 +174,219 @@ export function AiSettings() {
   const ready = aiReady(draft);
   const connected = saved.kind !== "none";
 
+  // one body, two frames: the dialog in the header family, and the settings page. Writing it
+  // twice would be two places for a provider to be added to, and one of them would be missed.
+  const body = (
+    <form
+      method="dialog"
+      onSubmit={(e) => {
+        e.preventDefault();
+        save();
+      }}
+      className="flex flex-col gap-3 p-4"
+    >
+      {!asPage && (
+        <header className="flex items-center gap-2 text-[14px]">
+          <span className="size-1.5 rounded-full bg-fg" />
+          <span className="font-medium">AI provider</span>
+          <span className="ml-auto text-[12.5px] text-dim">
+            {hostedAi ? "This Dort offers one" : "Dort hosts no AI"}
+          </span>
+        </header>
+      )}
+      <SegmentedControl<Mode>
+        value={mode}
+        onChange={(m) => pick(m === "key" ? "anthropic" : m)}
+        options={[
+          { value: "none", label: "None" },
+          // only offered where the deployment actually has a key (app/api/bedrock)
+          ...(hostedAi
+            ? [
+                {
+                  value: "dort" as const,
+                  label: "Dort's model",
+                  title:
+                    "This deployment's own Bedrock — no key needed, but it runs through its AWS account",
+                },
+              ]
+            : []),
+          // only a local Dort can run your Claude Code (CLAUDE_HERE)
+          ...(CLAUDE_HERE
+            ? [
+                {
+                  value: "claude" as const,
+                  label: "Your Claude",
+                  title: "Your own Claude Code and Claude plan, on this laptop",
+                },
+              ]
+            : []),
+          { value: "local", label: "Local model" },
+          { value: "key", label: "Own API key" },
+        ]}
+      />
+      {mode !== "none" && (
+        <div className="flex flex-col gap-2.5 rounded-inner border border-border bg-inner-grad p-3">
+          {mode === "key" && (
+            <Row label="Provider">
+              <Dropdown
+                ariaLabel="Provider"
+                value={draft.kind}
+                onChange={(k) => pick(k as AiKind)}
+                className="w-full"
+                options={KEYED.map((k) => ({
+                  value: k,
+                  label: PROVIDERS[k].label,
+                }))}
+              />
+            </Row>
+          )}
+          {(mode === "local" || draft.kind === "bedrock") && (
+            <Row label={draft.kind === "bedrock" ? "Region" : "Endpoint"}>
+              <Input
+                aria-label={
+                  draft.kind === "bedrock" ? "AWS region" : "Endpoint"
+                }
+                value={draft.baseUrl}
+                onChange={(e) => edit({ baseUrl: e.target.value })}
+                placeholder={PROVIDERS[draft.kind].baseUrl}
+                spellCheck={false}
+                className="w-full font-mono text-[12px]"
+              />
+            </Row>
+          )}
+          {mode === "claude" && (
+            <ClaudeLine
+              s={claude}
+              auth={auth}
+              onAuth={setAuth}
+              onSignIn={() => authOp("login")}
+              onSignOut={() => authOp("logout")}
+            />
+          )}
+          <Row label="Model">
+            {mode === "dort" ? (
+              // a list, never a free field: the route honours only what the operator offers,
+              // so typing a model here would just be silently ignored
+              <Dropdown
+                ariaLabel="Model"
+                value={draft.model || hostedModels[0] || ""}
+                onChange={(m) => edit({ model: m })}
+                className="w-full"
+                mono
+                options={hostedModels.map((m, i) => ({
+                  value: m,
+                  label: i === 0 ? `${m} · default` : m,
+                  text: m,
+                }))}
+              />
+            ) : mode === "claude" ? (
+              <Dropdown
+                ariaLabel="Model"
+                value={draft.model || "default"}
+                onChange={(m) => edit({ model: m === "default" ? "" : m })}
+                className="w-full"
+                options={claudeModels(draft.model).map((m) => ({
+                  value: m.value || "default",
+                  label: `${m.label} · ${m.hint}`,
+                  text: m.label,
+                }))}
+              />
+            ) : (
+              <Input
+                aria-label="Model"
+                value={draft.model}
+                onChange={(e) => edit({ model: e.target.value })}
+                placeholder={PROVIDERS[draft.kind].model}
+                spellCheck={false}
+                className="w-full font-mono text-[12px]"
+              />
+            )}
+          </Row>
+          {mode !== "claude" && mode !== "dort" && (
+            <Row label={mode === "local" ? "Key (optional)" : "API key"}>
+              <Input
+                type="password"
+                aria-label="API key"
+                value={draft.key}
+                onChange={(e) => edit({ key: e.target.value })}
+                placeholder={PROVIDERS[draft.kind].keyHint ?? "not needed"}
+                autoComplete="off"
+                spellCheck={false}
+                className="w-full font-mono text-[12px]"
+              />
+            </Row>
+          )}
+          <div className="flex items-center gap-1.5 pt-0.5">
+            <Button
+              size="sm"
+              disabled={
+                !ready ||
+                test.state === "busy" ||
+                (mode === "claude" && !claude?.loggedIn)
+              }
+              onClick={run}
+            >
+              {test.state === "busy" ? "Testing…" : "Test connection"}
+            </Button>
+            {(draft.key || saved.key) && (
+              <Button size="sm" variant="ghost" onClick={forget}>
+                Forget key
+              </Button>
+            )}
+          </div>
+          {test.text && (
+            <output className="flex items-start gap-2 break-words text-[12.5px] text-body">
+              <span
+                className={`mt-1.5 size-1.5 flex-none rounded-full ${test.state === "ok" ? "bg-green" : "bg-red"}`}
+              />
+              {test.text}
+            </output>
+          )}
+        </div>
+      )}
+      <p className="text-[12.5px] text-muted leading-normal">
+        {KIND_NOTE[draft.kind] ?? NOTE[mode]}
+      </p>
+      <div className="flex justify-end gap-1.5">
+        {/* stop using the connected AI in Dort; for Your Claude it does not sign Claude Code out */}
+        {connected && (
+          <Button
+            variant="ghost"
+            className="mr-auto"
+            title={
+              saved.kind === "claude"
+                ? "Stop using your Claude in Dort (Claude Code stays signed in)"
+                : "Stop using this AI in Dort and forget its key"
+            }
+            onClick={() => {
+              saveAiConfig(NO_AI);
+              setDraft(NO_AI);
+              setTest({ state: "idle" });
+              dialog.current?.close();
+            }}
+          >
+            <span className="size-1.5 rounded-full bg-red" />
+            Disconnect
+          </Button>
+        )}
+        {!asPage && (
+          <Button variant="ghost" onClick={() => dialog.current?.close()}>
+            Cancel
+          </Button>
+        )}
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={draft.kind !== "none" && !ready}
+        >
+          Save
+        </Button>
+      </div>
+    </form>
+  );
+
+  if (asPage) return body;
+
   return (
     <>
       {/* the header's capsule family (header.css): lit ring until an AI is connected, then a
@@ -216,209 +429,7 @@ export function AiSettings() {
         onKeyDown={(e) => e.key === "Escape" && e.stopPropagation()}
         className="ai-dialog m-auto w-[min(480px,calc(100vw-32px))] rounded-card border border-border bg-card-grad p-0 text-fg shadow-float"
       >
-        <form
-          method="dialog"
-          onSubmit={(e) => {
-            e.preventDefault();
-            save();
-          }}
-          className="flex flex-col gap-3 p-4"
-        >
-          <header className="flex items-center gap-2 text-[14px]">
-            <span className="size-1.5 rounded-full bg-fg" />
-            <span className="font-medium">AI provider</span>
-            <span className="ml-auto text-[12.5px] text-dim">
-              Dort hosts no AI
-            </span>
-          </header>
-          <SegmentedControl<Mode>
-            value={mode}
-            onChange={(m) => pick(m === "key" ? "anthropic" : m)}
-            options={[
-              { value: "none", label: "None" },
-              // only offered where the deployment actually has a key (app/api/bedrock)
-              ...(hostedAi
-                ? [
-                    {
-                      value: "dort" as const,
-                      label: "Dort's model",
-                      title:
-                        "This deployment's own Bedrock — no key needed, but it runs through its AWS account",
-                    },
-                  ]
-                : []),
-              // only a local Dort can run your Claude Code (CLAUDE_HERE)
-              ...(CLAUDE_HERE
-                ? [
-                    {
-                      value: "claude" as const,
-                      label: "Your Claude",
-                      title:
-                        "Your own Claude Code and Claude plan, on this laptop",
-                    },
-                  ]
-                : []),
-              { value: "local", label: "Local model" },
-              { value: "key", label: "Own API key" },
-            ]}
-          />
-          {mode !== "none" && (
-            <div className="flex flex-col gap-2.5 rounded-inner border border-border bg-inner-grad p-3">
-              {mode === "key" && (
-                <Row label="Provider">
-                  <Dropdown
-                    ariaLabel="Provider"
-                    value={draft.kind}
-                    onChange={(k) => pick(k as AiKind)}
-                    className="w-full"
-                    options={KEYED.map((k) => ({
-                      value: k,
-                      label: PROVIDERS[k].label,
-                    }))}
-                  />
-                </Row>
-              )}
-              {(mode === "local" || draft.kind === "bedrock") && (
-                <Row label={draft.kind === "bedrock" ? "Region" : "Endpoint"}>
-                  <Input
-                    aria-label={
-                      draft.kind === "bedrock" ? "AWS region" : "Endpoint"
-                    }
-                    value={draft.baseUrl}
-                    onChange={(e) => edit({ baseUrl: e.target.value })}
-                    placeholder={PROVIDERS[draft.kind].baseUrl}
-                    spellCheck={false}
-                    className="w-full font-mono text-[12px]"
-                  />
-                </Row>
-              )}
-              {mode === "claude" && (
-                <ClaudeLine
-                  s={claude}
-                  auth={auth}
-                  onAuth={setAuth}
-                  onSignIn={() => authOp("login")}
-                  onSignOut={() => authOp("logout")}
-                />
-              )}
-              <Row label="Model">
-                {mode === "dort" ? (
-                  // a list, never a free field: the route honours only what the operator offers,
-                  // so typing a model here would just be silently ignored
-                  <Dropdown
-                    ariaLabel="Model"
-                    value={draft.model || hostedModels[0] || ""}
-                    onChange={(m) => edit({ model: m })}
-                    className="w-full"
-                    mono
-                    options={hostedModels.map((m, i) => ({
-                      value: m,
-                      label: i === 0 ? `${m} · default` : m,
-                      text: m,
-                    }))}
-                  />
-                ) : mode === "claude" ? (
-                  <Dropdown
-                    ariaLabel="Model"
-                    value={draft.model || "default"}
-                    onChange={(m) => edit({ model: m === "default" ? "" : m })}
-                    className="w-full"
-                    options={claudeModels(draft.model).map((m) => ({
-                      value: m.value || "default",
-                      label: `${m.label} · ${m.hint}`,
-                      text: m.label,
-                    }))}
-                  />
-                ) : (
-                  <Input
-                    aria-label="Model"
-                    value={draft.model}
-                    onChange={(e) => edit({ model: e.target.value })}
-                    placeholder={PROVIDERS[draft.kind].model}
-                    spellCheck={false}
-                    className="w-full font-mono text-[12px]"
-                  />
-                )}
-              </Row>
-              {mode !== "claude" && mode !== "dort" && (
-                <Row label={mode === "local" ? "Key (optional)" : "API key"}>
-                  <Input
-                    type="password"
-                    aria-label="API key"
-                    value={draft.key}
-                    onChange={(e) => edit({ key: e.target.value })}
-                    placeholder={PROVIDERS[draft.kind].keyHint ?? "not needed"}
-                    autoComplete="off"
-                    spellCheck={false}
-                    className="w-full font-mono text-[12px]"
-                  />
-                </Row>
-              )}
-              <div className="flex items-center gap-1.5 pt-0.5">
-                <Button
-                  size="sm"
-                  disabled={
-                    !ready ||
-                    test.state === "busy" ||
-                    (mode === "claude" && !claude?.loggedIn)
-                  }
-                  onClick={run}
-                >
-                  {test.state === "busy" ? "Testing…" : "Test connection"}
-                </Button>
-                {(draft.key || saved.key) && (
-                  <Button size="sm" variant="ghost" onClick={forget}>
-                    Forget key
-                  </Button>
-                )}
-              </div>
-              {test.text && (
-                <output className="flex items-start gap-2 break-words text-[12.5px] text-body">
-                  <span
-                    className={`mt-1.5 size-1.5 flex-none rounded-full ${test.state === "ok" ? "bg-green" : "bg-red"}`}
-                  />
-                  {test.text}
-                </output>
-              )}
-            </div>
-          )}
-          <p className="text-[12.5px] text-muted leading-normal">
-            {KIND_NOTE[draft.kind] ?? NOTE[mode]}
-          </p>
-          <div className="flex justify-end gap-1.5">
-            {/* stop using the connected AI in Dort; for Your Claude it does not sign Claude Code out */}
-            {connected && (
-              <Button
-                variant="ghost"
-                className="mr-auto"
-                title={
-                  saved.kind === "claude"
-                    ? "Stop using your Claude in Dort (Claude Code stays signed in)"
-                    : "Stop using this AI in Dort and forget its key"
-                }
-                onClick={() => {
-                  saveAiConfig(NO_AI);
-                  setDraft(NO_AI);
-                  setTest({ state: "idle" });
-                  dialog.current?.close();
-                }}
-              >
-                <span className="size-1.5 rounded-full bg-red" />
-                Disconnect
-              </Button>
-            )}
-            <Button variant="ghost" onClick={() => dialog.current?.close()}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={draft.kind !== "none" && !ready}
-            >
-              Save
-            </Button>
-          </div>
-        </form>
+        {body}
       </dialog>
     </>
   );
