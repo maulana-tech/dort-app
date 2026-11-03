@@ -183,7 +183,10 @@ export function useChat(
         }
       })();
     },
-    [busy, turns, cfg, digest, runTool],
+    // wallet belongs here: it is the proof sent with the question, and a reader connects their
+    // wallet *after* the page has rendered. Left out, the first questions of a sitting carry the
+    // claim this callback closed over — none — and are counted as anonymous.
+    [busy, turns, cfg, digest, runTool, wallet],
   );
 
   return {
