@@ -16,7 +16,7 @@ import {
   shortAddress,
 } from "@/features/bridge/bridge";
 import { txUrl } from "@/features/bridge/chains";
-import { useWallet } from "@/features/bridge/useWallet";
+import { useWallet } from "@/features/bridge/WalletProvider";
 import {
   amountOut,
   asErc20,
