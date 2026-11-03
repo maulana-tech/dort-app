@@ -1,11 +1,12 @@
 import { sse } from "@/features/ai/utils/claude-bridge";
 import {
   type Bucket,
-  hostedModel,
+  hostedModels,
   hostedReady,
   hostedRegion,
   MAX_TOKENS,
   overRate,
+  pickModel,
   refuseHosted,
 } from "@/features/ai/utils/hosted";
 import { bedrockUrl, SYSTEM_PROMPT } from "@/features/ai/utils/provider";
@@ -29,6 +30,7 @@ const env = () => ({
   key: process.env.BEDROCK_API_KEY,
   region: process.env.BEDROCK_REGION,
   model: process.env.BEDROCK_MODEL,
+  models: process.env.BEDROCK_MODELS,
 });
 
 /** One brake per server instance: enough that a loop cannot spend the budget, not a quota. */
@@ -42,9 +44,12 @@ const who = (req: Request) =>
 const fail = (error: string, status: number) =>
   Response.json({ error }, { status });
 
-/** Whether this Dort has a model of its own, so the page can offer it or not. */
+/** Whether this Dort has a model of its own, and which ones it will pay for. */
 export async function GET(): Promise<Response> {
-  return Response.json({ ready: hostedReady(env()) });
+  const e = env();
+  const ready = hostedReady(e);
+  // the list is the operator's, not a suggestion: the POST below honours nothing outside it
+  return Response.json({ ready, models: ready ? hostedModels(e) : [] });
 }
 
 export async function POST(req: Request): Promise<Response> {
@@ -72,17 +77,20 @@ export async function POST(req: Request): Promise<Response> {
     );
 
   let messages: unknown;
+  let wanted: unknown;
   try {
-    const parsed = JSON.parse(body) as { messages?: unknown };
+    const parsed = JSON.parse(body) as { messages?: unknown; model?: unknown };
     messages = parsed.messages;
+    wanted = parsed.model;
   } catch {
     return fail("That request was not readable.", 400);
   }
   if (!Array.isArray(messages) || messages.length === 0)
     return fail("Nothing to ask.", 400);
 
-  // the model, the region and the token budget are this deployment's, not the caller's: a body
-  // that could name them would let any page spend the operator's money on anything it liked
+  // the region and the token budget are this deployment's, and the model may only be one the
+  // operator put on offer — `pickModel` falls back to the default for anything else, so a body
+  // can never spend their money on a model they did not choose to pay for
   let upstream: Response;
   try {
     upstream = await fetch(`${bedrockUrl(hostedRegion(e))}/messages`, {
@@ -93,7 +101,7 @@ export async function POST(req: Request): Promise<Response> {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: hostedModel(e),
+        model: pickModel(e, wanted),
         max_tokens: MAX_TOKENS,
         stream: true,
         system: SYSTEM_PROMPT,
