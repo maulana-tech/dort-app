@@ -24,12 +24,15 @@ import { flowLayout } from "@/features/atlas/utils/flow-layout";
 import { nodeHeight as labNodeHeight } from "@/features/atlas/utils/lab-graph";
 import { createAtlasModel } from "@/features/atlas/utils/model";
 import { unitCode } from "@/features/atlas/utils/units";
+import { formatAmount } from "@/features/bridge/bridge";
 import { buildTree, type Frame, layoutTree } from "@/features/trace";
 import { tokenize } from "@/features/trace/utils/highlight";
+import { previewDeposit, VAULTS } from "@/features/vault/vault";
 import { useAtlas } from "./atlas";
+import { ChatThread } from "./ChatThread";
 import { TraceWidget } from "./FeatureWidgets";
 import { LabGraph } from "./LabGraph";
-import type { LabDemo } from "./stats";
+import type { ChatDemo, LabDemo } from "./stats";
 import { Window } from "./Window";
 
 /**
@@ -462,5 +465,112 @@ function Triage({ atlas }: { atlas: AtlasData }) {
         <MiniSearch model={model} />
       </Fit>
     </div>
+  );
+}
+
+/* ── the three words of this build ───────────────────────────────────────────────────────── */
+
+const group = (n: string) => {
+  const [whole, frac] = n.split(".");
+  return whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (frac ? `.${frac}` : "");
+};
+
+/** Ask: the conversation, grounded in the run, in the panel chrome the words section shares. */
+export function AskVisual({ demo }: { demo: ChatDemo }) {
+  return (
+    <Fit>
+      <Panel title="Chat" aside="/chat">
+        <div className="w-[520px] p-3">
+          <ChatThread demo={demo} compact />
+        </div>
+      </Panel>
+    </Fit>
+  );
+}
+
+/**
+ * Move: one card per on-chain page, with the figure each one shows you before you sign. The
+ * vault's shares come from its own arithmetic and its address from VAULTS, so this cannot drift
+ * from what is deployed.
+ */
+export function MoveVisual() {
+  const deposit = 1_000_000_000n; // 1,000 USDC
+  const shares = previewDeposit(deposit, 0n, 0n);
+  const vault = VAULTS[84532]?.find((v) => v.vault)?.vault ?? null;
+  const rows: [string, string, string][] = [
+    [
+      "Vault",
+      `${group(formatAmount(deposit, 6))} USDC in`,
+      `≈ ${group(formatAmount(shares, 6))} dUSDC out`,
+    ],
+    ["Swap", "1 POT in", "4.330837 pUSDT out · 0.30% fee"],
+    ["Bridge", "250 USDC locked at home", "250 wUSDC on Portaldot"],
+  ];
+  return (
+    <Fit>
+      <Panel title="On-chain" aside={vault ? "live" : "Portaldot V3"}>
+        <div className="grid w-[520px] gap-2 p-3">
+          {rows.map(([label, from, to]) => (
+            <div
+              key={label}
+              className="rounded-[10px] border border-white/[.06] bg-card-grad p-3"
+            >
+              <p className="text-[12px] text-dim">{label}</p>
+              <p className="mt-1 flex flex-wrap items-baseline gap-2 font-mono text-[13px] text-fg">
+                {from}
+                <span className="text-muted">→</span>
+                <span className="text-body">{to}</span>
+              </p>
+            </div>
+          ))}
+          <p className="px-1 text-[12px] text-dim leading-snug">
+            Every figure is shown before the wallet is asked to sign, not after.
+          </p>
+        </div>
+      </Panel>
+    </Fit>
+  );
+}
+
+/** Learn: the protocols mapped for reading, and the incidents written up as reports. */
+export function LearnVisual({
+  protocols,
+  incidents,
+}: {
+  protocols: string[];
+  incidents: { name: string; year: string; loss: string }[];
+}) {
+  return (
+    <Fit>
+      <div className="grid w-[560px] gap-3">
+        <Panel title="Explore" aside="how they are meant to work">
+          <div className="flex flex-wrap gap-1.5 p-3">
+            {protocols.map((n) => (
+              <span
+                key={n}
+                className="rounded-full bg-raised px-3 py-1.5 text-[12.5px] text-muted"
+              >
+                {n}
+              </span>
+            ))}
+          </div>
+        </Panel>
+        <Panel title="Exploits" aside="closed, public incidents">
+          <ul className="grid gap-1.5 p-3">
+            {incidents.map((c) => (
+              <li
+                key={c.name}
+                className="flex items-baseline justify-between gap-3 rounded-[10px] border border-white/[.06] bg-card-grad px-3 py-2"
+              >
+                <span className="text-[13px] text-fg">{c.name}</span>
+                <span className="font-mono text-[12px] text-dim">
+                  {c.year} · {c.loss}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      </div>
+    </Fit>
   );
 }
