@@ -1,24 +1,16 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
-import { CoverageSummary } from "@/components/(main)/atlas/CoverageSummary";
-import { Chip, KindBadge, Meter, Panel, ToggleChip } from "@/components/ui";
-import type { AtlasData, FindingTool, Risk } from "@/features/atlas/types";
 import {
-  flaggedLines,
-  lineRanges,
-  reportsOf,
-  SEVERITIES,
-  SEVERITY_LABEL,
-  TOOL_LABEL,
-  TOOLS,
-  titleOf,
-} from "@/features/atlas/utils/findings";
-import { nodeHeight } from "@/features/atlas/utils/lab-graph";
-import { createAtlasModel } from "@/features/atlas/utils/model";
+  ActionButton,
+  AmountField,
+  SourceRow,
+} from "@/components/(main)/action/ActionCard";
+import { KindBadge, Meter, TokenIcon } from "@/components/ui";
+import { formatAmount } from "@/features/bridge/bridge";
 import { displayKind, type Frame, human, splitArgs } from "@/features/trace";
-import { LabGraph } from "./LabGraph";
-import type { LabDemo } from "./stats";
+import { previewDeposit, VAULTS } from "@/features/vault/vault";
+import { ChatThread } from "./ChatThread";
+import type { ChatDemo } from "./stats";
 import { Window } from "./Window";
 
 /*
@@ -26,6 +18,9 @@ import { Window } from "./Window";
  * isolated card rather than a whole-app screenshot. R11 (pin 15270086238695547): each one is a
  * small, clean mini-UI with nothing cut off at its edges. R16: window chrome where it is a window.
  * All of them render the app's own components / utils on the same sample data the app falls back to.
+ *
+ * The Lab, Findings and Coverage widgets left with the pages behind them: a landing row is a
+ * promise, and this build cannot keep those. Chat and Vault took their slots.
  */
 
 /** Trace: the first decoded frames of one test, in the app's row anatomy (TraceRow) without the clipped arg chips. */
@@ -101,150 +96,55 @@ export function TraceWidget({
   );
 }
 
-/** Lab: Actor → Call → Expect revert, laid out and run on the server (stats.ts `labDemo`), shrunk to fit. */
-export function LabWidget({ nodes, wires, runs, fields }: LabDemo) {
-  const W = Math.max(...nodes.map((n) => n.x + n.w));
-  const box = useRef<HTMLDivElement>(null);
-  const [k, setK] = useState(1);
-  // measured before the first paint: an unscaled first frame made the page jump (and re-measure
-  // every ScrollTrigger) as it shrank
-  useLayoutEffect(() => {
-    const el = box.current;
-    if (!el) return;
-    setK(Math.min(1, el.clientWidth / W));
-    const ro = new ResizeObserver(([e]) =>
-      setK(Math.min(1, e.contentRect.width / W)),
-    );
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [W]);
-  const top = Math.min(...nodes.map((n) => n.y));
-  const H = Math.max(...nodes.map((n) => n.y + nodeHeight(n))) - top;
+/** Thousands separators, so a figure beside another figure reads the same way. */
+const group = (n: string) => {
+  const [whole, frac] = n.split(".");
+  return whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (frac ? `.${frac}` : "");
+};
+
+/** Chat: the same thread the hero and the product tour show (ChatThread), in a window. */
+export function ChatWidget({ demo }: { demo: ChatDemo }) {
   return (
-    <div ref={box} className="w-full max-w-[560px]">
-      <div className="relative mx-auto" style={{ width: W * k, height: H * k }}>
-        <div
-          className="absolute top-0 left-0 origin-top-left"
-          style={{ width: W, height: H, transform: `scale(${k})` }}
-        >
-          <LabGraph nodes={nodes} wires={wires} runs={runs} fields={fields} />
-        </div>
+    <Window tab="/chat" aside="Sample" className="w-full max-w-[460px]">
+      <div className="dot-grid-soft p-3">
+        <ChatThread demo={demo} compact />
       </div>
-    </div>
+    </Window>
   );
 }
 
-/** Findings: the app's tool / severity filter row over the first two finding cards (FindingsTab anatomy). */
-export function FindingsWidget({
-  atlas,
-  cards = 2,
-}: {
-  atlas: AtlasData;
-  /** finding cards shown under the filters */
-  cards?: number;
-}) {
-  const model = createAtlasModel(atlas);
-  const all = model.findings;
-  const present = TOOLS.filter((t) =>
-    all.some((f) => reportsOf(f).some((r) => r.tool === t)),
-  );
-  const [tools, setTools] = useState<Set<FindingTool>>(() => new Set(TOOLS));
-  const [sevs, setSevs] = useState<Set<Risk>>(() => new Set(SEVERITIES));
-  const toggle = <T,>(set: Set<T>, v: T) => {
-    const next = new Set(set);
-    if (!next.delete(v)) next.add(v);
-    return next;
-  };
-  const shown = all.filter(
-    (f) =>
-      sevs.has(f.risk ?? "low") && reportsOf(f).some((r) => tools.has(r.tool)),
-  );
+/**
+ * Vault: the deposit card as `/vault` draws it, on the vault's own arithmetic. The address is
+ * read from VAULTS rather than written here, so the widget cannot outlive the deployment.
+ */
+export function VaultWidget() {
+  const deposit = 1_000_000_000n; // 1,000 USDC, six decimals
+  const shares = previewDeposit(deposit, 0n, 0n);
+  const live = VAULTS[84532]?.find((v) => v.vault)?.vault ?? null;
   return (
-    <Panel
-      label="Findings"
-      aside={`${shown.length}/${all.length} shown`}
-      className="w-full max-w-[520px]"
-    >
-      <div className="flex flex-wrap gap-1.5 px-4 pb-3">
-        {present.map((t) => (
-          <ToggleChip
-            key={t}
-            label={`${TOOL_LABEL[t]} ${all.filter((f) => reportsOf(f).some((r) => r.tool === t)).length}`}
-            on={tools.has(t)}
-            onToggle={() => setTools(toggle(tools, t))}
-          />
-        ))}
-        <span className="w-2" />
-        {SEVERITIES.filter((s) => all.some((f) => (f.risk ?? "low") === s)).map(
-          (s) => (
-            <ToggleChip
-              key={s}
-              label={`${SEVERITY_LABEL[s]} ${all.filter((f) => (f.risk ?? "low") === s).length}`}
-              on={sevs.has(s)}
-              onToggle={() => setSevs(toggle(sevs, s))}
-            />
-          ),
-        )}
+    <Window tab="/vault" aside="Base Sepolia" className="w-full max-w-[460px]">
+      <div className="dot-grid-soft grid gap-4 p-4">
+        <SourceRow
+          icon={<TokenIcon symbol="USDC" size={34} />}
+          title="In your wallet"
+          ticker="USDC"
+          amount="5,000 USDC"
+          secondary={
+            live
+              ? `vault ${live.slice(0, 6)}…${live.slice(-4)}`
+              : "not deployed"
+          }
+        />
+        <AmountField
+          id="lp-how-vault"
+          label="Deposit"
+          value={group(formatAmount(deposit, 6))}
+          onChange={() => {}}
+          token={<span className="text-ui-sm text-fg">USDC</span>}
+          secondary={`≈ ${group(formatAmount(shares, 6))} dUSDC`}
+        />
+        <ActionButton onClick={() => {}}>Deposit</ActionButton>
       </div>
-      <div className="m-2 mt-0 grid gap-2 rounded-inner border border-border bg-inner-grad p-2">
-        {shown.slice(0, cards).map((f) => {
-          const rs = reportsOf(f);
-          return (
-            <div
-              key={f.id}
-              className="flex min-w-0 flex-col gap-1.5 rounded-card border border-border bg-card-grad px-3 py-2.5 shadow-soft"
-            >
-              <span className="flex items-center gap-1.5">
-                <Chip
-                  tone={
-                    f.risk === "high" || f.risk === "med" ? "bad" : "neutral"
-                  }
-                  dot
-                >
-                  {SEVERITY_LABEL[f.risk ?? "low"]}
-                </Chip>
-                <Chip>
-                  {[...new Set(rs.map((r) => TOOL_LABEL[r.tool]))].join(" + ")}
-                </Chip>
-              </span>
-              <span className="truncate text-[13px] text-fg">
-                <span className="font-mono text-dim">{f.name.slice(0, 4)}</span>{" "}
-                {titleOf(f)}
-              </span>
-              <span className="truncate font-mono text-dim text-xs">
-                {f.detector ?? rs[0].detector}
-                {` · L${lineRanges(flaggedLines(f, model.lineOf(f)))}`}
-              </span>
-            </div>
-          );
-        })}
-        {shown.length > cards && (
-          <span className="px-1 text-[12.5px] text-dim">
-            +{shown.length - cards} more in the app
-          </span>
-        )}
-        {!shown.length && (
-          <span className="px-2 py-6 text-center text-[12.5px] text-dim">
-            No findings match the filters
-          </span>
-        )}
-      </div>
-    </Panel>
-  );
-}
-
-/** Coverage: the app's own CoverageSummary card (test coverage + audit focus list). */
-export function CoverageWidget({
-  atlas,
-  partly,
-}: {
-  atlas: AtlasData;
-  partly?: boolean;
-}) {
-  const model = createAtlasModel(atlas);
-  return (
-    <div className="w-full max-w-[460px]">
-      <CoverageSummary model={model} onSelect={() => {}} partly={partly} />
-    </div>
+    </Window>
   );
 }
