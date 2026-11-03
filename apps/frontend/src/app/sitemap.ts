@@ -18,6 +18,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page("/swap", 0.7),
     page("/explore", 0.7),
     page("/exploits", 0.7),
+    page("/settings", 0.4),
     ...protocolIds().map((id) => page(`/explore/${id}`, 0.6)),
     ...cases().map((c) => page(`/exploits/${c.id}`, 0.6)),
     ...PAGES.map((p) => page(hrefOf(p), p.slug ? 0.5 : 0.7)),
