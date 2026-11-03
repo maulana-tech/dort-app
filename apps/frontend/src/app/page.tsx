@@ -27,8 +27,9 @@ export const metadata = {
 };
 
 /**
- * What search engines read about Dort besides the page: the project (also known by its handle,
- * dort, with its X and GitHub), the site, and the app itself, free and open source.
+ * What search engines read about Dort besides the page: the project and its repository, the site,
+ * and the app itself, free and open source. No social handle is claimed here: naming an account
+ * this project does not run would be worse than naming none.
  */
 const ORG = `${SITE_URL}/#org`;
 const JSON_LD = {
@@ -38,16 +39,14 @@ const JSON_LD = {
       "@type": "Organization",
       "@id": ORG,
       name: SITE_NAME,
-      alternateName: "dort",
       url: SITE_URL,
       logo: `${SITE_URL}/brand/tile-180.png`,
-      sameAs: ["https://x.com/dort_app", GITHUB],
+      sameAs: [GITHUB],
     },
     {
       "@type": "WebSite",
       "@id": `${SITE_URL}/#website`,
       name: SITE_NAME,
-      alternateName: "dort",
       url: SITE_URL,
       publisher: { "@id": ORG },
     },
