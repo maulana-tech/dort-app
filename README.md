@@ -230,14 +230,23 @@ key: every other provider here is yours alone.
 BEDROCK_API_KEY=…                          # required; without it the option is not shown
 BEDROCK_REGION=us-east-1                   # optional
 BEDROCK_MODEL=anthropic.claude-haiku-5-5   # optional: what answers by default
-BEDROCK_MODELS=anthropic.claude-sonnet-5-5,anthropic.claude-opus-5-5  # optional: also offered
+BEDROCK_MODELS=minimax.minimax-m2.5,zai.glm-4.7-flash   # optional: replaces the suggested list
 ```
 
 The default is **Haiku**, not Sonnet, because the operator pays for every call: it is the cheapest
 current-generation Claude by a wide margin — $0.10 / $0.50 per million tokens against Sonnet 5.5's
-$2.00 / $10.00 — and still reads a run well enough to explain it. `BEDROCK_MODELS` adds models the
-reader may pick in Connect AI; a request naming anything outside that list silently gets the
-default back, so no page can spend the operator's budget on a model they did not offer.
+$2.00 / $10.00 — and still reads a run well enough to explain it.
+
+Beside it the reader can pick from other vendors, since the point of going through Bedrock is that
+it is not one company's model. Unset, the list suggests MiniMax, GLM, Qwen, Kimi and DeepSeek;
+`BEDROCK_MODELS` replaces it with whatever your account can actually invoke. A request naming
+anything outside the list silently gets the default back, so no page can spend the operator's
+budget on a model they did not offer.
+
+Bedrock serves two APIs on one host and the model's id decides which one answers: `anthropic.*`
+goes to the Messages API at `/anthropic/v1`, everything else to the OpenAI-compatible API at
+`/openai/v1`. Both were probed against the live host — each returns its own shape of 401 — and the
+browser needs no part of it, because the client already parses both stream shapes.
 
 Only the selected piece is sent: its name, its own source lines (at most 120), the pieces connected to it, open findings on it, a built-in checklist and the question. A fixed system prompt keeps the model defensive: explain behaviour, list what an auditor should check, write a Foundry test that pins **intended** behaviour, and refuse to write exploits. Details in [docs/ai-provider.md](docs/ai-provider.md).
 
