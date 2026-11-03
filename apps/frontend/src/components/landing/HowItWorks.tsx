@@ -14,9 +14,8 @@ import { Chip } from "@/components/ui";
 import type { Tone } from "@/components/ui/tone";
 import { ICON_PATH, type IconKey } from "@/features/atlas/utils/icons";
 import type { Frame, TestResult } from "@/features/trace";
-import { loadAtlas, useAtlas } from "./atlas";
 import { type Gsap, Lazy, Reveal, scrollToY, useStage } from "./motion";
-import type { LabDemo } from "./stats";
+import type { ChatDemo } from "./stats";
 import { Window } from "./Window";
 import "./how.css";
 
@@ -25,19 +24,14 @@ const list = () => import("@/components/(main)/trace/TestList");
 const widgetChunk = () => import("./FeatureWidgets");
 const TestList = dynamic(() => list().then((m) => m.TestList));
 const TraceWidget = dynamic(() => widgetChunk().then((m) => m.TraceWidget));
-const LabWidget = dynamic(() => widgetChunk().then((m) => m.LabWidget));
-const FindingsWidget = dynamic(() =>
-  widgetChunk().then((m) => m.FindingsWidget),
-);
-const CoverageWidget = dynamic(() =>
-  widgetChunk().then((m) => m.CoverageWidget),
-);
+const ChatWidget = dynamic(() => widgetChunk().then((m) => m.ChatWidget));
+const VaultWidget = dynamic(() => widgetChunk().then((m) => m.VaultWidget));
 /** what each step's widget needs loaded before it mounts */
 const READY: (() => Promise<unknown>)[] = [
   list,
   widgetChunk,
   widgetChunk,
-  () => Promise.all([widgetChunk(), loadAtlas()]),
+  widgetChunk,
 ];
 
 /** one labelled pill on a wire: what goes into a step, or what comes out of it */
@@ -71,32 +65,32 @@ const STEPS: Step[] = [
     title: "Read every frame",
     copy: [
       "Calls, events and cheatcodes decoded with your own ABIs.",
-      "Each frame links to the source lines it executed.",
+      "The Trace tab in Chat shows them beside the answer.",
     ],
     in: [{ t: "dort-data.json", code: true }, { t: "Your ABIs" }],
     out: [{ t: "Decoded frames" }, { t: "Source lines" }],
   },
   {
     icon: "plug",
-    title: "Write the test as a graph",
+    title: "Ask in plain language",
     copy: [
-      "Wire actors, calls and expected reverts onto the contract.",
-      "Run it in the browser, then export it as a Foundry test.",
+      "The run's figures go to the model you bring, never to one of ours.",
+      "What failed, why, and what the suite leaves untested.",
     ],
-    in: [{ t: "Actors" }, { t: "Calls" }, { t: "Expected reverts" }],
-    out: [{ t: "Foundry test", tone: "ok" }],
+    in: [{ t: "The run's summary" }, { t: "Your own AI" }],
+    out: [{ t: "An answer you can check", tone: "ok" }],
   },
   {
     icon: "warn",
-    title: "Triage what is left",
+    title: "Then move it on Portaldot",
     copy: [
-      "Slither and Aderyn merged into one deduplicated list.",
-      "Coverage shows the code no test ever touched.",
+      "Deposit, swap or bridge on Portaldot V3 and Base Sepolia.",
+      "Every page says what will happen before it asks you to sign.",
     ],
-    in: [{ t: "Slither" }, { t: "Aderyn" }, { t: "Coverage" }],
+    in: [{ t: "Your wallet" }, { t: "Portaldot V3" }],
     out: [
-      { t: "Findings", tone: "bad" },
-      { t: "Untested code", tone: "warn" },
+      { t: "Shares, quotes, receipts", tone: "ok" },
+      { t: "No blind signature", tone: "warn" },
     ],
   },
 ];
@@ -233,14 +227,13 @@ export function HowItWorks({
   tests,
   frames,
   test,
-  lab,
+  chat,
 }: {
   tests: TestResult[];
   frames: Frame[];
   test: string;
-  lab: LabDemo | null;
+  chat: ChatDemo;
 }) {
-  const atlas = useAtlas();
   const ref = useRef<HTMLElement>(null);
   const trigger = useRef<ScrollTrigger | null>(null);
   const [at, setAt] = useState(0);
@@ -433,13 +426,8 @@ export function HowItWorks({
       </div>
     </Window>,
     <TraceWidget key="trace" test={test} frames={frames} />,
-    lab && <LabWidget key="lab" {...lab} />,
-    atlas && (
-      <div key="find" className="grid w-full max-w-[460px] gap-3">
-        <FindingsWidget atlas={atlas} cards={1} />
-        <CoverageWidget atlas={atlas} partly={false} />
-      </div>
-    ),
+    <ChatWidget key="chat" demo={chat} />,
+    <VaultWidget key="vault" />,
   ];
 
   const head = (
