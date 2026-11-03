@@ -6,11 +6,13 @@ import {
   HOSTED_MODEL,
   HOSTED_REGION,
   hostedModel,
+  hostedModels,
   hostedReady,
   hostedRegion,
   MAX_BODY,
   MAX_TOKENS,
   overRate,
+  pickModel,
   RATE,
   refuseHosted,
 } from "./hosted.ts";
@@ -48,6 +50,56 @@ assert.equal(
 );
 // the fallback must be a Bedrock-flavoured id: a plain Anthropic one is not one
 assert.match(HOSTED_MODEL, /^anthropic\./);
+// and it must be a cheap one: the operator pays for every call made with it
+assert.match(
+  HOSTED_MODEL,
+  /haiku/,
+  "the default is the cheap tier, because the operator is the one paying",
+);
+
+// ── the reader may pick, but only from the operator's list ─────────────────────────────────
+// A request that could name any model would let one page run the operator's budget up on the
+// most expensive thing Bedrock sells. The choice is an index into their list, not a free string.
+assert.deepEqual(
+  hostedModels({}),
+  [HOSTED_MODEL],
+  "with nothing configured there is one model and it is the default",
+);
+assert.deepEqual(
+  hostedModels({
+    model: "anthropic.claude-haiku-5-5",
+    models: "anthropic.claude-sonnet-5-5, anthropic.claude-opus-5-5",
+  }),
+  [
+    "anthropic.claude-haiku-5-5",
+    "anthropic.claude-sonnet-5-5",
+    "anthropic.claude-opus-5-5",
+  ],
+  "the default leads, the rest follow in the order given",
+);
+assert.deepEqual(
+  hostedModels({ model: "a", models: "a, b, a, b, " }),
+  ["a", "b"],
+  "duplicates and blanks are dropped",
+);
+
+const offered = { model: "cheap", models: "dear" };
+assert.equal(pickModel(offered, "dear"), "dear", "a listed model is honoured");
+assert.equal(pickModel(offered, "cheap"), "cheap");
+for (const wanted of [
+  "anthropic.claude-opus-5-5",
+  "",
+  null,
+  undefined,
+  42,
+  { model: "dear" },
+  ["dear"],
+])
+  assert.equal(
+    pickModel(offered, wanted),
+    "cheap",
+    `not on the list falls back: ${JSON.stringify(wanted)}`,
+  );
 
 // ── who may spend the operator's money ─────────────────────────────────────────────────────
 const ok = {
