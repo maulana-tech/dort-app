@@ -226,7 +226,7 @@ assert.equal(isHostedUrl(undefined), false);
 assert.equal(isHostedUrl(""), false);
 assert.equal(isHostedUrl("http://localhost:3000"), false);
 assert.equal(isHostedUrl("http://127.0.0.1:3020"), false);
-assert.equal(isHostedUrl("https://dort-app.vercel.app"), true);
-assert.equal(isHostedUrl("https://dort-app.vercel.app/"), true);
+assert.equal(isHostedUrl("https://dort.example"), true);
+assert.equal(isHostedUrl("https://www.dort.example/"), true);
 
 console.log("provider ok");
