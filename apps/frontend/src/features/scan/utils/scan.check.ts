@@ -7,6 +7,8 @@ import {
   displayFrames,
   EXAMPLES,
   flattenTrace,
+  hasChildren,
+  hiddenByFold,
   joinSources,
   MAX_SOURCE,
   NOT_CHECKED,
@@ -592,5 +594,50 @@ assert.match(
 );
 
 assert.ok(MAX_SOURCE > 100_000, "a real project's flattened source must fit");
+
+// ── folding a call hides what it called ────────────────────────────────────────────────────
+// The rows were drawn with a fold box that did nothing, because the handler was a no-op copied
+// from a read-only preview. A call's children are the rows after it with a greater depth, up to
+// the next row at its own depth or shallower.
+const tree2 = flattenTrace({
+  type: "CALL",
+  to: "0xa",
+  calls: [
+    { type: "CALL", to: "0xb", calls: [{ type: "CALL", to: "0xc" }] },
+    { type: "CALL", to: "0xd" },
+  ],
+});
+assert.deepEqual(
+  tree2.map((f) => f.d),
+  [0, 1, 2, 1],
+);
+assert.deepEqual(hiddenByFold(tree2, new Set()), [false, false, false, false]);
+assert.deepEqual(
+  hiddenByFold(tree2, new Set([1])),
+  [false, false, true, false],
+  "folding b hides c and leaves d alone",
+);
+assert.deepEqual(
+  hiddenByFold(tree2, new Set([0])),
+  [false, true, true, true],
+  "folding the root hides everything under it",
+);
+assert.deepEqual(
+  hiddenByFold(tree2, new Set([0, 1])),
+  [false, true, true, true],
+  "a fold inside a fold changes nothing visible, and must not un-hide anything",
+);
+assert.deepEqual(
+  hiddenByFold(tree2, new Set([3])),
+  [false, false, false, false],
+  "folding a leaf hides nothing: it has nothing to hide",
+);
+
+// only a call with children earns a fold box
+assert.deepEqual(
+  tree2.map((_, i) => hasChildren(tree2, i)),
+  [true, true, false, false],
+);
+assert.equal(hasChildren([], 0), false, "an empty trace has no boxes to draw");
 
 console.log("scan ok");

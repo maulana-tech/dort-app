@@ -34,6 +34,8 @@ import {
   displayFrames,
   EXAMPLES,
   gatherFacts,
+  hasChildren,
+  hiddenByFold,
   joinSources,
   MAX_SOURCE,
   NOT_CHECKED,
@@ -41,6 +43,7 @@ import {
   type ScanFacts,
   type ScanInput,
   scanPrompt,
+  shortHex,
   subjectLabel,
   traceSummary,
   whyNot,
@@ -160,6 +163,32 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
   const shownRows = useMemo(() => displayFrames(shownFrames), [shownFrames]);
   const shownGas = Math.max(1, ...shownFrames.map((f) => f.gas ?? 0));
   const shownCalls = shownFrames.filter((f) => f.kind !== "EVENT").length;
+  // the rows were drawn with a fold box and a click target that did nothing, copied from a
+  // read-only preview. A call you cannot open is a picture of a call.
+  const [folded, setFolded] = useState<ReadonlySet<number>>(() => new Set());
+  const [pick, setPick] = useState<number | null>(null);
+  const hidden = useMemo(
+    () => hiddenByFold(shownFrames, folded),
+    [shownFrames, folded],
+  );
+  const toggleFold = (i: number) =>
+    setFolded((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(i)) next.add(i);
+      return next;
+    });
+  /** ask about one call, with the call itself attached rather than described */
+  const askAboutCall = (i: number) => {
+    const f = shownFrames[i];
+    if (!f || !chat.ready) return;
+    const where = `${f.kind} ${f.to}.${f.fn}${f.args ? `(${f.args})` : ""}`;
+    chat.send(
+      `What should I check about ${f.fn} on ${shortHex(f.to)}?`,
+      `In the trace above, call ${i} is:\n\n${where}${f.ok ? "" : ` — which reverted: ${f.status}`}${
+        f.gas ? `\nGas: ${f.gas}` : ""
+      }${f.ret ? `\nIt returned: ${f.ret}` : ""}\n\nWhat is worth checking about this one call, and how would I confirm it? If the trace does not say enough to tell, say so plainly.`,
+    );
+  };
   const touched = useMemo(() => addressesIn(liveFrames), [liveFrames]);
   // what the box would make of what is in it, so the control can say so before it is pressed
   const detected = useMemo(() => detect(draft), [draft]);
@@ -985,25 +1014,31 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
                               {traceSummary(shownFrames)}
                             </p>
                           )}
-                          {shownRows.map((f, i) => (
-                            <TraceRow
-                              key={`${i}-${f.fn}`}
-                              index={i}
-                              frame={f}
-                              maxGas={shownGas}
-                              selected={false}
-                              inRange={false}
-                              onSelect={() => {}}
-                              fold={
-                                (shownRows[i + 1]?.d ?? -1) > f.d
-                                  ? "open"
-                                  : null
-                              }
-                              onFold={() => {}}
-                              ask={null}
-                              onAsk={() => {}}
-                            />
-                          ))}
+                          {shownRows.map((f, i) =>
+                            hidden[i] ? null : (
+                              <TraceRow
+                                key={`${i}-${f.fn}`}
+                                index={i}
+                                frame={f}
+                                maxGas={shownGas}
+                                selected={pick === i}
+                                inRange={false}
+                                onSelect={() => setPick(pick === i ? null : i)}
+                                fold={
+                                  hasChildren(shownFrames, i)
+                                    ? folded.has(i)
+                                      ? "closed"
+                                      : "open"
+                                    : null
+                                }
+                                onFold={() => toggleFold(i)}
+                                // the pill sits on the row last clicked, as it does in the
+                                // trace view this panel borrows its rows from
+                                ask={pick === i && chat.ready ? "Ask" : null}
+                                onAsk={() => askAboutCall(i)}
+                              />
+                            ),
+                          )}
                           {/* the rows abbreviate addresses to stay readable; nothing may be
                               only ever seen cut short */}
                           {touched.length > 0 && (

@@ -9,6 +9,8 @@ export {
   displayFrames,
   EXAMPLES,
   flattenTrace,
+  hasChildren,
+  hiddenByFold,
   joinSources,
   MAX_SOURCE,
   NOT_CHECKED,

@@ -280,6 +280,38 @@ export const displayFrames = (frames: Frame[]): Frame[] =>
     ret: f.ret.length > 24 ? `${f.ret.slice(0, 10)}…${f.ret.slice(-6)}` : f.ret,
   }));
 
+/**
+ * Which rows a set of folded calls hides.
+ *
+ * A call's children are the rows after it with a greater depth, up to the next row at its own
+ * depth or shallower. Folding one hides all of them, and folding a call inside a folded call
+ * changes nothing visible — which is why this is computed from the whole list rather than
+ * tracked as each fold happens: two independent answers would drift apart the first time
+ * someone folded a parent after its child.
+ */
+export function hiddenByFold(
+  frames: Frame[],
+  folded: ReadonlySet<number>,
+): boolean[] {
+  const hidden = frames.map(() => false);
+  // the depth of the shallowest fold we are currently inside, or null
+  let under: number | null = null;
+  for (let i = 0; i < frames.length; i++) {
+    if (under !== null && frames[i].d > under) {
+      hidden[i] = true;
+      continue;
+    }
+    under = folded.has(i) ? frames[i].d : null;
+  }
+  return hidden;
+}
+
+/** Whether a row has children at all, which is what earns it a fold box. */
+export const hasChildren = (frames: Frame[], i: number): boolean => {
+  const here = frames[i];
+  return here !== undefined && (frames[i + 1]?.d ?? -1) > here.d;
+};
+
 /** Every address the transaction touched, first seen first — the legend under the trace. */
 export function addressesIn(
   frames: Frame[],
