@@ -140,11 +140,7 @@ export const GROUPS: DocGroup[] = [
               "Each one is a report: its contracts and how they connect, its main flows as sequence diagrams, and links to the code.",
             ],
           },
-          { h2: "3. Read what went wrong elsewhere" },
-          {
-            p: "**Exploits** holds post-mortems of closed, public incidents — what the protocol intended, what actually happened, and how a reviewer catches that class of mistake. No exploit code, and no attacker addresses: the build-time data check fails on any 40-hex string, so one cannot be added by accident.",
-          },
-          { h2: "4. Move something on-chain" },
+          { h2: "3. Move something on-chain" },
           {
             steps: [
               "**Vault** deposits into `DortSafeVault` and shows the shares it will mint before you sign.",
@@ -224,30 +220,6 @@ export const GROUPS: DocGroup[] = [
           },
           {
             p: "Open it from **Explore** in the top bar. The Contract Lab can go full screen.",
-          },
-        ],
-      },
-      {
-        slug: "exploits",
-        title: "Exploits",
-        lead: "Large smart contract incidents as defensive post-mortems.",
-        blocks: [
-          {
-            p: "Exploits covers four of the largest smart contract incidents on the rekt.news leaderboard, one per vulnerability class: Poly Network, Euler Finance, Nomad Bridge and Beanstalk. Each is one report: overview, attack flow as a sequence diagram, funds, root cause as a diff, and how an auditor catches it.",
-          },
-          {
-            video: "/docs/exploits.mp4",
-            caption:
-              "An incident as one report: overview, attack flow and how an auditor catches it",
-          },
-          { h2: "Policy" },
-          {
-            list: [
-              "Historical, closed incidents only, at the level their public post-mortems describe.",
-              "No exploit code, calldata, transaction payloads or attacker addresses.",
-              "Every attack step that matters is paired with the missing check, and every case ends with the invariant that would have failed.",
-              "Code is illustrative, written to the pattern, and says so. Facts link to their sources.",
-            ],
           },
         ],
       },

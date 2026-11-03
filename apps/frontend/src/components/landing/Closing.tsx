@@ -261,7 +261,6 @@ export function Footer() {
       links: [
         ["Chat", "/chat"],
         ["Explore", "/explore"],
-        ["Exploits", "/exploits"],
         ["Docs", "/docs"],
       ],
     },

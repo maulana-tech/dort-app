@@ -174,11 +174,9 @@ function Glyph({ icon, at, bad }: Word["glyphs"][number]) {
 export function BigWords({
   chat,
   protocols,
-  incidents,
 }: {
   chat: ChatDemo;
   protocols: string[];
-  incidents: { name: string; year: string; loss: string }[];
 }) {
   const ref = useRef<HTMLElement>(null);
   useStage(ref, bigWords, WORDS_MQ);
@@ -207,13 +205,13 @@ export function BigWords({
     },
     {
       word: "Learn",
-      line: "How the protocols you depend on work, and how others lost the money.",
+      line: "How the protocols you depend on work, read from their own source.",
       glyphs: [
         { icon: "warn", at: "-top-12 left-3 md:-top-16 md:-left-4", bad: true },
         { icon: "check", at: "-bottom-12 right-3 md:-right-4 md:-bottom-16" },
       ],
       min: "min-h-[700px] md:min-h-[505px] lg:min-h-[634px] xl:min-h-[674px]",
-      visual: <LearnVisual protocols={protocols} incidents={incidents} />,
+      visual: <LearnVisual protocols={protocols} />,
       wait: visuals,
     },
   ];

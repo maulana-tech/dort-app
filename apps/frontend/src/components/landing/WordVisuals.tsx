@@ -532,14 +532,8 @@ export function MoveVisual() {
   );
 }
 
-/** Learn: the protocols mapped for reading, and the incidents written up as reports. */
-export function LearnVisual({
-  protocols,
-  incidents,
-}: {
-  protocols: string[];
-  incidents: { name: string; year: string; loss: string }[];
-}) {
+/** Learn: the protocols mapped for reading, from their own source. */
+export function LearnVisual({ protocols }: { protocols: string[] }) {
   return (
     <Fit>
       <div className="grid w-[560px] gap-3">
@@ -554,21 +548,6 @@ export function LearnVisual({
               </span>
             ))}
           </div>
-        </Panel>
-        <Panel title="Exploits" aside="closed, public incidents">
-          <ul className="grid gap-1.5 p-3">
-            {incidents.map((c) => (
-              <li
-                key={c.name}
-                className="flex items-baseline justify-between gap-3 rounded-[10px] border border-border bg-card-grad px-3 py-2"
-              >
-                <span className="text-[13px] text-fg">{c.name}</span>
-                <span className="font-mono text-[12px] text-dim">
-                  {c.year} · {c.loss}
-                </span>
-              </li>
-            ))}
-          </ul>
         </Panel>
       </div>
     </Fit>

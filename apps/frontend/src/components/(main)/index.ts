@@ -1,7 +1,5 @@
 export { BridgeWorkspace } from "./bridge/BridgeWorkspace";
 export { ChatWorkspace } from "./chat/ChatWorkspace";
-export { ExploitsGallery } from "./exploits/ExploitsGallery";
-export { ExploitWorkspace } from "./exploits/ExploitWorkspace";
 export { ExploreGallery } from "./explore/ExploreGallery";
 export { ProtocolWorkspace } from "./explore/ProtocolWorkspace";
 export { CallGraph } from "./graph/CallGraph";
