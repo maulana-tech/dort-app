@@ -752,6 +752,93 @@ export const GROUPS: DocGroup[] = [
         ],
       },
       {
+        slug: "deploy",
+        title: "Deploy to Vercel",
+        lead: "A public Dort anyone can open, with the half that needs your machine turned off.",
+        blocks: [
+          {
+            p: "Dort runs hosted as well as locally, and the difference is not cosmetic. A deploy can read a chain, answer questions and show a trace; it cannot run `forge`, and it cannot reach your Claude Code. Those two live on your machine, and a hosted build **answers 404 for them on purpose** rather than pretending.",
+          },
+          { h2: "The one setting people get wrong" },
+          {
+            p: "This repository has no root `package.json`. The app is `apps/frontend`, and the exporter beside it is plain Node with no build. Point Vercel at the app or the first deploy fails before it installs anything.",
+          },
+          {
+            table: {
+              head: ["Vercel setting", "Value"],
+              rows: [
+                ["Framework preset", "Next.js"],
+                ["Root Directory", "`apps/frontend`"],
+                [
+                  "Install Command",
+                  "`pnpm install` (the default; the repo pins pnpm 10)",
+                ],
+                ["Build Command", "`pnpm build` (the default)"],
+                ["Node version", "20 or newer"],
+              ],
+            },
+          },
+          { h2: "Environment variables" },
+          {
+            p: "None are required. Without them you get a working Dort where every reader brings their own AI, which is the arrangement the rest of this project argues for.",
+          },
+          {
+            table: {
+              head: ["Variable", "What it does"],
+              rows: [
+                [
+                  "`NEXT_PUBLIC_URL`",
+                  "Your deploy's own address, e.g. `https://dort.example`. It is what the download commands in these docs print, and what the sitemap and social cards use. Leave it out and they name `localhost:3000`, which helps nobody reading your site",
+                ],
+                [
+                  "`BEDROCK_API_KEY`",
+                  "Turns on the model this deploy pays for. **Only set it if you mean to pay for other people's questions** — every call goes through your AWS account and lands in its logs if model invocation logging is on there",
+                ],
+                [
+                  "`BEDROCK_REGION`",
+                  "Where to call, e.g. `ap-southeast-2`. Defaults to `us-east-1`",
+                ],
+                [
+                  "`BEDROCK_MODEL`",
+                  "The default model. Set it to one your key can actually reach — a key without Anthropic entitlement answers 404 for every Claude id, however available the console says they are",
+                ],
+                [
+                  "`BEDROCK_MODELS`",
+                  "A comma-separated list of the others a reader may pick. Nothing outside it can be asked for, whatever a request says",
+                ],
+                [
+                  "`DORT_HOSTED`",
+                  "Forces the hosted behaviour off Vercel. On Vercel it is already implied by `VERCEL`",
+                ],
+              ],
+            },
+          },
+          {
+            note: "Set the Bedrock variables in Vercel's dashboard, never in the repository. `.env*` is gitignored here, and a key in a commit is a key to rotate.",
+            tone: "warn",
+          },
+          { h2: "What the deploy cannot do" },
+          {
+            list: [
+              "**Start test** and **Reload run** need `forge` on a machine. Run `node dort-bridge.mjs` in your project and the hosted page will use it — the bridge binds `127.0.0.1`, accepts only Dort's origins plus a token it prints, and runs nothing but the exporter.",
+              "**Your Claude** is local-only. `/api/claude` answers 404 on a hosted build, because it would otherwise run a binary on the server for whoever asked.",
+              "**A loaded run** has to be dropped in. `DORT_DATA_PATH` reads a file off disk, and the disk is not yours on a deploy; readers drop a `dort-data.json` on the Chat page instead.",
+            ],
+          },
+          { h2: "Before you point anyone at it" },
+          {
+            steps: [
+              "Open `/chat` and ask something. With no Bedrock key the box still answers from the run's own figures, and says so.",
+              "Open `/vault` and connect a wallet. The deposit figures come from the contract's own arithmetic over RPC, so a blank card means the chain is unreachable from the browser, not that the deploy is broken.",
+              'Check `/api/bedrock` in a tab. It answers `{"ready":false,"models":[]}` without a key, and lists the models with one. It never returns the key.',
+            ],
+          },
+          {
+            note: "The hosted model's rate limit is held in memory, per server instance. Serverless gives you several, so treat it as a brake rather than a budget — and keep an AWS budget alarm behind it.",
+          },
+        ],
+      },
+      {
         slug: "privacy",
         title: "Privacy & security",
         lead: "What stays on your machine, and what Dort will never do.",
