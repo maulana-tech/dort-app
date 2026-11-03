@@ -1,47 +1,42 @@
-/* Ask / Move / Learn (BigWords.tsx).
+/* Ask / Move / Learn (BigWords.tsx): three white slides, moved sideways by the scroll.
 
-   One point, one block, in normal flow. The word is held in place with position:sticky inside
-   its own block, so it stays level with its panel for exactly as long as that block is on
-   screen and hands over the moment the next one arrives.
+   One point is one slide, and the word and its card are inside the same slide. That is the whole
+   fix for what went wrong before: when the words lived in one column and the panels moved across
+   another, a panel stepping left landed on top of a word instead of being clipped, because the
+   clip box spanned both columns. A slide carries its word with it, so there is nothing for it to
+   be printed over.
 
-   This replaces a pinned stage that translated three panels across two grid columns. The clip
-   window has to be the right-hand column alone, and on a stage spanning both columns it is not:
-   a panel stepping one column to the left landed on top of the words instead of being cut off.
-   Sticky cannot do that. Nothing here overlaps anything, at any scroll position, because every
-   block still occupies its own space on the page — which is also why a phone, a screen reader
-   and a reader with motion turned off all get a layout that needs none of this. */
+   Default — no JS, reduced motion, or a phone — is the slides stacked down the page, each in its
+   own space. Nothing below is needed for that to read.
 
-@media (min-width: 768px) {
-  /* the word rides down its own block and stops at the next one; h-screen keeps it centred
-     against whatever height the panel turns out to be */
-  .lp-words-head {
-    position: sticky;
-    top: 0;
+   From md up with motion allowed, the stage becomes one screen with the slides in a row running
+   off to the right, and the timeline translates the row. Every property the row needs is set
+   here explicitly, flex-direction included: Tailwind's flex-col is a utility on the same element,
+   and leaving the direction unstated once already left the row stacked while the script moved it
+   sideways. These rules are unlayered, so they win over Tailwind's layer — but only the ones
+   actually written. */
+
+@media (prefers-reduced-motion: no-preference) and (min-width: 768px) {
+  .lp-words-stage {
     height: 100svh;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
+    align-items: center;
+    /* the window: slides two and three wait outside it until the scroll brings them in */
+    overflow: hidden;
+    padding-block: 0;
   }
-}
 
-/* the plate the panel sits on: one surface per point, so a visual never reads as loose parts
-   floating on the canvas, and two blocks can never be mistaken for one */
-.lp-words-plate {
-  border-radius: 28px;
-}
-
-@media (min-width: 768px) {
-  .lp-words-plate {
-    background: rgb(255 255 255 / 0.06);
-    border: 1px solid rgb(255 255 255 / 0.1);
-    padding: clamp(1.5rem, 3vw, 2.75rem);
-  }
-}
-
-/* before GSAP runs, the panel waits one step to the right; with no motion allowed it never
-   moved in the first place, so it must not be left sitting there */
-@media (prefers-reduced-motion: no-preference) and (min-width: 768px) {
-  .lp-words-plate {
+  .lp-words-track {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    width: 100%;
+    gap: 0;
     will-change: transform;
+  }
+
+  .lp-words-slide {
+    flex: 0 0 100%;
+    min-width: 0;
   }
 }

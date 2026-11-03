@@ -44,90 +44,86 @@ const TILT = [-14, 9, -6, 12, -10, 16];
  * so a resize or an address bar appearing does not leave the track half a panel out.
  */
 function bigWords(root: HTMLElement, gsap: Gsap) {
-  for (const block of gsap.utils.toArray<HTMLElement>("[data-lp=word]", root)) {
-    const q = gsap.utils.selector(block);
-    const [plate] = q("[data-lp=plate]");
+  const q = gsap.utils.selector(root);
+  const [track] = q("[data-lp=track]");
+  const slides = q("[data-lp=slide]");
+  const n = slides.length;
+  if (!track || n < 2) return;
 
-    // the word drops in as its block arrives
-    gsap
-      .timeline({
-        scrollTrigger: {
-          trigger: block,
-          start: "top 80%",
-          end: "top 30%",
-          scrub: 0.6,
-        },
-      })
-      .fromTo(
-        q("[data-lp=letter]"),
-        {
-          yPercent: -140,
-          rotate: (i: number) => TILT[i % TILT.length],
-          autoAlpha: 0,
-        },
-        {
-          yPercent: 0,
-          rotate: 0,
-          autoAlpha: 1,
-          ease: "bounce.out",
-          stagger: 0.12,
-          duration: 1,
-        },
-      )
-      .fromTo(
-        q("[data-lp=line]"),
-        { autoAlpha: 0, y: 24 },
-        { autoAlpha: 1, y: 0, duration: 0.6 },
-        "-=0.4",
-      );
+  // the distance is (n-1) stage widths. Measured, not expressed as a percentage: xPercent is a
+  // share of the element's OWN width, and this track is one stage wide with its slides
+  // overflowing it — so the usual -100*(n-1)/n would have moved two thirds of one screen
+  // instead of two whole ones. offsetWidth is re-read on every refresh (invalidateOnRefresh),
+  // so a resize cannot leave the row between slides.
+  const tl = gsap.timeline({
+    scrollTrigger: {
+      trigger: root,
+      start: "top top",
+      // one screen of scrolling per slide change: enough that a flick cannot skip one
+      end: () => `+=${(n - 1) * 100}%`,
+      pin: true,
+      scrub: 1,
+      invalidateOnRefresh: true,
+      anticipatePin: 1,
+    },
+  });
+  // one time unit per slide change, so a letter tween can be placed at the moment its slide
+  // arrives rather than at a fraction nobody can read
+  tl.to(
+    track,
+    {
+      x: () => -(n - 1) * (track as HTMLElement).offsetWidth,
+      ease: "none",
+      duration: n - 1,
+    },
+    0,
+  );
 
-    // the panel comes in from the right — the sideways move, done inside the block's own space
-    // so it can never travel over the words. A short distance on purpose: far enough to read as
-    // horizontal, near enough that it is already legible when it settles.
-    gsap.fromTo(
-      plate,
-      { x: 120, autoAlpha: 0 },
+  // each word's letters tumble in as its slide comes level. The first slide is already on
+  // screen when the pin takes hold, so its letters are left alone: a fromTo would hide them at
+  // setup and the scrub's catch-up would show a wordless card for a beat.
+  slides.forEach((_, i) => {
+    if (i === 0) return;
+    tl.fromTo(
+      q(`[data-lp=slide]:nth-child(${i + 1}) [data-lp=letter]`),
       {
-        x: 0,
+        yPercent: -120,
+        rotate: (j: number) => TILT[j % TILT.length],
+        autoAlpha: 0,
+      },
+      {
+        yPercent: 0,
+        rotate: 0,
         autoAlpha: 1,
-        ease: "power2.out",
-        scrollTrigger: {
-          trigger: plate,
-          start: "top 92%",
-          end: "top 45%",
-          scrub: 0.6,
-        },
+        ease: "bounce.out",
+        stagger: 0.08,
+        duration: 0.5,
       },
+      Math.max(0, i - 0.45),
     );
+  });
 
-    // the badges circle their corner while the block passes
-    const spin = gsap.timeline({
-      scrollTrigger: {
-        trigger: block,
-        start: "top bottom",
-        end: "bottom top",
-        scrub: true,
-      },
-    });
-    const orbit = 22;
-    for (const [i, g] of q("[data-lp=glyph]").entries()) {
-      const r = i ? -orbit : orbit;
-      spin.to(
-        g,
-        {
-          // easeEach belongs INSIDE the keyframes object; as a sibling GSAP rejects it
-          // ("Invalid property easeEach") and every orbit step runs linear instead of eased.
-          keyframes: {
-            x: [0, r, 0, -r, 0],
-            y: [-r, 0, r, 0, -r],
-            easeEach: "sine.inOut",
-          },
-          rotate: i ? -40 : 40,
-          ease: "none",
+  // the badges circle their corner for the whole stretch, on the same timeline so they cannot
+  // run on past it
+  const orbit = 20;
+  for (const [i, g] of q("[data-lp=glyph]").entries()) {
+    const r = i % 2 ? -orbit : orbit;
+    tl.to(
+      g,
+      {
+        // easeEach belongs INSIDE the keyframes object; as a sibling GSAP rejects it
+        // ("Invalid property easeEach") and every orbit step runs linear instead of eased.
+        keyframes: {
+          x: [0, r, 0, -r, 0],
+          y: [-r, 0, r, 0, -r],
+          easeEach: "sine.inOut",
         },
-        0,
-      );
-    }
+        rotate: i % 2 ? -30 : 30,
+        duration: tl.duration() || 1,
+        ease: "none",
+      },
+      0,
+    );
   }
 }
 
@@ -205,59 +201,60 @@ export function BigWords({
   ];
   return (
     <section ref={ref} data-tone="words" aria-label="Ask, move, learn">
-      {/* one point, one block. Each keeps its own space on the page, so no word can ever be
-          printed over a panel and no panel can be cut in half — which is what a pinned stage
-          clipping across two columns did. */}
-      {words.map((w, i) => (
-        <div
-          key={w.word}
-          data-lp="word"
-          className="mx-auto grid max-w-[1240px] items-start gap-10 px-4 py-20 md:grid-cols-[minmax(0,clamp(240px,26vw,360px))_1fr] md:gap-16 md:px-6 md:py-0"
-        >
-          <div data-lp="head" className="lp-words-head">
-            <p className="mb-4 font-mono text-[12px] text-on-canvas-muted tracking-[0.08em]">
-              {`${String(i + 1).padStart(2, "0")} / ${String(words.length).padStart(2, "0")}`}
-            </p>
-            <h2
-              aria-label={w.word}
-              className="font-light text-[clamp(76px,10vw,150px)] text-on-canvas leading-[0.9] tracking-[-0.06em]"
-            >
-              {[...w.word].map((c, j) => (
-                <span
-                  // biome-ignore lint/suspicious/noArrayIndexKey: letters repeat, their position is the identity
-                  key={j}
-                  data-lp="letter"
-                  aria-hidden="true"
-                  className="inline-block"
-                >
-                  {c}
-                </span>
-              ))}
-            </h2>
-            <p
-              data-lp="line"
-              className="mt-6 max-w-[420px] text-balance text-[16px] text-on-canvas-muted leading-relaxed md:text-[18px]"
-            >
-              {w.line}
-            </p>
-          </div>
+      <div className="lp-words-stage mx-auto w-full max-w-[1320px] px-4 py-20 md:px-6">
+        <div className="lp-words-track flex flex-col gap-16 md:gap-0">
+          {words.map((w, i) => (
+            // one point, one slide: the word and its card travel together, so nothing can ever
+            // be printed over anything else however far the row moves
+            <div key={w.word} data-lp="slide" className="lp-words-slide">
+              <article className="grid items-center gap-8 rounded-[32px] bg-white p-6 shadow-float md:grid-cols-[minmax(0,clamp(260px,26vw,380px))_1fr] md:gap-12 md:p-16">
+                <div data-lp="head" className="min-w-0">
+                  <p className="mb-4 font-mono text-[12px] text-primary/55 tracking-[0.08em]">
+                    {`${String(i + 1).padStart(2, "0")} / ${String(words.length).padStart(2, "0")}`}
+                  </p>
+                  <h2
+                    aria-label={w.word}
+                    className="font-light text-[clamp(64px,8vw,132px)] text-primary leading-[0.9] tracking-[-0.06em]"
+                  >
+                    {[...w.word].map((c, j) => (
+                      <span
+                        // biome-ignore lint/suspicious/noArrayIndexKey: letters repeat, their position is the identity
+                        key={j}
+                        data-lp="letter"
+                        aria-hidden="true"
+                        className="inline-block"
+                      >
+                        {c}
+                      </span>
+                    ))}
+                  </h2>
+                  <p
+                    data-lp="line"
+                    className="mt-5 max-w-[420px] text-balance text-[15px] text-body leading-relaxed md:text-[17px]"
+                  >
+                    {w.line}
+                  </p>
+                </div>
 
-          {/* the panel's own plate, with room inside it for the badges that hang off the
-              visual's corners — they are inside the block, so nothing is ever clipped */}
-          {/* the cell is a screen tall so the word beside it has something to stay level with;
-              the plate inside hugs its visual rather than becoming a screen-tall empty box */}
-          <div className="flex min-w-0 items-center justify-center md:min-h-[100svh]">
-            <div data-lp="plate" className="lp-words-plate relative w-full">
-              {w.glyphs.map((g) => (
-                <Glyph key={g.icon} {...g} />
-              ))}
-              <Lazy className={`w-full ${w.min} md:min-h-0`} wait={w.wait}>
-                {w.visual}
-              </Lazy>
+                {/* the badges hang off the visual's corners; the card's padding is what keeps
+                    them inside the slide, where the window cannot cut them */}
+                <div className="relative min-w-0">
+                  {w.glyphs.map((g) => (
+                    <Glyph key={g.icon} {...g} />
+                  ))}
+                  <Lazy
+                    className={`w-full ${w.min} md:min-h-0`}
+                    margin="100% 200%"
+                    wait={w.wait}
+                  >
+                    {w.visual}
+                  </Lazy>
+                </div>
+              </article>
             </div>
-          </div>
+          ))}
         </div>
-      ))}
+      </div>
     </section>
   );
 }
