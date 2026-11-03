@@ -1,5 +1,6 @@
 import {
   Compare,
+  Credits,
   Faq,
   Features,
   Finale,
@@ -83,6 +84,9 @@ export default async function Home() {
         <Words />
         <Features />
         <OnChain />
+        {/* after OnChain, which ends on doing something with what you read: connecting a wallet
+            is the other thing a wallet is for here, and this says plainly how much it is worth */}
+        <Credits />
         <Tests />
         <Compare />
         <Faq />

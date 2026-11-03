@@ -104,6 +104,8 @@ const TONES: Record<
   words: { bg: [10, 79, 193], glow: 0.05, x: 50, y: 40 },
   how: { bg: [11, 83, 203], glow: 0.04, x: 50, y: 60 },
   findings: { bg: [11, 86, 209], glow: 0.08, x: 50, y: 100 },
+  // between OnChain and Tests: a step down from the on-chain pages, not a new place
+  credits: { bg: [11, 84, 205], glow: 0.06, x: 50, y: 45 },
   tests: { bg: [11, 82, 201], glow: 0.05, x: 50, y: 50 },
   ask: { bg: [11, 86, 211], glow: 0.07, x: 30, y: 80 },
   compare: { bg: [10, 80, 197], glow: 0.05, x: 30, y: 30 },

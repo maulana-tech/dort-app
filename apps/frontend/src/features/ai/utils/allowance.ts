@@ -26,9 +26,14 @@ const HOUR = 60 * 60_000;
  * history on a chain we support has paid the faucet's price and gets the real allowance.
  */
 export const TIERS: Record<Tier, Allowance> = {
-  anon: { calls: 8, windowMs: HOUR },
-  wallet: { calls: 20, windowMs: HOUR },
-  onchain: { calls: 60, windowMs: HOUR },
+  // Generous on purpose. A brake exists to stop a loop, and a loop is hundreds a minute — it
+  // does not need to be felt by someone reading the page to know whether it works. Eight was
+  // low enough that a visitor trying the thing properly could meet it, and meeting a limit
+  // while deciding whether to trust a tool is the most expensive moment to meet one.
+  anon: { calls: 40, windowMs: HOUR },
+  // what connecting is worth: a hundred an hour, which is what "a hundred credits" means here
+  wallet: { calls: 100, windowMs: HOUR },
+  onchain: { calls: 100, windowMs: HOUR },
 };
 
 export const allowanceOf = (tier: Tier): Allowance => TIERS[tier];
@@ -42,7 +47,7 @@ export const isTier = (t: unknown): t is Tier =>
 /** Questions earned per whole unit of the chain's own token held. */
 export const PER_UNIT = 10;
 /** However little is held, and however much: any balance earns the floor, none earns the cap. */
-export const CREDIT_CAP = 240;
+export const CREDIT_CAP = 400;
 
 /**
  * What a balance is worth in questions.
@@ -76,8 +81,8 @@ export function tierLine(tier: Tier, left: number): string {
   if (tier === "onchain")
     return `${n}. What your wallet holds on a chain Dort reads is counted as credit — the faucet is the price, and the tokens stay yours.`;
   if (tier === "wallet")
-    return `${n}. Claim from a faucet and make one transaction to raise it — Dort checks the chains it supports.`;
-  return `${n}. Connect a wallet for more, which is also how Dort tells one reader from another behind a shared address.`;
+    return `${n}. Holding anything on a chain Dort reads raises it further — the faucet is the price.`;
+  return `${n}. Connect a wallet and prove it for ${TIERS.wallet.calls} an hour, which is also how Dort tells one reader from another behind a shared address.`;
 }
 
 export type Bucket = { at: number[] };

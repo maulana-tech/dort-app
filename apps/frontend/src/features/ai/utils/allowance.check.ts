@@ -21,9 +21,20 @@ const HOUR = 60 * 60_000;
 // ── the tiers are ordered, and the bottom one is not zero ──────────────────────────────────
 // An anonymous reader must still be able to ask something: a page that is dead until you
 // connect a wallet is a page most people close. The ladder is a nudge, not a gate.
-assert.ok(TIERS.anon.calls > 0, "anonymous is small, never nothing");
+assert.ok(
+  TIERS.anon.calls >= 40,
+  "a brake stops a loop, which is hundreds a minute; it must not be felt by someone reading the page to decide whether to trust the tool",
+);
 assert.ok(TIERS.wallet.calls > TIERS.anon.calls);
-assert.ok(TIERS.onchain.calls > TIERS.wallet.calls);
+assert.ok(
+  TIERS.onchain.calls >= TIERS.wallet.calls,
+  "proving a wallet is the big step; holding something only raises it further",
+);
+assert.equal(
+  TIERS.wallet.calls,
+  100,
+  "connecting is worth a hundred an hour, which is what 'a hundred credits' means here",
+);
 for (const t of ["anon", "wallet", "onchain"] as const)
   assert.equal(
     allowanceOf(t).windowMs,
@@ -67,8 +78,16 @@ assert.match(
   /1 question left/,
   "one question, not questions",
 );
-assert.match(tierLine("anon", 5), /Connect a wallet/);
-assert.match(tierLine("wallet", 5), /faucet/);
+assert.match(
+  tierLine("anon", 5),
+  /Connect a wallet and prove it for 100 an hour/,
+);
+assert.match(tierLine("wallet", 5), /faucet is the price/);
+assert.doesNotMatch(
+  tierLine("wallet", 5),
+  /balance|spent|deducted/i,
+  "an hourly rate is not a ledger, and must never be described as one",
+);
 assert.match(tierLine("onchain", 5), /counted as credit/);
 assert.match(
   tierLine("onchain", 5),
