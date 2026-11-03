@@ -377,7 +377,7 @@ export function proposeScenario(d, dataPath, input) {
   list = [...list.filter(s => s?.id !== sc.id), entry];
   writeFileSync(`${file}.tmp`, `${JSON.stringify(list, null, 1)}\n`);
   renameSync(`${file}.tmp`, file);
-  return { saved: file, id: sc.id, replaced, next: `In Dort (run locally, or dort-app.vercel.app linked with node dort-bridge.mjs in this project): Atlas → Scenarios, pick "AI · ${sc.name}" under "Proposed by your AI client" (switch back to the tab, or press Reload trace, to pick it up), then Run and Export .t.sol.` };
+  return { saved: file, id: sc.id, replaced, next: `Saved to ${file}, next to dort-data.json. Read it, run the test it describes, and keep it in your suite only once you agree with it.` };
 }
 
 // ---------- MCP ----------
