@@ -227,10 +227,17 @@ key: every other provider here is yours alone.
 
 ```bash
 # to offer it from your own deployment
-BEDROCK_API_KEY=…            # required; without it the option is not shown
-BEDROCK_REGION=us-east-1     # optional
-BEDROCK_MODEL=anthropic.claude-sonnet-5   # optional
+BEDROCK_API_KEY=…                          # required; without it the option is not shown
+BEDROCK_REGION=us-east-1                   # optional
+BEDROCK_MODEL=anthropic.claude-haiku-5-5   # optional: what answers by default
+BEDROCK_MODELS=anthropic.claude-sonnet-5-5,anthropic.claude-opus-5-5  # optional: also offered
 ```
+
+The default is **Haiku**, not Sonnet, because the operator pays for every call: it is the cheapest
+current-generation Claude by a wide margin — $0.10 / $0.50 per million tokens against Sonnet 5.5's
+$2.00 / $10.00 — and still reads a run well enough to explain it. `BEDROCK_MODELS` adds models the
+reader may pick in Connect AI; a request naming anything outside that list silently gets the
+default back, so no page can spend the operator's budget on a model they did not offer.
 
 Only the selected piece is sent: its name, its own source lines (at most 120), the pieces connected to it, open findings on it, a built-in checklist and the question. A fixed system prompt keeps the model defensive: explain behaviour, list what an auditor should check, write a Foundry test that pins **intended** behaviour, and refuse to write exploits. Details in [docs/ai-provider.md](docs/ai-provider.md).
 
