@@ -27,7 +27,7 @@ import {
   txUrl,
   VAULT_CHAINS,
 } from "@/features/bridge/chains";
-import { useWallet } from "@/features/bridge/useWallet";
+import { useWallet } from "@/features/bridge/WalletProvider";
 import { useVault } from "@/features/vault/useVault";
 import {
   firstDeployedChain,
