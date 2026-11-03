@@ -29,18 +29,18 @@ import "./compare.css";
 const ROWS: { what: string; dort: string; cli: string }[] = [
   {
     what: "Traces you can read",
-    dort: "Every call, event and cheatcode decoded, each frame on the source lines and storage it touched, and a call graph per test.",
+    dort: "Every call, event and cheatcode decoded, each frame on the source lines it ran — beside the answer, in Chat's Trace tab.",
     cli: "A text tree from forge -vvvv, the rest one opcode at a time in forge debug",
   },
   {
-    what: "One finding per issue, triaged",
-    dort: "Slither and Aderyn merged into one finding per issue, triaged in place and exported as a Markdown report.",
-    cli: "Two separate reports, no triage",
+    what: "A question, not a grep",
+    dort: "Ask in plain language. The run's figures go to the model you bring, with the calls they came from one tab away.",
+    cli: "A JSON blob from forge test --json, and whatever you can grep out of it",
   },
   {
-    what: "Coverage and tests you can wire",
-    dort: "Coverage per function, untested ones first, and Lab scenarios exported as .t.sol tests.",
-    cli: "A per-file table from forge coverage, tests written by hand",
+    what: "Told before you sign",
+    dort: "The shares a deposit mints, the price impact of a swap, what the escrow holds against what Portaldot issued — shown before the wallet is asked.",
+    cli: "cast send, then read the receipt and find out",
   },
 ];
 
@@ -54,23 +54,20 @@ function raw(d: CompareData): string[][] {
   return [
     [`$ forge test --mt ${test} -vvvv`, ...d.tree],
     [
-      "$ cat reports/slither.json",
-      '  "check": "reentrancy-no-eth",',
-      '  "impact": "Medium",',
-      '  "first_markdown_element": "src/DortVault.sol#L73-L79"',
-      "$ cat reports/aderyn.json",
-      '  "detector_name": "reentrancy-state-change",',
-      '  "title": "Reentrancy: State change after external call",',
-      '  "line_no": 75',
+      "$ forge test --json",
+      '{"DortSafeVaultTest":{"duration":{"secs":2},"test_results":{',
+      '  "test_depositMintsShares()":{"status":"Success","decoded_logs":[…],',
+      '  "kind":{"Unit":{"gas":131072}},"traces":[[ "Deployment", {…} ]]},',
+      "  … one line of JSON per suite, every trace inside it",
+      "$ # now read it",
     ],
     [
-      "$ forge coverage",
-      "| File | % Lines | % Branches | % Funcs |",
-      "|------|---------|------------|---------|",
-      `| ${d.cov.file} | ${d.cov.lines} | ${d.cov.branches} | ${d.cov.funcs} |`,
-      "",
-      `$ vim ${d.sol.file}`,
-      ...d.sol.lines,
+      "$ cast call 0x162Dcf95…5aF8 'totalAssets()(uint256)' --rpc-url …",
+      "0",
+      "$ cast send 0x162Dcf95…5aF8 'deposit(uint256,address)' 1000000000 $ME …",
+      "blockNumber          53482026",
+      "status               1 (success)",
+      "$ # how many shares did that mint? run another call and see",
     ],
   ];
 }
