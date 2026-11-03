@@ -1,48 +1,8 @@
-import {
-  flaggedLines,
-  lineRanges,
-  reportsOf,
-  SEVERITY_LABEL,
-  splitFix,
-  TOOL_LABEL,
-  titleOf,
-} from "@/features/atlas/utils/findings";
-import { createAtlasModel } from "@/features/atlas/utils/model";
+import { cases } from "@/features/exploits";
+import { protocolSummaries } from "@/features/explore/services/protocols";
 import { BigWords } from "./BigWords";
-import { FindingsWheel } from "./FindingsWheel";
-import { RunSentence } from "./RunSentence";
-import {
-  demoAtlas,
-  depositFrames,
-  scenarioDemo,
-  scenarioSol,
-  testRows,
-} from "./stats";
+import { chatDemo, testRows } from "./stats";
 import { TestDrift } from "./TestDrift";
-
-/** Server halves of the scroll stages: read the sample run, hand plain data to the client stage. */
-
-export async function Run() {
-  const scenario = await scenarioDemo();
-  return scenario ? <RunSentence scenario={scenario} /> : null;
-}
-
-export async function Findings() {
-  const model = createAtlasModel(await demoAtlas());
-  const findings = model.findings.map((f) => {
-    const rs = reportsOf(f);
-    return {
-      id: f.name.slice(0, 4),
-      title: titleOf(f),
-      risk: f.risk ?? "low",
-      severity: SEVERITY_LABEL[f.risk ?? "low"],
-      tools: [...new Set(rs.map((r) => TOOL_LABEL[r.tool]))].join(" + "),
-      where: `${f.detector ?? rs[0]?.detector ?? ""} · L${lineRanges(flaggedLines(f, model.lineOf(f)))}`,
-      what: splitFix(f.desc)[0],
-    };
-  });
-  return <FindingsWheel findings={findings} />;
-}
 
 export async function Tests() {
   const tests = await testRows();
@@ -58,10 +18,15 @@ export async function Tests() {
 }
 
 export async function Words() {
-  const [trace, scenario, sol] = await Promise.all([
-    depositFrames(),
-    scenarioDemo(),
-    scenarioSol(),
-  ]);
-  return <BigWords trace={trace} scenario={scenario} sol={sol} />;
+  const chat = await chatDemo();
+  // the protocols and incidents are the app's own data, not a list typed into the landing
+  const protocols = protocolSummaries().map((p) => p.name);
+  const incidents = cases()
+    .slice(0, 4)
+    .map((c) => ({
+      name: c.name,
+      year: c.date.slice(0, 4),
+      loss: `$${Math.round(c.loss / 1_000_000)}M`,
+    }));
+  return <BigWords chat={chat} protocols={protocols} incidents={incidents} />;
 }
