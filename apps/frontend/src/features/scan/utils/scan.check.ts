@@ -640,4 +640,29 @@ assert.deepEqual(
 );
 assert.equal(hasChildren([], 0), false, "an empty trace has no boxes to draw");
 
+// ── what Dort already knows about the protocols a contract talks to ────────────────────────
+// Explore holds four protocols' integration checklists, and they were sitting in a tab while a
+// review of a contract calling Uniswap got the model's general knowledge instead.
+const uniSrc = `pragma solidity ^0.8.24;
+import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+contract Swapper { ISwapRouter router; }`;
+const withHints = scanPrompt(must(detect(uniSrc, "Swapper.sol")), {
+  chain: "x",
+});
+assert.match(
+  withHints,
+  /uniswapV3\*Callback/,
+  "the checklist reaches the model",
+);
+assert.match(
+  withHints,
+  /not findings/,
+  "and arrives framed as things to check, not as findings",
+);
+assert.doesNotMatch(
+  scanPrompt(must(detect(SRC, "V.sol")), { chain: "x" }),
+  /uniswapV3/,
+  "a contract that touches none of them is told about none of them",
+);
+
 console.log("scan ok");

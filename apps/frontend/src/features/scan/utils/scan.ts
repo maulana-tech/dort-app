@@ -15,6 +15,7 @@
  *
  * Pure: Node runs scan.check.ts against it, and nothing here touches a network or a key.
  */
+import { hintBlock } from "../../explore/utils/hints.ts";
 import type { Frame, FrameKind } from "../../trace/types";
 
 export type ScanKind = "address" | "tx" | "source";
@@ -439,6 +440,10 @@ export function scanPrompt(input: ScanInput, facts: ScanFacts): string {
       "```",
       "",
       `Worth keeping in mind for this language: ${HAZARDS[lang]}.`,
+      // what Dort already knows about the protocols this contract talks to. A model's general
+      // knowledge of Uniswap is not the same as "every uniswapV3*Callback verifies msg.sender
+      // is a canonical pool", and the second is the sentence that catches the bug.
+      hintBlock(input.value),
     );
   }
   if (input.kind === "address") {
