@@ -129,8 +129,8 @@ export function isHostedUrl(url: string | undefined): boolean {
 /**
  * This Dort runs on the auditor's own machine (NEXT_PUBLIC_URL empty or local). Only then can it
  * run forge (Start test), re-read dort-data.json from disk (Reload run, DORT_DATA_PATH), pick
- * up MCP-proposed scenarios or run "Your Claude"; the hosted site (https://dort-app.vercel.app) hides
- * all of them, its API routes answering 404 anyway.
+ * up MCP-proposed scenarios or run "Your Claude"; a public deploy hides all of them, its API
+ * routes answering 404 anyway.
  */
 export const LOCAL_APP = !isHostedUrl(process.env.NEXT_PUBLIC_URL);
 /** "Your Claude" runs the Claude Code on the machine serving Dort */
