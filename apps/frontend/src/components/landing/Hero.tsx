@@ -18,7 +18,6 @@ import { HeroChat } from "./HeroChat";
 import { ProductTabs } from "./ProductTabs";
 import { ScatterGrow } from "./ScatterGrow";
 import { chatDemo } from "./stats";
-import { XMark } from "./XMark";
 import "@/components/(main)/shell/header.css";
 import "./hero.css";
 
@@ -73,16 +72,6 @@ export function Nav({ active = "product" }: { active?: "product" | "docs" }) {
             (onorca.dev/docs: Discord, X and GitHub left of Download, no fill) */}
         {docs && (
           <span className="mr-2 flex items-center gap-1">
-            <a
-              href="https://x.com/dort_app"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Dort on X"
-              title="Follow @dort_app on X"
-              className="grid size-8 place-items-center text-on-canvas-muted transition-colors hover:text-on-canvas"
-            >
-              <XMark className="size-[15px]" />
-            </a>
             <a
               href={GITHUB}
               target="_blank"
