@@ -38,22 +38,181 @@ below says which one it belongs to.
 visual Scenarios and the exploit post-mortems are real and run on `full`; they are marked
 **(on `full`)** wherever they come up here, rather than described as if this build had them.
 
-## Documentation
+---
 
-The docs are served by the app: open [dort-app.vercel.app/docs](https://dort-app.vercel.app/docs),
-or run it yourself (`pnpm dev` in `apps/frontend`) and open `/docs`, where the pages that show the
-app carry short recordings of it.
+## Setup
 
-| Section | Pages |
+### Requirements
+
+- Node 20+, [pnpm](https://pnpm.io) 10
+- [Foundry](https://getfoundry.sh) (`forge` on PATH) — 1.8.x for source-line steps, see the traps below
+- Optional: Slither and Aderyn for findings, Claude Code or a local model for Ask AI
+
+### Run it, then point it at your project
+
+[dort-app.vercel.app](https://dort-app.vercel.app) runs everything that only needs a chain: Chat,
+Explore, and the wallet pages. Running `forge` against **your** project needs Dort on your own
+machine, or the bridge below — a hosted page cannot read your source, which is the point.
+
+```bash
+cd apps/frontend && pnpm install && pnpm dev    # http://localhost:3000
+
+cd path/to/your-project
+curl -fsSLO -w "saved %{filename_effective}\n" "http://localhost:3000/exporter/dort-{export,lib,atlas,findings,coverage,chains,bridge}.mjs"
+node dort-export.mjs                            # writes dort-data.json: drop it on /chat
+node dort-bridge.mjs --app http://localhost:3000  # optional: run forge from the page
+```
+
+The bridge has no default origin: it runs `node dort-export.mjs` on your machine when asked, so it
+trusts only the origin you name with `--app`. With it running, the run buttons on `full` run
+`forge` on your computer; your code is never uploaded. The first time, Chrome,
+Brave or Edge ask to let the page reach your computer or local network — allow it. Safari does not,
+so use another browser for the bridge. Without it, everything else works from a dropped
+`dort-data.json`.
+
+### App Setup (run Dort locally)
+
+```bash
+# Clone the repository
+git clone https://github.com/maulana-tech/dort-app.git
+cd dort-app/apps/frontend
+
+# Install dependencies
+pnpm install
+
+# Start the development server
+pnpm dev            # http://localhost:3000
+```
+
+With nothing loaded this build opens on **Chat**, where you can hand in a transaction, an address
+or a file without a project at all, and a drop zone takes a `dort-data.json` when you have one. A
+*Sample data* badge in the top bar says when the bundled DortVault is what is being shown. On
+`full`, a **Start here** page comes first, with two tabs: **For Human** (the commands) and **For
+Agent** (one prompt to paste into your coding agent).
+
+### Export a run from your Foundry project
+
+In your project root (next to `foundry.toml`), fetch the exporter from the running app (seven plain Node scripts, the same version the app reads) and run it:
+
+```bash
+cd path/to/your-project
+curl -fsSLO -w "saved %{filename_effective}\n" "http://localhost:3000/exporter/dort-{export,lib,atlas,findings,coverage,chains,bridge}.mjs"
+node dort-export.mjs
+```
+
+It writes `dort-data.json` next to `foundry.toml` (add it to `.gitignore`). Flags and options: [foundry/README.md](foundry/README.md).
+
+```bash
+node dort-export.mjs                          # all tests
+node dort-export.mjs --mt test_deposit        # one test
+node dort-export.mjs --chain base-sepolia     # on a fork of Base Sepolia
+node dort-export.mjs --forks all              # local run plus one run per testnet
+slither . --json reports/slither.json          # optional: picked up automatically
+aderyn . -o reports/aderyn.json                # optional: picked up automatically
+```
+
+### Load it
+
+- **Drop it in:** click *Sample data → Use my project* and drop `dort-data.json`. It is read in that browser tab only.
+- **Keep it live:** start the app pointing at the file, so every export is picked up on the next request. (On `full`, **Reload trace** (⌘R) and **Start test** do this from the page.)
+
+  ```bash
+  DORT_DATA_PATH=/abs/path/to/your-project/dort-data.json pnpm dev
+  ```
+
+### Scripts
+
+```bash
+# apps/frontend
+pnpm dev            # Next.js dev server
+pnpm build          # production build
+pnpm lint           # biome check
+pnpm format         # biome format --write
+
+# foundry
+forge build && node --test *.test.mjs   # exporter unit tests
+forge test                              # the DortVault sample suite
+node dort-mcp.mjs                      # the MCP server (stdio)
+```
+
+> **Three traps worth knowing.**
+>
+> 1. The app reads a run from disk only when `DORT_DATA_PATH` is set; without it, a dropped file or the sample is what you see.
+> 2. forge's `--mt` matches the full test signature, so a plain `^test_deposit$` matches nothing — the exporter writes `^test_deposit\(\)$` for you.
+> 3. **Source-line steps want forge 1.8.x.** forge 1.9 removed the built-in debugger, and its `--dump` writes a SolDB bundle directory where 1.8.x wrote the single JSON file the exporter decodes. On 1.9 the export still writes its traces and prints `dort: step-by-step source lines skipped — …`; only the per-line steps are missing.
+
+---
+
+## Features
+
+### In this build (`main`)
+
+- **Read a transaction**: paste a hash and Dort asks the chain for the call tree, then draws every call, event and return — rows fold, and any row can be asked about on its own
+- **Read an address**: the deployed bytecode, its size, balance and nonce, and whether anything is there at all
+- **Read a file**: drop a `.sol`, `.move` or `.rs` file in, or paste it; the language decides which hazards the reviewer is reminded of
+- **The whole envelope, like an explorer**: nonce, index in block, type, gas limit against gas used, price, selector, calldata size, logs and the block's timestamp
+- **Protocol checklists in the prompt**: hand in a contract that calls Uniswap, Aave, Compound or Morpho and that protocol's integration checks go to the model with it
+- **Thinking shown, not hidden**: the model's reasoning streams into the Context tab while it works, with its token and context use beside it, so a reader can judge whether the answer was reached or guessed
+- **The session survives a refresh**: the conversation is kept in this browser, and *New* is the only thing that clears it
+- **Explore**: Uniswap v3, Aave v3.5, Morpho Blue and Compound III, every flow as a sequence diagram linked to the pinned source on GitHub
+- **Vault**: deposit and withdraw against `DortSafeVault`, the correct twin of the deliberately flawed sample — the shares a deposit mints shown before you sign, and both exits (exact assets, or exact shares) as an explicit choice
+- **Swap**: trade on PortalSwapRouter, Portaldot V3's own DEX, with the price impact these small pools really charge given its own line and a hard refusal past 15%
+- **Cross-Chain Bridge**: lock on a home chain, mint the wrapped copy on Portaldot, send it back — with both chains' numbers side by side, because a bridge is only honest while they match
+- **Any Wallet, Your Choice**: wallets are found through EIP-6963 and listed by name, so two extensions do not mean the wrong one opens; disconnect is real, and a wallet that cannot see the contract is refused rather than left to fail
+- **A wallet instead of a login**: the deployment's own model needs a brake, so the allowance comes from the chain — connect and prove a wallet, and a faucet claim raises it further
+- **Bring Your Own AI**: your Claude Code and Claude plan, Ollama or LM Studio, or your own Anthropic, Amazon Bedrock, OpenAI or OpenRouter key
+- **MCP Server**: your AI client reads a run and proposes scenarios, checked against the Lab's model
+- **Drop a run in**: a `dort-data.json` exported from your own project is read in that browser tab, and its decoded calls appear in the Trace tab beside the chat
+- **Sample Vault**: try everything without a project, on the bundled DortVault
+
+### On the `full` branch
+
+- **Decoded Call Trace**: every call, event and cheatcode with decoded arguments, return values, gas and the source line it ran, as a page of its own
+- **Why It Passed**: click a test to see the exact assertions that held and the lines they checked
+- **Call Graph**: the same run drawn as a map of who called whom
+- **Start Test From The App**: run all tests, one test, or a chosen few, with a live pass or fail log per test, and a fork picker
+- **Contract Atlas**: functions, storage slots, external calls and events as a node graph built from the AST
+- **Paths**: replay each entry point step by step, with writes after an external call flagged in red
+- **Findings Where They Belong**: Slither and Aderyn results deduplicated and pinned to the function they concern
+- **Coverage On The Map**: `forge coverage` per function, untested pieces counted in the toolbar
+- **Visual Scenarios**: wire actor, call, expected revert, snapshot and assert cards, run them in the browser
+- **Generate A Foundry Test**: every scenario exports a `.t.sol` file you run with `forge`
+- **Exploits**: Poly Network, Euler Finance, Nomad Bridge and Beanstalk as post-mortems with funds, root cause and the invariant that catches it
+- **Keyboard First**: arrows step through calls, `1` `2` `3` switch views, `A` asks AI, `F` goes full screen
+
+> **Testnet forks** belong to the exporter, so both builds have them: run the same tests on
+> Portaldot V3, Ethereum Sepolia, Arbitrum Sepolia, Base Sepolia, Robinhood Chain Testnet,
+> HyperEVM Testnet or Tempo Moderato. On `main` that is a command-line flag; on `full` it is also
+> a picker in the toolbar.
+
+---
+
+## Hackathon Submission
+
+Portaldot Hacker House 2026.
+
+| | |
 |---|---|
-| Start here | `/docs` · `/docs/quick-start` · `/docs/first-session` |
-| Using Dort | `/docs/chat` · `/docs/explore` |
-| On-chain | `/docs/wallet` · `/docs/vault` · `/docs/bridge` · `/docs/swap` |
-| Running tests | `/docs/exporter` · `/docs/forks` · `/docs/run-from-browser` |
-| AI | `/docs/ai` · `/docs/mcp` |
-| More | `/docs/local` · `/docs/deploy` · `/docs/privacy` · `/docs/limits` |
+| **Track** | Node Operations & Tooling — network security analysis tooling for the Portaldot ecosystem |
+| **Chain** | Portaldot V3 Testnet, chain id `420420777`, EVM RPC `https://test-evm-rpc-v3.portaldot.dev` |
+| **Other chains** | Ethereum, Arbitrum, Base, Robinhood Chain, Hyperliquid, Tempo (testnet forks) |
+| **Contract address** | `DortSafeVault` on Base Sepolia: [`0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8`](https://sepolia.basescan.org/address/0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8) — over Circle's USDC, block 53482026 |
+| **Transaction hash** | [`0x2aafcfaa81d24ed15d4c5412da0458f952c2288351467a161184d27d69904e8d`](https://sepolia.basescan.org/tx/0x2aafcfaa81d24ed15d4c5412da0458f952c2288351467a161184d27d69904e8d) |
+| **On Portaldot V3** | _pending testnet tPOT: distribution is handed out by an admin, not a faucet. [`script/DeployVault.s.sol`](foundry/script/DeployVault.s.sol) and [`script/DeployPortaldot.s.sol`](foundry/script/DeployPortaldot.s.sol) are both simulated clean against the live chain (3.0M and 5.2M gas, ~0.0000004 POT in total) and `VAULTS` already names pUSDT as the asset — only the gas is missing._ |
+| **Website** | [dort-app.vercel.app](https://dort-app.vercel.app) — Chat, Explore and the wallet pages. Running `forge` against your own project still needs Dort on your machine, which is what lets it read your source |
+| **Source** | [github.com/maulana-tech/dort-app](https://github.com/maulana-tech/dort-app) |
 
-The pages are written as data in [`features/docs/pages.ts`](apps/frontend/src/features/docs/pages.ts).
+### What Portaldot gives this project, and what it gives back
+
+Dort needs a chain whose deployed contracts can be read and executed call by call. Portaldot V3
+provides exactly that through an Ethereum JSON-RPC over a WASM runtime, so a Portaldot auditor gets
+the same decoded traces an Ethereum auditor has — against contracts that really live on Portaldot
+(`PortaldotTest` reads Wrapped POT and Portal USDT at every run). In return, the ecosystem gets a
+defensive tool: a reviewer can fork Portaldot, replay a protocol's own Foundry tests against live
+state, and see every call next to the line of Solidity that ran, with Slither and Aderyn findings
+pinned to the same function.
+
+---
 
 ---
 
@@ -143,184 +302,6 @@ node dort-export.mjs [--mt …] [--mc …] [--chain <key> | --forks all]
   ├─ findings: merge reports/slither.json and reports/aderyn.json into the atlas
   ├─ coverage: forge coverage --report lcov                    (skipped with a note if it fails)
   └─ write dort-data.json   (DORT_MERGE=1: merge into the existing run instead of replacing it)
-```
-
----
-
-## Features
-
-### In this build (`main`)
-
-- **Read a transaction**: paste a hash and Dort asks the chain for the call tree, then draws every call, event and return — rows fold, and any row can be asked about on its own
-- **Read an address**: the deployed bytecode, its size, balance and nonce, and whether anything is there at all
-- **Read a file**: drop a `.sol`, `.move` or `.rs` file in, or paste it; the language decides which hazards the reviewer is reminded of
-- **The whole envelope, like an explorer**: nonce, index in block, type, gas limit against gas used, price, selector, calldata size, logs and the block's timestamp
-- **Protocol checklists in the prompt**: hand in a contract that calls Uniswap, Aave, Compound or Morpho and that protocol's integration checks go to the model with it
-- **Thinking shown, not hidden**: the model's reasoning streams into the Context tab while it works, with its token and context use beside it, so a reader can judge whether the answer was reached or guessed
-- **The session survives a refresh**: the conversation is kept in this browser, and *New* is the only thing that clears it
-- **Explore**: Uniswap v3, Aave v3.5, Morpho Blue and Compound III, every flow as a sequence diagram linked to the pinned source on GitHub
-- **Vault**: deposit and withdraw against `DortSafeVault`, the correct twin of the deliberately flawed sample — the shares a deposit mints shown before you sign, and both exits (exact assets, or exact shares) as an explicit choice
-- **Swap**: trade on PortalSwapRouter, Portaldot V3's own DEX, with the price impact these small pools really charge given its own line and a hard refusal past 15%
-- **Cross-Chain Bridge**: lock on a home chain, mint the wrapped copy on Portaldot, send it back — with both chains' numbers side by side, because a bridge is only honest while they match
-- **Any Wallet, Your Choice**: wallets are found through EIP-6963 and listed by name, so two extensions do not mean the wrong one opens; disconnect is real, and a wallet that cannot see the contract is refused rather than left to fail
-- **A wallet instead of a login**: the deployment's own model needs a brake, so the allowance comes from the chain — connect and prove a wallet, and a faucet claim raises it further
-- **Bring Your Own AI**: your Claude Code and Claude plan, Ollama or LM Studio, or your own Anthropic, Amazon Bedrock, OpenAI or OpenRouter key
-- **MCP Server**: your AI client reads a run and proposes scenarios, checked against the Lab's model
-- **Drop a run in**: a `dort-data.json` exported from your own project is read in that browser tab, and its decoded calls appear in the Trace tab beside the chat
-- **Sample Vault**: try everything without a project, on the bundled DortVault
-
-### On the `full` branch
-
-- **Decoded Call Trace**: every call, event and cheatcode with decoded arguments, return values, gas and the source line it ran, as a page of its own
-- **Why It Passed**: click a test to see the exact assertions that held and the lines they checked
-- **Call Graph**: the same run drawn as a map of who called whom
-- **Start Test From The App**: run all tests, one test, or a chosen few, with a live pass or fail log per test, and a fork picker
-- **Contract Atlas**: functions, storage slots, external calls and events as a node graph built from the AST
-- **Paths**: replay each entry point step by step, with writes after an external call flagged in red
-- **Findings Where They Belong**: Slither and Aderyn results deduplicated and pinned to the function they concern
-- **Coverage On The Map**: `forge coverage` per function, untested pieces counted in the toolbar
-- **Visual Scenarios**: wire actor, call, expected revert, snapshot and assert cards, run them in the browser
-- **Generate A Foundry Test**: every scenario exports a `.t.sol` file you run with `forge`
-- **Exploits**: Poly Network, Euler Finance, Nomad Bridge and Beanstalk as post-mortems with funds, root cause and the invariant that catches it
-- **Keyboard First**: arrows step through calls, `1` `2` `3` switch views, `A` asks AI, `F` goes full screen
-
-> **Testnet forks** belong to the exporter, so both builds have them: run the same tests on
-> Portaldot V3, Ethereum Sepolia, Arbitrum Sepolia, Base Sepolia, Robinhood Chain Testnet,
-> HyperEVM Testnet or Tempo Moderato. On `main` that is a command-line flag; on `full` it is also
-> a picker in the toolbar.
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Frontend | Next.js 16 (App Router, React Compiler), React 19, TypeScript, Tailwind CSS v4 |
-| Motion | Motion, GSAP, Lenis (landing page) |
-| Exporter | Plain Node.js 20+ scripts, no dependencies |
-| Smart contracts | Foundry (`forge build`, `forge test`, `forge coverage`, `forge inspect`), Solidity 0.8.20 |
-| Static analysis | Slither, Aderyn (JSON reports merged into the atlas) |
-| Chains | Seven EVM testnets (Portaldot V3 first) through public read-only RPCs, overridable per chain |
-| AI | Claude through the user's own Claude Code, Ollama / LM Studio, Anthropic, Amazon Bedrock, OpenAI, OpenRouter |
-| AI tooling | MCP server over stdio (JSON-RPC 2.0) |
-| Tests | Node built-in test runner (9 exporter test files), 31 `*.check.ts` self-checks in the app, Foundry unit, fork and invariant tests |
-| Lint / Format | Biome |
-| CI / Deploy | GitHub Actions (lint, typecheck, build, forge test, export smoke test), Vercel |
-| Built with | Claude Code, Orca worktrees; videos with Remotion and ElevenLabs |
-
----
-
-## Foundry Integration
-
-Foundry is where the data comes from. Dort adds nothing to your project except seven plain scripts, and reads only what `forge` already produces.
-
-| Component | File | Description |
-|---|---|---|
-| **Exporter** | [`dort-export.mjs`](foundry/dort-export.mjs) | Runs `forge build`, `forge test --json -vvvv` and one `--debug --dump` per unit test, decodes frames, writes `dort-data.json`. Prints machine-readable `dort::` progress lines when `DORT_PROGRESS` is set |
-| **Decoding** | [`dort-lib.mjs`](foundry/dort-lib.mjs) | keccak256, ABI parameter decoding, revert reasons, solc source maps to line indexes, and `mergeRun` for partial runs |
-| **Atlas** | [`dort-atlas.mjs`](foundry/dort-atlas.mjs) | The contract map from `forge build --ast` and `forge inspect … storageLayout` |
-| **Findings** | [`dort-findings.mjs`](foundry/dort-findings.mjs) | Parses Slither and Aderyn JSON and merges them into the atlas, deduplicated |
-| **Coverage** | [`dort-coverage.mjs`](foundry/dort-coverage.mjs) | `forge coverage --report lcov` mapped onto atlas pieces |
-| **Chains** | [`dort-chains.mjs`](foundry/dort-chains.mjs) | The seven testnets (Portaldot V3 first), `--chain` / `--forks`, and a check that each RPC really serves the chain it claims |
-| **Scenario runner** | [`dort-scenario.mjs`](foundry/dort-scenario.mjs) | Copies a test exported from Scenarios into `test/scenarios/` and runs just that file with `forge test --match-path` |
-| **Protocol maps** | [`dort-protocol.mjs`](foundry/dort-protocol.mjs) | Joins the maps of a protocol's contracts into one graph for Explore and checks the written flows against the AST |
-| **Start test route** | [`route.ts`](apps/frontend/src/app/api/test-run/route.ts) | Runs the exporter from the app, streams its output as NDJSON, one run at a time, 15 minute timeout |
-| **Bridge** | [`dort-bridge.mjs`](foundry/dort-bridge.mjs) | Lets the hosted app run the exporter on your machine: listens on `127.0.0.1` only, answers only the Dort origins and the token in the link it prints, runs nothing but `node dort-export.mjs` with validated test and fork names, same NDJSON stream as the route |
-
-### Foundry surface in use
-
-| Command | Purpose |
-|---|---|
-| `forge build` | Compile and produce the ABIs the decoder needs |
-| `forge test --json -vvvv` | The call traces, results and gas |
-| `forge test --debug --dump` | Step data that ties every frame to its source lines |
-| `forge test --mt / --mc` | Run one test or a chosen set (`^(name)\(` for functions, `^(Contract)$` for suites) |
-| `forge test --fork-url` | The same tests on a testnet's latest block |
-| `forge build --ast` | The contract map |
-| `forge inspect … storageLayout` | Storage slots on the map |
-| `forge coverage --report lcov` | Coverage per function |
-
----
-
-## AI Integration
-
-Dort has no model of its own. A deployment may offer one it pays for; every other option is a
-model you bring. The user picks in **Connect AI**.
-
-| Option | What answers | What leaves your machine |
-|---|---|---|
-| **Dort's model** (default where offered) | This deployment's Amazon Bedrock, paid for by whoever runs it | Your question, and any code with it, to **that operator's AWS account** — and into its logs if model invocation logging is on there |
-| **None** | Dort's built-in text, composed from the run's own figures | Nothing. No network call is made |
-| **Your Claude** | Your own Claude Code, signed in with your own Claude plan | The prompt goes through the app's local route to the `claude` program on your laptop |
-| **Local model** | Ollama, LM Studio or any OpenAI-compatible server you run | The prompt goes to the endpoint you typed, normally `localhost` |
-| **Own API key** | Anthropic, Amazon Bedrock, OpenAI or OpenRouter | The prompt and your key go from your browser straight to that provider |
-
-**Dort's model** exists so a first-time visitor can ask something without opening an AWS console,
-and it is the default only while nothing else is chosen. It appears only when the server has
-`BEDROCK_API_KEY` set — a Dort without it never advertises a model it does not have. The key stays
-in the server's environment and never reaches the browser; the route answers this app's own origin
-only, caps the conversation it will forward, and holds the model, region and token budget on the
-server so no page can name them. Reviewing a contract that has not been published? Bring your own
-key: every other provider here is yours alone.
-
-```bash
-# to offer it from your own deployment
-BEDROCK_API_KEY=…                          # required; without it the option is not shown
-BEDROCK_REGION=us-east-1                   # optional
-BEDROCK_MODEL=anthropic.claude-haiku-5-5   # optional: what answers by default
-BEDROCK_MODELS=minimax.minimax-m2.5,zai.glm-4.7-flash   # optional: replaces the suggested list
-```
-
-The default is **Haiku**, not Sonnet, because the operator pays for every call: it is the cheapest
-current-generation Claude by a wide margin — $0.10 / $0.50 per million tokens against Sonnet 5.5's
-$2.00 / $10.00 — and still reads a run well enough to explain it.
-
-Beside it the reader can pick from other vendors, since the point of going through Bedrock is that
-it is not one company's model. Unset, the list suggests MiniMax, GLM, Qwen, Kimi and DeepSeek;
-`BEDROCK_MODELS` replaces it with whatever your account can actually invoke. A request naming
-anything outside the list silently gets the default back, so no page can spend the operator's
-budget on a model they did not offer.
-
-Bedrock serves two APIs on one host and the model's id decides which one answers: `anthropic.*`
-goes to the Messages API at `/anthropic/v1/messages`, everything else to the OpenAI-compatible
-API at `/v1/chat/completions`. Both were probed against the live host — each returns its own shape of 401 — and the
-browser needs no part of it, because the client already parses both stream shapes.
-
-#### Who gets how many questions
-
-The operator pays for every call to **Dort's model**, so it needs a brake, and the brake reads the
-chain instead of asking for an account. Connecting is worth the most; a faucet claim raises it
-further.
-
-| | Questions an hour | How |
-|---|---|---|
-| Just arrived | 40 | no wallet, nothing signed |
-| Wallet proved | 100 | one signature, good for the hour — it moves nothing and approves nothing |
-| Holding anything | 100 + 10 per whole token, up to 400 | any balance on a chain Dort reads |
-
-Which is all it is: there is no token, nothing is transferred and nothing is written to a chain,
-and the same tokens can be moved to a second address and counted again. It buys a faucet's worth
-of friction. Your own key has no limit at all, because it is your bill.
-
-Only the selected piece is sent: its name, its own source lines (at most 120), the pieces connected to it, open findings on it, a built-in checklist and the question. A fixed system prompt keeps the model defensive: explain behaviour, list what an auditor should check, write a Foundry test that pins **intended** behaviour, and refuse to write exploits. Details in [`/docs/ai`](https://dort-app.vercel.app/docs/ai).
-
-### MCP server
-
-[`dort-mcp.mjs`](foundry/dort-mcp.mjs) lets your own AI client (Claude Code, Claude Desktop, Cursor) read a run. Plain Node, stdio, no network. Details in [`/docs/mcp`](https://dort-app.vercel.app/docs/mcp).
-
-| Tool | Access | Returns |
-|---|---|---|
-| `overview` | read | Contract, tests, finding counts, coverage totals and the scenario model |
-| `get_trace(test)` | read | One test's decoded frames |
-| `get_atlas` | read | Every mapped piece with its line, plus each entry point's reads, writes, calls and emits |
-| `get_piece(id)` | read | One piece: source lines, links, findings, reverts and coverage |
-| `list_findings(severity?, tool?)` | read | Slither, Aderyn and Dort's own findings |
-| `propose_scenario(scenario)` | append | Checks a scenario against the Lab's cards and saves it to `dort-scenarios.json` |
-
-A proposal is written to `dort-scenarios.json` in the project, next to `dort-data.json`. This build has no scenario editor to review it in — that lives on the `full` branch — so treat the file as the record: read it, run the test it describes, and keep it only once you agree with it.
-
-```bash
-claude mcp add dort -- node /abs/path/dort-mcp.mjs --data=/abs/path/dort-data.json
 ```
 
 ---
@@ -465,6 +446,121 @@ assumed from the V2 interface:
 changing the fee or the rounding stops matching the chain and fails the build. The page prices a
 trade locally while you type, then asks the router again before signing and takes `amountOutMin`
 from that second number.
+
+---
+
+## Foundry Integration
+
+Foundry is where the data comes from. Dort adds nothing to your project except seven plain scripts, and reads only what `forge` already produces.
+
+| Component | File | Description |
+|---|---|---|
+| **Exporter** | [`dort-export.mjs`](foundry/dort-export.mjs) | Runs `forge build`, `forge test --json -vvvv` and one `--debug --dump` per unit test, decodes frames, writes `dort-data.json`. Prints machine-readable `dort::` progress lines when `DORT_PROGRESS` is set |
+| **Decoding** | [`dort-lib.mjs`](foundry/dort-lib.mjs) | keccak256, ABI parameter decoding, revert reasons, solc source maps to line indexes, and `mergeRun` for partial runs |
+| **Atlas** | [`dort-atlas.mjs`](foundry/dort-atlas.mjs) | The contract map from `forge build --ast` and `forge inspect … storageLayout` |
+| **Findings** | [`dort-findings.mjs`](foundry/dort-findings.mjs) | Parses Slither and Aderyn JSON and merges them into the atlas, deduplicated |
+| **Coverage** | [`dort-coverage.mjs`](foundry/dort-coverage.mjs) | `forge coverage --report lcov` mapped onto atlas pieces |
+| **Chains** | [`dort-chains.mjs`](foundry/dort-chains.mjs) | The seven testnets (Portaldot V3 first), `--chain` / `--forks`, and a check that each RPC really serves the chain it claims |
+| **Scenario runner** | [`dort-scenario.mjs`](foundry/dort-scenario.mjs) | Copies a test exported from Scenarios into `test/scenarios/` and runs just that file with `forge test --match-path` |
+| **Protocol maps** | [`dort-protocol.mjs`](foundry/dort-protocol.mjs) | Joins the maps of a protocol's contracts into one graph for Explore and checks the written flows against the AST |
+| **Start test route** | [`route.ts`](apps/frontend/src/app/api/test-run/route.ts) | Runs the exporter from the app, streams its output as NDJSON, one run at a time, 15 minute timeout |
+| **Bridge** | [`dort-bridge.mjs`](foundry/dort-bridge.mjs) | Lets the hosted app run the exporter on your machine: listens on `127.0.0.1` only, answers only the Dort origins and the token in the link it prints, runs nothing but `node dort-export.mjs` with validated test and fork names, same NDJSON stream as the route |
+
+### Foundry surface in use
+
+| Command | Purpose |
+|---|---|
+| `forge build` | Compile and produce the ABIs the decoder needs |
+| `forge test --json -vvvv` | The call traces, results and gas |
+| `forge test --debug --dump` | Step data that ties every frame to its source lines |
+| `forge test --mt / --mc` | Run one test or a chosen set (`^(name)\(` for functions, `^(Contract)$` for suites) |
+| `forge test --fork-url` | The same tests on a testnet's latest block |
+| `forge build --ast` | The contract map |
+| `forge inspect … storageLayout` | Storage slots on the map |
+| `forge coverage --report lcov` | Coverage per function |
+
+---
+
+## AI Integration
+
+Dort has no model of its own. A deployment may offer one it pays for; every other option is a
+model you bring. The user picks in **Connect AI**.
+
+| Option | What answers | What leaves your machine |
+|---|---|---|
+| **Dort's model** (default where offered) | This deployment's Amazon Bedrock, paid for by whoever runs it | Your question, and any code with it, to **that operator's AWS account** — and into its logs if model invocation logging is on there |
+| **None** | Dort's built-in text, composed from the run's own figures | Nothing. No network call is made |
+| **Your Claude** | Your own Claude Code, signed in with your own Claude plan | The prompt goes through the app's local route to the `claude` program on your laptop |
+| **Local model** | Ollama, LM Studio or any OpenAI-compatible server you run | The prompt goes to the endpoint you typed, normally `localhost` |
+| **Own API key** | Anthropic, Amazon Bedrock, OpenAI or OpenRouter | The prompt and your key go from your browser straight to that provider |
+
+**Dort's model** exists so a first-time visitor can ask something without opening an AWS console,
+and it is the default only while nothing else is chosen. It appears only when the server has
+`BEDROCK_API_KEY` set — a Dort without it never advertises a model it does not have. The key stays
+in the server's environment and never reaches the browser; the route answers this app's own origin
+only, caps the conversation it will forward, and holds the model, region and token budget on the
+server so no page can name them. Reviewing a contract that has not been published? Bring your own
+key: every other provider here is yours alone.
+
+```bash
+# to offer it from your own deployment
+BEDROCK_API_KEY=…                          # required; without it the option is not shown
+BEDROCK_REGION=us-east-1                   # optional
+BEDROCK_MODEL=anthropic.claude-haiku-5-5   # optional: what answers by default
+BEDROCK_MODELS=minimax.minimax-m2.5,zai.glm-4.7-flash   # optional: replaces the suggested list
+```
+
+The default is **Haiku**, not Sonnet, because the operator pays for every call: it is the cheapest
+current-generation Claude by a wide margin — $0.10 / $0.50 per million tokens against Sonnet 5.5's
+$2.00 / $10.00 — and still reads a run well enough to explain it.
+
+Beside it the reader can pick from other vendors, since the point of going through Bedrock is that
+it is not one company's model. Unset, the list suggests MiniMax, GLM, Qwen, Kimi and DeepSeek;
+`BEDROCK_MODELS` replaces it with whatever your account can actually invoke. A request naming
+anything outside the list silently gets the default back, so no page can spend the operator's
+budget on a model they did not offer.
+
+Bedrock serves two APIs on one host and the model's id decides which one answers: `anthropic.*`
+goes to the Messages API at `/anthropic/v1/messages`, everything else to the OpenAI-compatible
+API at `/v1/chat/completions`. Both were probed against the live host — each returns its own shape of 401 — and the
+browser needs no part of it, because the client already parses both stream shapes.
+
+#### Who gets how many questions
+
+The operator pays for every call to **Dort's model**, so it needs a brake, and the brake reads the
+chain instead of asking for an account. Connecting is worth the most; a faucet claim raises it
+further.
+
+| | Questions an hour | How |
+|---|---|---|
+| Just arrived | 40 | no wallet, nothing signed |
+| Wallet proved | 100 | one signature, good for the hour — it moves nothing and approves nothing |
+| Holding anything | 100 + 10 per whole token, up to 400 | any balance on a chain Dort reads |
+
+Which is all it is: there is no token, nothing is transferred and nothing is written to a chain,
+and the same tokens can be moved to a second address and counted again. It buys a faucet's worth
+of friction. Your own key has no limit at all, because it is your bill.
+
+Only the selected piece is sent: its name, its own source lines (at most 120), the pieces connected to it, open findings on it, a built-in checklist and the question. A fixed system prompt keeps the model defensive: explain behaviour, list what an auditor should check, write a Foundry test that pins **intended** behaviour, and refuse to write exploits. Details in [`/docs/ai`](https://dort-app.vercel.app/docs/ai).
+
+### MCP server
+
+[`dort-mcp.mjs`](foundry/dort-mcp.mjs) lets your own AI client (Claude Code, Claude Desktop, Cursor) read a run. Plain Node, stdio, no network. Details in [`/docs/mcp`](https://dort-app.vercel.app/docs/mcp).
+
+| Tool | Access | Returns |
+|---|---|---|
+| `overview` | read | Contract, tests, finding counts, coverage totals and the scenario model |
+| `get_trace(test)` | read | One test's decoded frames |
+| `get_atlas` | read | Every mapped piece with its line, plus each entry point's reads, writes, calls and emits |
+| `get_piece(id)` | read | One piece: source lines, links, findings, reverts and coverage |
+| `list_findings(severity?, tool?)` | read | Slither, Aderyn and Dort's own findings |
+| `propose_scenario(scenario)` | append | Checks a scenario against the Lab's cards and saves it to `dort-scenarios.json` |
+
+A proposal is written to `dort-scenarios.json` in the project, next to `dort-data.json`. This build has no scenario editor to review it in — that lives on the `full` branch — so treat the file as the record: read it, run the test it describes, and keep it only once you agree with it.
+
+```bash
+claude mcp add dort -- node /abs/path/dort-mcp.mjs --data=/abs/path/dort-data.json
+```
 
 ---
 
@@ -613,109 +709,6 @@ Only one run at a time is allowed, with a 15 minute limit. The local routes (`/a
 
 ---
 
-## Setup
-
-### Requirements
-
-- Node 20+, [pnpm](https://pnpm.io) 10
-- [Foundry](https://getfoundry.sh) (`forge` on PATH) — 1.8.x for source-line steps, see the traps below
-- Optional: Slither and Aderyn for findings, Claude Code or a local model for Ask AI
-
-### Run it, then point it at your project
-
-[dort-app.vercel.app](https://dort-app.vercel.app) runs everything that only needs a chain: Chat,
-Explore, and the wallet pages. Running `forge` against **your** project needs Dort on your own
-machine, or the bridge below — a hosted page cannot read your source, which is the point.
-
-```bash
-cd apps/frontend && pnpm install && pnpm dev    # http://localhost:3000
-
-cd path/to/your-project
-curl -fsSLO -w "saved %{filename_effective}\n" "http://localhost:3000/exporter/dort-{export,lib,atlas,findings,coverage,chains,bridge}.mjs"
-node dort-export.mjs                            # writes dort-data.json: drop it on /chat
-node dort-bridge.mjs --app http://localhost:3000  # optional: run forge from the page
-```
-
-The bridge has no default origin: it runs `node dort-export.mjs` on your machine when asked, so it
-trusts only the origin you name with `--app`. With it running, the run buttons on `full` run
-`forge` on your computer; your code is never uploaded. The first time, Chrome,
-Brave or Edge ask to let the page reach your computer or local network — allow it. Safari does not,
-so use another browser for the bridge. Without it, everything else works from a dropped
-`dort-data.json`.
-
-### App Setup (run Dort locally)
-
-```bash
-# Clone the repository
-git clone https://github.com/maulana-tech/dort-app.git
-cd dort-app/apps/frontend
-
-# Install dependencies
-pnpm install
-
-# Start the development server
-pnpm dev            # http://localhost:3000
-```
-
-With nothing loaded this build opens on **Chat**, where you can hand in a transaction, an address
-or a file without a project at all, and a drop zone takes a `dort-data.json` when you have one. A
-*Sample data* badge in the top bar says when the bundled DortVault is what is being shown. On
-`full`, a **Start here** page comes first, with two tabs: **For Human** (the commands) and **For
-Agent** (one prompt to paste into your coding agent).
-
-### Export a run from your Foundry project
-
-In your project root (next to `foundry.toml`), fetch the exporter from the running app (seven plain Node scripts, the same version the app reads) and run it:
-
-```bash
-cd path/to/your-project
-curl -fsSLO -w "saved %{filename_effective}\n" "http://localhost:3000/exporter/dort-{export,lib,atlas,findings,coverage,chains,bridge}.mjs"
-node dort-export.mjs
-```
-
-It writes `dort-data.json` next to `foundry.toml` (add it to `.gitignore`). Flags and options: [foundry/README.md](foundry/README.md).
-
-```bash
-node dort-export.mjs                          # all tests
-node dort-export.mjs --mt test_deposit        # one test
-node dort-export.mjs --chain base-sepolia     # on a fork of Base Sepolia
-node dort-export.mjs --forks all              # local run plus one run per testnet
-slither . --json reports/slither.json          # optional: picked up automatically
-aderyn . -o reports/aderyn.json                # optional: picked up automatically
-```
-
-### Load it
-
-- **Drop it in:** click *Sample data → Use my project* and drop `dort-data.json`. It is read in that browser tab only.
-- **Keep it live:** start the app pointing at the file, so every export is picked up on the next request. (On `full`, **Reload trace** (⌘R) and **Start test** do this from the page.)
-
-  ```bash
-  DORT_DATA_PATH=/abs/path/to/your-project/dort-data.json pnpm dev
-  ```
-
-### Scripts
-
-```bash
-# apps/frontend
-pnpm dev            # Next.js dev server
-pnpm build          # production build
-pnpm lint           # biome check
-pnpm format         # biome format --write
-
-# foundry
-forge build && node --test *.test.mjs   # exporter unit tests
-forge test                              # the DortVault sample suite
-node dort-mcp.mjs                      # the MCP server (stdio)
-```
-
-> **Three traps worth knowing.**
->
-> 1. The app reads a run from disk only when `DORT_DATA_PATH` is set; without it, a dropped file or the sample is what you see.
-> 2. forge's `--mt` matches the full test signature, so a plain `^test_deposit$` matches nothing — the exporter writes `^test_deposit\(\)$` for you.
-> 3. **Source-line steps want forge 1.8.x.** forge 1.9 removed the built-in debugger, and its `--dump` writes a SolDB bundle directory where 1.8.x wrote the single JSON file the exporter decodes. On 1.9 the export still writes its traces and prints `dort: step-by-step source lines skipped — …`; only the per-line steps are missing.
-
----
-
 ## How It Works
 
 ### Reading something that already exists (this build)
@@ -847,6 +840,25 @@ dort-data.json
 
 ---
 
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 16 (App Router, React Compiler), React 19, TypeScript, Tailwind CSS v4 |
+| Motion | Motion, GSAP, Lenis (landing page) |
+| Exporter | Plain Node.js 20+ scripts, no dependencies |
+| Smart contracts | Foundry (`forge build`, `forge test`, `forge coverage`, `forge inspect`), Solidity 0.8.20 |
+| Static analysis | Slither, Aderyn (JSON reports merged into the atlas) |
+| Chains | Seven EVM testnets (Portaldot V3 first) through public read-only RPCs, overridable per chain |
+| AI | Claude through the user's own Claude Code, Ollama / LM Studio, Anthropic, Amazon Bedrock, OpenAI, OpenRouter |
+| AI tooling | MCP server over stdio (JSON-RPC 2.0) |
+| Tests | Node built-in test runner (9 exporter test files), 31 `*.check.ts` self-checks in the app, Foundry unit, fork and invariant tests |
+| Lint / Format | Biome |
+| CI / Deploy | GitHub Actions (lint, typecheck, build, forge test, export smoke test), Vercel |
+| Built with | Claude Code, Orca worktrees; videos with Remotion and ElevenLabs |
+
+---
+
 ## Build Checklist
 
 **This build (`main`)**
@@ -883,30 +895,22 @@ dort-data.json
 
 ---
 
-## Hackathon Submission
+## Documentation
 
-Portaldot Hacker House 2026.
+The docs are served by the app: open [dort-app.vercel.app/docs](https://dort-app.vercel.app/docs),
+or run it yourself (`pnpm dev` in `apps/frontend`) and open `/docs`, where the pages that show the
+app carry short recordings of it.
 
-| | |
+| Section | Pages |
 |---|---|
-| **Track** | Node Operations & Tooling — network security analysis tooling for the Portaldot ecosystem |
-| **Chain** | Portaldot V3 Testnet, chain id `420420777`, EVM RPC `https://test-evm-rpc-v3.portaldot.dev` |
-| **Other chains** | Ethereum, Arbitrum, Base, Robinhood Chain, Hyperliquid, Tempo (testnet forks) |
-| **Contract address** | `DortSafeVault` on Base Sepolia: [`0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8`](https://sepolia.basescan.org/address/0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8) — over Circle's USDC, block 53482026 |
-| **Transaction hash** | [`0x2aafcfaa81d24ed15d4c5412da0458f952c2288351467a161184d27d69904e8d`](https://sepolia.basescan.org/tx/0x2aafcfaa81d24ed15d4c5412da0458f952c2288351467a161184d27d69904e8d) |
-| **On Portaldot V3** | _pending testnet tPOT: distribution is handed out by an admin, not a faucet. [`script/DeployVault.s.sol`](foundry/script/DeployVault.s.sol) and [`script/DeployPortaldot.s.sol`](foundry/script/DeployPortaldot.s.sol) are both simulated clean against the live chain (3.0M and 5.2M gas, ~0.0000004 POT in total) and `VAULTS` already names pUSDT as the asset — only the gas is missing._ |
-| **Website** | [dort-app.vercel.app](https://dort-app.vercel.app) — Chat, Explore and the wallet pages. Running `forge` against your own project still needs Dort on your machine, which is what lets it read your source |
-| **Source** | [github.com/maulana-tech/dort-app](https://github.com/maulana-tech/dort-app) |
+| Start here | `/docs` · `/docs/quick-start` · `/docs/first-session` |
+| Using Dort | `/docs/chat` · `/docs/explore` |
+| On-chain | `/docs/wallet` · `/docs/vault` · `/docs/bridge` · `/docs/swap` |
+| Running tests | `/docs/exporter` · `/docs/forks` · `/docs/run-from-browser` |
+| AI | `/docs/ai` · `/docs/mcp` |
+| More | `/docs/local` · `/docs/deploy` · `/docs/privacy` · `/docs/limits` |
 
-### What Portaldot gives this project, and what it gives back
-
-Dort needs a chain whose deployed contracts can be read and executed call by call. Portaldot V3
-provides exactly that through an Ethereum JSON-RPC over a WASM runtime, so a Portaldot auditor gets
-the same decoded traces an Ethereum auditor has — against contracts that really live on Portaldot
-(`PortaldotTest` reads Wrapped POT and Portal USDT at every run). In return, the ecosystem gets a
-defensive tool: a reviewer can fork Portaldot, replay a protocol's own Foundry tests against live
-state, and see every call next to the line of Solidity that ran, with Slither and Aderyn findings
-pinned to the same function.
+The pages are written as data in [`features/docs/pages.ts`](apps/frontend/src/features/docs/pages.ts).
 
 ---
 
