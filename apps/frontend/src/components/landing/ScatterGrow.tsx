@@ -1,55 +1,49 @@
 "use client";
 
 import { type ReactNode, useEffect, useRef } from "react";
-import { LogoText } from "@/components/ui";
 import { type Gsap, useStage } from "./motion";
-import "./hub.css";
+import "./bento.css";
 
-/** how far each mark flies off its arm when the hub scatters, in a 1440-wide viewport (scaled) */
-const SCATTER = [
-  { x: -200, y: -230, r: -16 },
-  { x: 150, y: 50, r: 10 },
-  { x: 190, y: -60, r: 14 },
-];
+/** the square the product window grows out of */
 const SQ = 56;
 
+/** every chain the exporter can fork, in the order foundry/dort-chains.mjs lists them */
+const CHAINS = [
+  "Portaldot V3",
+  "Ethereum",
+  "Arbitrum",
+  "Base",
+  "Robinhood",
+  "HyperEVM",
+  "Tempo",
+];
+
 /**
- * Tenth pass: before it scatters, the row is a hub (hub.css, refs W1–W3, B1–B2): the three marks
- * on arms wired into the Dort core, a lit grid behind. (Nineteenth pass, "terlalu
- * banyak komponen dan teks": the eyebrow, the wire labels, the core's file name and all three
- * rings were dropped; the marks' names stay.)
- * Genie: a pinned stage (~2.6 viewports). The row of round icons (three here: Foundry, Solidity,
- * Ethereum) scatters to random spots,
- * gathers back into the centre and fades, a tiny square appears there and grows into the full app
- * mockup, tilted on the way in and landing flat. Here the icons are the tools Dort reads and the
- * mockup is the live app (ProductTabs: Lab / Scenario / Trace / Flow / Map / Findings on the
- * sample run), whose view tabs fade in once the window has landed: one move from hero to product.
+ * "Start from your own run": what Dort reads, as a bento of cards, and then the live app growing
+ * out of a square in the middle of them.
+ *
+ * The cards replace a hub diagram — three marks on wires around a core — which looked handsome
+ * and said nothing: a reader learned that Dort has something to do with Foundry, Solidity and a
+ * chain, which they could already guess. A card can carry the command, the seven testnets and
+ * the fact that the exporter has no dependencies, and those are the things that actually answer
+ * "what do I do with this?".
+ *
+ * Genie's move is kept, because it is the page's one big transition: a pinned stage (~2.6
+ * viewports) where the cards lift away, a tiny square appears where they were, and it grows into
+ * the live app, tilted on the way in and landing flat, its view tabs arriving once it has.
  */
 function scatterGrow(root: HTMLElement, gsap: Gsap) {
   const q = gsap.utils.selector(root);
-  const marks = q("[data-lp=mark]");
-  const core = q("[data-lp=core]");
+  const cards = q("[data-lp=card]");
   const shot = q("[data-lp=frame]")[0] as HTMLElement;
   const win = shot.firstElementChild as HTMLElement;
   const square = q("[data-lp=square]");
-  const k = () => Math.min(1.15, innerWidth / 1440);
+  if (!shot || !win || !square[0]) return;
   const clipFrom = () => {
     const y = shot.offsetHeight / 2 - SQ / 2;
     const x = shot.offsetWidth / 2 - SQ / 2;
     return `inset(${y}px ${x}px ${y}px ${x}px round 14px)`;
   };
-  // where a mark (or the core) has to travel to meet the square as it appears: the frame's centre,
-  // still lowered by the 12vh the window rises from
-  const sq = square[0].getBoundingClientRect();
-  const toSquare = (el: HTMLElement) => {
-    const r = (el.querySelector(".lp-mark") ?? el).getBoundingClientRect();
-    return {
-      x: sq.left + sq.width / 2 - (r.left + r.width / 2),
-      y: sq.top + sq.height / 2 + innerHeight * 0.12 - (r.top + r.height / 2),
-    };
-  };
-  const home = marks.map((el) => toSquare(el));
-  const meet = toSquare(core[0]);
 
   gsap
     .timeline({
@@ -63,54 +57,33 @@ function scatterGrow(root: HTMLElement, gsap: Gsap) {
         invalidateOnRefresh: true,
       },
     })
-    // 1. the hub comes apart: the wires go, the marks scatter
+    // 1. the cards lift away, nearest last, and the heading goes with them
     // (fromTo everywhere: invalidateOnRefresh must never record a later state)
     .fromTo(
-      q("[data-lp=wire]"),
-      { autoAlpha: 1 },
-      { autoAlpha: 0, duration: 0.9 },
-    )
-    .fromTo(
-      marks,
-      { x: 0, y: 0, rotate: 0, scale: 1, autoAlpha: 1 },
+      cards,
+      { y: 0, autoAlpha: 1, scale: 1 },
       {
-        x: (i) => SCATTER[i].x * k(),
-        y: (i) => SCATTER[i].y * k(),
-        rotate: (i) => SCATTER[i].r,
-        duration: 3,
+        y: -70,
+        autoAlpha: 0,
+        scale: 0.96,
+        duration: 1.6,
+        stagger: 0.12,
+        ease: "power2.in",
       },
-      0,
-    )
-    // 2. everything gathers into the centre and goes, the heading lifts away
-    .to(marks, {
-      x: (i) => home[i].x,
-      y: (i) => home[i].y,
-      rotate: 0,
-      scale: 0.3,
-      autoAlpha: 0,
-      duration: 1.4,
-      ease: "power2.in",
-    })
-    .fromTo(
-      core,
-      { x: 0, y: 0, rotate: 0 },
-      { x: meet.x, y: meet.y, rotate: -4, duration: 1.4 },
-      "<",
     )
     .fromTo(
       q("[data-lp=head]"),
       { y: 0, autoAlpha: 1 },
       { y: -60, autoAlpha: 0, duration: 1.2 },
-      "<",
+      "<0.3",
     )
-    // the core hands over to the square in the same spot, at the same size
+    // 2. a square takes their place, in the middle of where they were
     .fromTo(
       square,
       { autoAlpha: 0, scale: 0.85 },
       { autoAlpha: 1, scale: 1, duration: 0.6, ease: "back.out(2)" },
-      "-=0.4",
+      "-=0.3",
     )
-    .fromTo(core, { autoAlpha: 1 }, { autoAlpha: 0, duration: 0.5 }, "<")
     // 3. the square grows into the live window, tilted on the way in, landing flat
     .addLabel("grow")
     .fromTo(
@@ -185,47 +158,82 @@ export function ScatterGrow({
           <span className="text-white/70">not a blank file.</span>
         </h2>
       </div>
-      <div className="lp-hub">
-        <div aria-hidden="true" data-lp="bg" className="lp-hub-bg" />
-        <div className="lp-hub-o">
-          <span aria-hidden="true" data-lp="wire" className="lp-hub-axis" />
-          {[
-            ["180deg", "var(--hx)"],
-            ["90deg", "var(--hy)"],
-            ["0deg", "var(--hx)"],
-          ].map(([a, arm], i) => (
-            <span
-              key={a}
-              aria-hidden="true"
-              data-lp="wire"
-              className="lp-hub-wire"
-              style={{ "--a": a, "--arm": arm } as React.CSSProperties}
-            >
-              <i style={{ animationDelay: `${i * -1.1}s` }} />
-            </span>
-          ))}
-          <div data-lp="core" className="lp-hub-core">
-            <LogoText height={28} />
-          </div>
-          <ul aria-label="Tools Dort works with" className="lp-hub-marks">
-            {marks.map((m) => (
-              <li key={m.title} data-lp="mark">
-                <a
-                  href={m.href}
-                  className="group flex flex-col items-center gap-2.5"
-                  aria-label={m.title}
-                >
-                  {/* crafted mark (lp-mark): one size, optically centred, a soft inner light (P1) */}
-                  <span className="lp-mark">{m.node}</span>
-                  <span className="whitespace-nowrap text-[13px] text-on-canvas-muted transition-colors group-hover:text-on-canvas">
-                    {m.title}
-                  </span>
-                </a>
+
+      {/* what Dort reads, as cards rather than as a diagram of three logos on wires: a card can
+          carry the command, the chains and the fact that the exporter has no dependencies, and
+          those are what answer "what do I do with this?" */}
+      <div className="lp-sg-bento mx-auto grid w-full max-w-[1100px] gap-3 px-4 md:grid-cols-2 md:px-6 lg:grid-cols-4">
+        <div aria-hidden="true" data-lp="bg" className="lp-bento-bg" />
+
+        <article
+          data-lp="card"
+          className="lp-bento lg:col-span-2 lg:row-span-2"
+        >
+          <span className="lp-mark lp-bento-mark">{marks[0]?.node}</span>
+          <h3 className="mt-5 font-medium text-[22px] text-on-canvas tracking-[-0.01em]">
+            Your own <code className="font-mono text-[19px]">forge test</code>
+          </h3>
+          <p className="mt-3 text-[14px] text-on-canvas-muted leading-relaxed">
+            One command writes one file. It runs your suite, decodes every frame
+            with your project&rsquo;s own ABIs and solc source maps, and writes{" "}
+            <code className="font-mono text-[13px]">dort-data.json</code>. Dort
+            reads that file and draws it — it never runs analysis of its own, so
+            there is nothing of ours between you and what Foundry said.
+          </p>
+          <p className="mt-5 inline-flex rounded-full border border-white/[.12] bg-white/[.06] px-3.5 py-1.5 font-mono text-[12.5px] text-on-canvas">
+            node dort-export.mjs
+          </p>
+        </article>
+
+        <article data-lp="card" className="lp-bento lg:col-span-2">
+          <span className="lp-mark lp-bento-mark">{marks[2]?.node}</span>
+          <h3 className="mt-4 font-medium text-[18px] text-on-canvas">
+            Seven testnets, forked
+          </h3>
+          <p className="mt-2 text-[13.5px] text-on-canvas-muted leading-relaxed">
+            <code className="font-mono text-[12.5px]">
+              --chain base-sepolia
+            </code>{" "}
+            runs the same suite against a fork, so the balances and the code are
+            the chain&rsquo;s, not a fixture&rsquo;s.
+          </p>
+          <ul className="mt-3 flex flex-wrap gap-1.5">
+            {CHAINS.map((c) => (
+              <li
+                key={c}
+                className="rounded-full bg-white/[.07] px-2.5 py-1 text-[12px] text-on-canvas-muted"
+              >
+                {c}
               </li>
             ))}
           </ul>
-        </div>
+        </article>
+
+        <article data-lp="card" className="lp-bento">
+          <span className="lp-mark lp-bento-mark">{marks[1]?.node}</span>
+          <h3 className="mt-4 font-medium text-[18px] text-on-canvas">
+            Back to the line
+          </h3>
+          <p className="mt-2 text-[13.5px] text-on-canvas-muted leading-relaxed">
+            solc source maps put every call back on the line of Solidity that
+            made it, so a trace reads as your code and not as addresses.
+          </p>
+        </article>
+
+        <article data-lp="card" className="lp-bento">
+          <h3 className="mt-1 font-medium text-[18px] text-on-canvas">
+            Plain Node, nothing else
+          </h3>
+          <p className="mt-2 text-[13.5px] text-on-canvas-muted leading-relaxed">
+            The exporter is a handful of{" "}
+            <code className="font-mono text-[12.5px]">.mjs</code> files you curl
+            into your project. They import each other and{" "}
+            <code className="font-mono text-[12.5px]">node:</code>, and nothing
+            from npm — so there is no install to audit before you can run it.
+          </p>
+        </article>
       </div>
+
       <div className="lp-sg-product">{children}</div>
     </section>
   );
