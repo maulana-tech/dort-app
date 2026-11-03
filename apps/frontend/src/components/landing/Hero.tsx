@@ -47,7 +47,7 @@ export function Nav({ active = "product" }: { active?: "product" | "docs" }) {
     // across the page, and this one is meant to float. The cost is that the white wordmark has
     // nothing behind it over the landing's white slides; a gradient scrim here is the fix if
     // that ever matters more than the seam does.
-    <nav className="lh-up sticky top-0 z-50 flex h-[76px] items-center px-4 md:px-6">
+    <nav className="lh-up lh-nav-neg sticky top-0 z-50 flex h-[76px] items-center px-4 md:px-6">
       {/* the bar spans the viewport so it reads as one edge; its contents stay on the 1240
           column, and the hairline and the two '+' marks hang off that column, not the window */}
       <div className="relative mx-auto flex h-full w-full max-w-[1240px] items-center justify-between">

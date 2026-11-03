@@ -107,3 +107,19 @@
     transform: none;
   }
 }
+
+/* The landing nav has no bar behind it, so it crosses the page's white cards as well as its
+   blue. `difference` paints every pixel of it as the exact inverse of whatever is underneath:
+   over the blue canvas it comes out warm, over a white slide it comes out dark, and there is no
+   backdrop it can vanish into. That is the effect, not a side effect — the nav is never simply
+   white any more.
+
+   It has to sit on the <nav> itself. An element blends with what is painted beneath it inside
+   its PARENT stacking context, and position:sticky always makes one: put the blend on the links
+   instead and they would blend against the nav's own transparent background, which changes
+   nothing at all.
+
+   Unconditional: this is a contrast trick, not decoration, and nothing about it moves. */
+.lh-nav-neg {
+  mix-blend-mode: difference;
+}

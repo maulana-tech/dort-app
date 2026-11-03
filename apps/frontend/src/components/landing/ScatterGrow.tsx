@@ -162,31 +162,28 @@ export function ScatterGrow({
       {/* what Dort reads, as cards rather than as a diagram of three logos on wires: a card can
           carry the command, the chains and the fact that the exporter has no dependencies, and
           those are what answer "what do I do with this?" */}
-      <div className="lp-sg-bento mx-auto grid w-full max-w-[1100px] gap-3 px-4 md:grid-cols-2 md:px-6 lg:grid-cols-4">
+      <div className="lp-sg-bento mx-auto grid w-full max-w-[1080px] gap-3 px-4 md:grid-cols-2 md:px-6 lg:grid-cols-6">
         <div aria-hidden="true" data-lp="bg" className="lp-bento-bg" />
 
-        <article
-          data-lp="card"
-          className="lp-bento lg:col-span-2 lg:row-span-2"
-        >
-          <span className="lp-mark lp-bento-mark">{marks[0]?.node}</span>
-          <h3 className="mt-5 font-medium text-[22px] text-on-canvas tracking-[-0.01em]">
+        <article data-lp="card" className="lp-bento lg:col-span-4">
+          <span className="lp-bento-mark">{marks[0]?.node}</span>
+          <h3 className="mt-4 font-medium text-[21px] text-on-canvas tracking-[-0.01em]">
             Your own <code className="font-mono text-[19px]">forge test</code>
           </h3>
-          <p className="mt-3 text-[14px] text-on-canvas-muted leading-relaxed">
+          <p className="mt-2.5 max-w-[62ch] text-[13.5px] text-on-canvas-muted leading-relaxed">
             One command writes one file. It runs your suite, decodes every frame
             with your project&rsquo;s own ABIs and solc source maps, and writes{" "}
             <code className="font-mono text-[13px]">dort-data.json</code>. Dort
             reads that file and draws it — it never runs analysis of its own, so
             there is nothing of ours between you and what Foundry said.
           </p>
-          <p className="mt-5 inline-flex rounded-full border border-white/[.12] bg-white/[.06] px-3.5 py-1.5 font-mono text-[12.5px] text-on-canvas">
+          <p className="mt-4 self-start rounded-full border border-white/[.12] bg-white/[.06] px-3.5 py-1.5 font-mono text-[12.5px] text-on-canvas">
             node dort-export.mjs
           </p>
         </article>
 
         <article data-lp="card" className="lp-bento lg:col-span-2">
-          <span className="lp-mark lp-bento-mark">{marks[2]?.node}</span>
+          <span className="lp-bento-mark">{marks[2]?.node}</span>
           <h3 className="mt-4 font-medium text-[18px] text-on-canvas">
             Seven testnets, forked
           </h3>
@@ -209,8 +206,8 @@ export function ScatterGrow({
           </ul>
         </article>
 
-        <article data-lp="card" className="lp-bento">
-          <span className="lp-mark lp-bento-mark">{marks[1]?.node}</span>
+        <article data-lp="card" className="lp-bento lg:col-span-2">
+          <span className="lp-bento-mark">{marks[1]?.node}</span>
           <h3 className="mt-4 font-medium text-[18px] text-on-canvas">
             Back to the line
           </h3>
@@ -220,8 +217,8 @@ export function ScatterGrow({
           </p>
         </article>
 
-        <article data-lp="card" className="lp-bento">
-          <h3 className="mt-1 font-medium text-[18px] text-on-canvas">
+        <article data-lp="card" className="lp-bento lg:col-span-4">
+          <h3 className="font-medium text-[18px] text-on-canvas">
             Plain Node, nothing else
           </h3>
           <p className="mt-2 text-[13.5px] text-on-canvas-muted leading-relaxed">
