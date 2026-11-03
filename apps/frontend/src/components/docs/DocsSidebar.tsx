@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { GitHubMark } from "@/components/landing/GitHubMark";
-import { XMark } from "@/components/landing/XMark";
 import { GROUPS, hrefOf } from "@/features/docs/pages";
 import { SearchButton } from "./DocsSearch";
 
@@ -13,15 +12,6 @@ function Follow() {
     "flex items-center gap-2.5 rounded-tile px-2.5 py-1.5 text-[13.5px] text-on-canvas-dim transition-colors hover:text-on-canvas";
   return (
     <div className="flex flex-col gap-0.5 border-border border-t pt-4">
-      <a
-        href="https://x.com/dort_app"
-        target="_blank"
-        rel="noopener noreferrer"
-        className={link}
-      >
-        <XMark className="size-3.5 flex-none" />
-        Follow @dort_app on X
-      </a>
       <a
         href="https://github.com/maulana-tech/dort-app"
         target="_blank"
