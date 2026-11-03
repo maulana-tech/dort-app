@@ -1092,15 +1092,45 @@ function factRows(
     ]);
   }
   if (subject.kind === "tx") {
+    // the order an explorer lists them in, which is the order a reader asks: what happened,
+    // when, between whom, how much it moved, what it cost, and what it left behind
     rows.push(["Transaction", subject.value]);
-    rows.push(["Status", f.status ?? "unknown"]);
-    if (f.block !== undefined) rows.push(["Block", String(f.block)]);
+    rows.push([
+      "Status",
+      `${f.status ?? "unknown"}${f.at ? ` · ${new Date(f.at * 1000).toLocaleString()}` : ""}`,
+    ]);
+    if (f.block !== undefined)
+      rows.push([
+        "Block",
+        `${f.block}${f.index !== undefined ? ` · position ${f.index}` : ""}`,
+      ]);
     if (f.from) rows.push(["From", f.from]);
     if (f.to) rows.push(["To", f.to]);
-    if (f.value && f.value !== "0") rows.push(["Value", `${f.value} wei`]);
+    rows.push([
+      "Value",
+      f.value && f.value !== "0" ? `${f.value} wei` : "none",
+    ]);
+    if (f.gasUsed)
+      rows.push([
+        "Gas used",
+        `${f.gasUsed.toLocaleString("en-US")}${f.gasLimit ? ` of ${f.gasLimit.toLocaleString("en-US")}` : ""}`,
+      ]);
+    if (f.gasPrice) rows.push(["Gas price", `${f.gasPrice} wei`]);
+    if (f.nonce !== undefined)
+      rows.push([
+        "Nonce",
+        `${f.nonce}${f.txType ? ` · type ${f.txType}` : ""}`,
+      ]);
+    if (f.selector)
+      rows.push([
+        "Calldata",
+        `${f.selector} · ${f.inputBytes?.toLocaleString("en-US") ?? "?"} bytes`,
+      ]);
     rows.push([
       "Calls traced",
-      f.frames?.length ? String(f.frames.length) : "none",
+      f.frames?.length
+        ? `${f.frames.filter((x) => x.kind !== "EVENT").length} calls · ${f.logs ?? 0} log${f.logs === 1 ? "" : "s"}`
+        : "none",
     ]);
   }
   if (subject.kind === "source") {

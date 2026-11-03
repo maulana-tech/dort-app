@@ -318,12 +318,25 @@ export type ScanFacts = {
   bytecodeBytes?: number;
   /** ERC-20 metadata, when the address answers to it */
   token?: { symbol: string; decimals: number } | null;
-  /** tx scans */
+  /** tx scans: the envelope, as an explorer would list it */
   from?: string;
   to?: string;
   value?: string;
   status?: "success" | "reverted";
   block?: number;
+  /** seconds since the epoch, from the block the transaction is in */
+  at?: number;
+  nonce?: number;
+  index?: number;
+  txType?: string;
+  gasLimit?: number | null;
+  gasUsed?: number | null;
+  /** effective gas price, in the chain's own smallest unit */
+  gasPrice?: string;
+  /** the first four bytes of the calldata, and how much of it there was */
+  selector?: string;
+  inputBytes?: number;
+  logs?: number;
   frames?: Frame[];
   /** a page a reader can open to see this for themselves, where the chain has one */
   explorer?: string | null;
@@ -412,7 +425,23 @@ export function scanPrompt(input: ScanInput, facts: ScanFacts): string {
     head.push(
       `Transaction: ${input.value}`,
       `From ${facts.from} to ${facts.to}${facts.value && facts.value !== "0" ? `, carrying ${facts.value} wei` : ""}`,
-      `Status: ${facts.status ?? "unknown"}${facts.block ? `, block ${facts.block}` : ""}`,
+      `Status: ${facts.status ?? "unknown"}${facts.block ? `, block ${facts.block}` : ""}${
+        facts.at ? ` on ${new Date(facts.at * 1000).toISOString()}` : ""
+      }`,
+      [
+        facts.nonce !== undefined ? `nonce ${facts.nonce}` : "",
+        facts.txType ? `type ${facts.txType}` : "",
+        facts.gasUsed
+          ? `${facts.gasUsed.toLocaleString("en-US")} of ${facts.gasLimit?.toLocaleString("en-US") ?? "?"} gas used`
+          : "",
+        facts.selector ? `selector ${facts.selector}` : "",
+        facts.inputBytes ? `${facts.inputBytes} bytes of calldata` : "",
+        facts.logs !== undefined
+          ? `${facts.logs} log${facts.logs === 1 ? "" : "s"}`
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" · "),
       "",
       "The calls it actually made and the events they emitted, indented by depth (from the node's own tracer):",
       frameLines(facts.frames ?? []),

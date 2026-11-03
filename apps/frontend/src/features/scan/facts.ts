@@ -124,6 +124,26 @@ export async function gatherFacts(
   facts.value = tx.value.toString();
   facts.block = Number(tx.blockNumber);
   facts.status = receipt?.status === "success" ? "success" : "reverted";
+  // the rest of the envelope, which an explorer would list and we were throwing away: a reader
+  // asking "what is this transaction" wants when, by whom, in what order and at what cost, and
+  // the model reasons better about a call it knows the shape of
+  facts.nonce = tx.nonce;
+  facts.index = tx.transactionIndex ?? undefined;
+  facts.txType = typeof tx.type === "string" ? tx.type : undefined;
+  facts.gasLimit = tx.gas === undefined ? null : Number(tx.gas);
+  facts.gasUsed =
+    receipt?.gasUsed === undefined ? null : Number(receipt.gasUsed);
+  facts.gasPrice = receipt?.effectiveGasPrice?.toString();
+  facts.selector = tx.input?.slice(0, 10);
+  facts.inputBytes = tx.input ? Math.max(0, (tx.input.length - 2) / 2) : 0;
+  facts.logs = receipt?.logs?.length;
+  // one more call for the one thing neither of the first two carries
+  try {
+    const block = await client.getBlock({ blockNumber: tx.blockNumber ?? 0n });
+    facts.at = Number(block.timestamp);
+  } catch {
+    /* a chain that will not give up the block still gave us the transaction */
+  }
 
   let traceNote: string | null = null;
   try {
