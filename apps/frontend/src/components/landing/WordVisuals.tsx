@@ -100,9 +100,9 @@ function Panel({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-[14px] border border-white/[.08] bg-card-grad p-1.5 shadow-float">
+    <div className="rounded-[14px] border border-border bg-card-grad p-1.5 shadow-float">
       <p className="flex items-center gap-2 px-2.5 pt-1.5 pb-2 text-[13px] text-fg">
-        <span className="size-1.5 rounded-full bg-white" />
+        <span className="size-1.5 rounded-full bg-primary" />
         {title}
         {aside && (
           <span className="ml-auto pl-6 font-mono text-[11.5px] text-dim">
@@ -110,7 +110,7 @@ function Panel({
           </span>
         )}
       </p>
-      <div className="rounded-[10px] border border-white/[.05] bg-inner-grad">
+      <div className="rounded-[10px] border border-border bg-inner-grad">
         {children}
       </div>
     </div>
@@ -149,11 +149,11 @@ function MiniSource({ model, f }: { model: Model; f?: Piece }) {
             key={n}
             className={`flex gap-3 pr-4 ${bad.has(n) ? "bg-red/[.08] shadow-[inset_2px_0_0_var(--red)]" : ""}`}
           >
-            <span className="w-8 text-right text-white/25">{n + 1}</span>
+            <span className="w-8 text-right text-dim">{n + 1}</span>
             <span className="w-8 text-right text-dim/80">
               {hits?.[n] == null ? "" : hits[n] ? hitLabel(hits[n]) : "0"}
             </span>
-            <span className="whitespace-pre text-white/80">
+            <span className="whitespace-pre text-body">
               {tokenize(model.lines[n] ?? "").map((t, i) => (
                 <span
                   // biome-ignore lint/suspicious/noArrayIndexKey: tokens of one static line
@@ -402,10 +402,10 @@ export function TestVisual({
                   key={n}
                   className="flex gap-4 pr-6"
                 >
-                  <span className="w-8 flex-none text-right text-white/25">
+                  <span className="w-8 flex-none text-right text-dim">
                     {n + 1}
                   </span>
-                  <span className="whitespace-pre text-white/80">
+                  <span className="whitespace-pre text-body">
                     {tokenize(l).map((t, i) => (
                       <span
                         // biome-ignore lint/suspicious/noArrayIndexKey: tokens of one static line
@@ -513,7 +513,7 @@ export function MoveVisual() {
           {rows.map(([label, from, to]) => (
             <div
               key={label}
-              className="rounded-[10px] border border-white/[.06] bg-card-grad p-3"
+              className="rounded-[10px] border border-border bg-card-grad p-3"
             >
               <p className="text-[12px] text-dim">{label}</p>
               <p className="mt-1 flex flex-wrap items-baseline gap-2 font-mono text-[13px] text-fg">
@@ -560,7 +560,7 @@ export function LearnVisual({
             {incidents.map((c) => (
               <li
                 key={c.name}
-                className="flex items-baseline justify-between gap-3 rounded-[10px] border border-white/[.06] bg-card-grad px-3 py-2"
+                className="flex items-baseline justify-between gap-3 rounded-[10px] border border-border bg-card-grad px-3 py-2"
               >
                 <span className="text-[13px] text-fg">{c.name}</span>
                 <span className="font-mono text-[12px] text-dim">

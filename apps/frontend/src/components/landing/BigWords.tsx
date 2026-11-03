@@ -1,9 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { type ReactNode, useRef } from "react";
+import { type CSSProperties, Fragment, type ReactNode, useRef } from "react";
 import { ICON_PATH, type IconKey } from "@/features/atlas/utils/icons";
-import { type Gsap, Lazy, MOTION_MQ, useStage } from "./motion";
+import { type Gsap, Lazy, useStage } from "./motion";
+import "./words.css";
 import type { ChatDemo } from "./stats";
 
 // the visuals are their own chunk, fetched as their spot nears
@@ -12,13 +13,9 @@ const AskVisual = dynamic(() => visuals().then((m) => m.AskVisual));
 const MoveVisual = dynamic(() => visuals().then((m) => m.MoveVisual));
 const LearnVisual = dynamic(() => visuals().then((m) => m.LearnVisual));
 
-type Layout = "left" | "right" | "top";
-
 type Word = {
   word: string;
   line: string;
-  /** word + copy left of the visual, right of it, or above it (the word slides up as it rises) */
-  layout: Layout;
   /** two icon badges orbiting the visual: icon, where they sit on its edge, finding dot */
   glyphs: { icon: IconKey; at: string; bad?: boolean }[];
   /** the empty spot's height until the visual mounts (Lazy): the mounted height per breakpoint,
@@ -33,107 +30,126 @@ type Word = {
 const TILT = [-14, 9, -6, 12, -10, 16];
 
 /**
- * Genie: three giant words ('Create' / 'Like' / 'Magic'), each letter dropping in on its own with
- * the scroll, mascots beside them. Here 'Trace' / 'Test' / 'Triage', the three things Dort does,
- * each sharing its screen with the product doing it (WordVisuals): the word and its line on one
- * side, the live UI on the other (or under it, the word sliding up as it rises), the UI scrubbing
- * in (rise, 0.96 → 1, tilted back → flat) with the icon badges orbiting its corners. Phones stack
- * word, line, visual; reduced motion shows everything in place.
+ * The pinned layout only exists where it can work: wide enough for a word and a panel side by
+ * side, and only when motion is allowed. Below that the section stays three plain blocks, which
+ * is what the markup is without any of this. words.css matches this query exactly, so the CSS
+ * and the timeline can never disagree about which layout is on screen.
+ */
+const WORDS_MQ =
+  "(prefers-reduced-motion: no-preference) and (min-width: 768px)";
+
+/** the letters of one word, dropping in with the bounce the section is built around */
+const dropIn = (tl: gsap.core.Timeline, letters: Element[], at: string) =>
+  tl.fromTo(
+    letters,
+    {
+      yPercent: -140,
+      rotate: (i: number) => TILT[i % TILT.length],
+      autoAlpha: 0,
+    },
+    {
+      yPercent: 0,
+      rotate: 0,
+      autoAlpha: 1,
+      ease: "bounce.out",
+      stagger: 0.1,
+      duration: 0.9,
+    },
+    at,
+  );
+
+/**
+ * Genie: three giant words, each letter dropping in on its own with the scroll, mascots beside
+ * them. Here 'Ask' / 'Move' / 'Learn', the three things Dort does, and the screen is shared
+ * rather than taken in turns: the word holds still on the left while the product doing it
+ * travels in from the right.
+ *
+ * One pinned trigger drives everything, which is the point — the reader scrolls down, as they
+ * always do, and the movement they get is sideways. Two triggers (one for the words, one for the
+ * track) would drift apart on a fast flick and show the wrong word over the wrong panel, which
+ * is the one failure this section cannot have.
+ *
+ * The step is measured, not assumed: one panel's width, read at refresh (invalidateOnRefresh),
+ * so a resize or an address bar appearing does not leave the track half a panel out.
  */
 function bigWords(root: HTMLElement, gsap: Gsap) {
-  const orbit = matchMedia("(min-width: 768px)").matches ? 26 : 8;
-  for (const block of gsap.utils.toArray<HTMLElement>("[data-lp=word]", root)) {
-    const q = gsap.utils.selector(block);
-    const [visual] = q("[data-lp=visual]");
-    gsap
-      .timeline({
-        scrollTrigger: {
-          trigger: block,
-          start: "top 85%",
-          end: "top 25%",
-          scrub: 0.6,
-        },
-      })
-      .fromTo(
-        q("[data-lp=letter]"),
-        {
-          yPercent: -140,
-          rotate: (i) => TILT[i % TILT.length],
-          autoAlpha: 0,
-        },
-        {
-          yPercent: 0,
-          rotate: 0,
-          autoAlpha: 1,
-          ease: "bounce.out",
-          stagger: 0.12,
-          duration: 1,
-        },
-      )
-      .fromTo(
-        q("[data-lp=line]"),
+  const q = gsap.utils.selector(root);
+  const heads = q("[data-lp=head]");
+  const panels = q("[data-lp=panel]");
+  if (panels.length < 2) return;
+  // one cell's width: what a panel has to travel for the next one to take its place. Measured
+  // at every refresh, so a resize or a phone's address bar never leaves the row half a step out.
+  const step = () => panels[0].getBoundingClientRect().width;
+
+  const tl = gsap.timeline({
+    defaults: { ease: "none" },
+    scrollTrigger: {
+      trigger: root,
+      start: "top top",
+      // ~1.3 screens of scroll per panel, so a flick never skips one; scrub 1 eases the
+      // catch-up, which is what makes a sideways move read as one deliberate slide
+      end: () => `+=${panels.length * 130}%`,
+      pin: true,
+      scrub: 1,
+      invalidateOnRefresh: true,
+    },
+  });
+
+  panels.forEach((_, k) => {
+    const at = `p${k}`;
+    tl.addLabel(at);
+    const letters = q(
+      `[data-lp=head]:nth-child(${k * 2 + 1}) [data-lp=letter]`,
+    );
+    const line = q(`[data-lp=head]:nth-child(${k * 2 + 1}) [data-lp=line]`);
+    if (k === 0) {
+      dropIn(tl, letters, at);
+      tl.fromTo(
+        line,
         { autoAlpha: 0, y: 24 },
-        { autoAlpha: 1, y: 0, duration: 0.6 },
-        "-=0.4",
+        { autoAlpha: 1, y: 0, duration: 0.5 },
+        `${at}+=0.5`,
       );
-    // the visual rises; the word above it slides up out of the way on the same trigger
-    const rise = gsap.timeline({
-      scrollTrigger: {
-        trigger: visual,
-        start: "top 100%",
-        end: "top 40%",
-        scrub: 0.6,
-      },
-    });
-    rise.fromTo(
-      visual,
+    } else {
+      // the row and the word move together: a word is never left standing over a panel it does
+      // not belong to, not even for the length of a crossfade
+      tl.to(panels, { x: (i: number) => (i - k) * step(), duration: 1 }, at)
+        .to(heads[k - 1], { autoAlpha: 0, y: -40, duration: 0.4 }, at)
+        .set(heads[k], { autoAlpha: 1, y: 0 }, `${at}+=0.38`);
+      dropIn(tl, letters, `${at}+=0.38`);
+      tl.fromTo(
+        line,
+        { autoAlpha: 0, y: 24 },
+        { autoAlpha: 1, y: 0, duration: 0.4 },
+        `${at}+=0.75`,
+      );
+    }
+    // the panel holds still a while before the next one takes its place
+    tl.to({}, { duration: 0.9 });
+  });
+
+  // the badges circle their corner for the whole pinned stretch, on the same timeline so they
+  // cannot run on past it. Added last, with the length the timeline turned out to have.
+  const total = tl.duration();
+  const orbit = 26;
+  for (const [i, g] of q("[data-lp=glyph]").entries()) {
+    const r = i % 2 ? -orbit : orbit;
+    tl.to(
+      g,
       {
-        y: 140,
-        scale: 0.96,
-        rotateX: 12,
-        autoAlpha: 0,
-        transformPerspective: 1400,
-        transformOrigin: "50% 0%",
-      },
-      {
-        y: 0,
-        scale: 1,
-        rotateX: 0,
-        autoAlpha: 1,
-        ease: "power2.out",
+        // easeEach belongs INSIDE the keyframes object; as a sibling GSAP rejects it
+        // ("Invalid property easeEach") and every orbit step runs linear instead of eased.
+        keyframes: {
+          x: [0, r, 0, -r, 0],
+          y: [-r, 0, r, 0, -r],
+          easeEach: "sine.inOut",
+        },
+        rotate: i % 2 ? -40 : 40,
+        duration: total,
+        ease: "none",
       },
       0,
     );
-    if (block.dataset.layout === "top")
-      rise.fromTo(q("[data-lp=head]"), { y: 60 }, { y: -40, ease: "none" }, 0);
-    // the badges circle their corner of the visual while it passes, both on one trigger
-    // (a tighter circle on phones, where the badges sit in the gap above and below the visual)
-    const spin = gsap.timeline({
-      scrollTrigger: {
-        trigger: block,
-        start: "top bottom",
-        end: "bottom top",
-        scrub: true,
-      },
-    });
-    for (const [i, g] of q("[data-lp=glyph]").entries()) {
-      const r = i ? -orbit : orbit;
-      spin.to(
-        g,
-        {
-          // easeEach belongs INSIDE the keyframes object; as a sibling GSAP rejects it
-          // ("Invalid property easeEach") and every orbit step runs linear instead of eased.
-          keyframes: {
-            x: [0, r, 0, -r, 0],
-            y: [-r, 0, r, 0, -r],
-            easeEach: "sine.inOut",
-          },
-          rotate: i ? -40 : 40,
-          ease: "none",
-        },
-        0,
-      );
-    }
   }
 }
 
@@ -163,12 +179,6 @@ function Glyph({ icon, at, bad }: Word["glyphs"][number]) {
   );
 }
 
-const GRID: Record<Layout, string> = {
-  left: "md:grid-cols-[4fr_7fr]",
-  right: "md:grid-cols-[7fr_4fr]",
-  top: "",
-};
-
 export function BigWords({
   chat,
   protocols,
@@ -179,12 +189,11 @@ export function BigWords({
   incidents: { name: string; year: string; loss: string }[];
 }) {
   const ref = useRef<HTMLElement>(null);
-  useStage(ref, bigWords, MOTION_MQ);
+  useStage(ref, bigWords, WORDS_MQ);
   const words: Word[] = [
     {
       word: "Ask",
       line: "A question in your own words, answered from the run that really happened.",
-      layout: "left",
       glyphs: [
         { icon: "waves", at: "-top-12 left-3 md:-top-16 md:-left-4" },
         { icon: "fn", at: "-bottom-12 right-3 md:-right-4 md:-bottom-16" },
@@ -196,7 +205,6 @@ export function BigWords({
     {
       word: "Move",
       line: "Deposit, swap and bridge on Portaldot V3 — told what happens first.",
-      layout: "right",
       glyphs: [
         { icon: "plug", at: "-top-12 right-3 md:-top-16 md:-right-4" },
         { icon: "user", at: "-bottom-12 left-3 md:-bottom-16 md:-left-4" },
@@ -208,7 +216,6 @@ export function BigWords({
     {
       word: "Learn",
       line: "How the protocols you depend on work, and how others lost the money.",
-      layout: "top",
       glyphs: [
         { icon: "warn", at: "-top-12 left-3 md:-top-16 md:-left-4", bad: true },
         { icon: "check", at: "-bottom-12 right-3 md:-right-4 md:-bottom-16" },
@@ -219,67 +226,73 @@ export function BigWords({
     },
   ];
   return (
-    <section ref={ref} data-tone="words" aria-label="Ask, move, learn">
-      {words.map((w) => (
-        <div
-          key={w.word}
-          data-lp="word"
-          data-layout={w.layout}
-          className={`mx-auto grid max-w-[1240px] items-center gap-12 px-4 py-24 md:min-h-[100svh] md:gap-16 md:px-6 md:py-32 ${GRID[w.layout]}`}
-        >
-          <div
-            data-lp="head"
-            className={
-              w.layout === "top"
-                ? "text-center"
-                : w.layout === "right"
-                  ? "md:order-last md:text-right"
-                  : ""
-            }
-          >
-            <h2
-              aria-label={w.word}
-              className={`font-light text-on-canvas leading-[0.9] tracking-[-0.06em] ${
-                w.layout === "top"
-                  ? "text-[clamp(96px,17vw,240px)]"
-                  : "text-[clamp(96px,11vw,168px)]"
-              }`}
+    <section
+      ref={ref}
+      data-tone="words"
+      aria-label="Ask, move, learn"
+      className="lp-words"
+    >
+      {/* word, panel, word, panel, word, panel — the order a phone reads and a screen reader
+          follows. words.css deals them into two columns from md up; nothing here depends on it */}
+      <div className="lp-words-stage mx-auto flex max-w-[1240px] flex-col gap-12 px-4 py-24 md:px-6">
+        {words.map((w, i) => (
+          <Fragment key={w.word}>
+            <div data-lp="head" className="lp-words-head">
+              <p className="mb-4 font-mono text-[12px] text-on-canvas-muted tracking-[0.08em]">
+                {`${String(i + 1).padStart(2, "0")} / ${String(words.length).padStart(2, "0")}`}
+              </p>
+              <h2
+                aria-label={w.word}
+                className="font-light text-[clamp(76px,10vw,150px)] text-on-canvas leading-[0.9] tracking-[-0.06em]"
+              >
+                {[...w.word].map((c, j) => (
+                  <span
+                    // biome-ignore lint/suspicious/noArrayIndexKey: letters repeat, their position is the identity
+                    key={j}
+                    data-lp="letter"
+                    aria-hidden="true"
+                    className="inline-block"
+                  >
+                    {c}
+                  </span>
+                ))}
+              </h2>
+              <p
+                data-lp="line"
+                className="mt-6 max-w-[420px] text-balance text-[16px] text-on-canvas-muted leading-relaxed md:text-[18px]"
+              >
+                {w.line}
+              </p>
+            </div>
+            <div
+              data-lp="panel"
+              // --i is the panel's place in the row; words.css turns it into the offset that
+              // makes a row out of three things sharing one grid cell, before any script runs
+              style={{ "--i": i } as CSSProperties}
+              className="lp-words-panel flex items-center justify-center md:py-16"
             >
-              {[...w.word].map((c, i) => (
-                <span
-                  // biome-ignore lint/suspicious/noArrayIndexKey: letters repeat, their position is the identity
-                  key={i}
-                  data-lp="letter"
-                  aria-hidden="true"
-                  className="inline-block"
+              {/* the badges hang off the visual's corners, and the stage clips: the room for
+                  them has to be inside it, which is what the panel's padding is for */}
+              <div className="relative w-full">
+                {w.glyphs.map((g) => (
+                  <Glyph key={g.icon} {...g} />
+                ))}
+                {/* a wide horizontal margin: panels two and three sit off to the right, outside
+                    the viewport, so without it they would only mount as they slid in, and pop.
+                    The measured min heights hold the empty spot in the stacked layout; pinned,
+                    the panel sizes to the visual, which has a whole screen to fit in */}
+                <Lazy
+                  className={`w-full ${w.min} md:min-h-0`}
+                  margin="100% 200%"
+                  wait={w.wait}
                 >
-                  {c}
-                </span>
-              ))}
-            </h2>
-            <p
-              data-lp="line"
-              className={`mt-6 max-w-[420px] text-balance text-[16px] text-on-canvas-muted leading-relaxed md:text-[18px] ${
-                w.layout === "top"
-                  ? "mx-auto"
-                  : w.layout === "right"
-                    ? "md:ml-auto"
-                    : ""
-              }`}
-            >
-              {w.line}
-            </p>
-          </div>
-          <div data-lp="visual" className="relative min-w-0">
-            {w.glyphs.map((g) => (
-              <Glyph key={g.icon} {...g} />
-            ))}
-            <Lazy className={w.min} wait={w.wait}>
-              {w.visual}
-            </Lazy>
-          </div>
-        </div>
-      ))}
+                  {w.visual}
+                </Lazy>
+              </div>
+            </div>
+          </Fragment>
+        ))}
+      </div>
     </section>
   );
 }

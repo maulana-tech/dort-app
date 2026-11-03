@@ -1,0 +1,51 @@
+/* Ask / Move / Learn (BigWords.tsx).
+   Two layouts out of one piece of markup, and which is in force is decided here, not in JS.
+
+   The DOM is interleaved — word, panel, word, panel, word, panel — because that is the order a
+   person reads on a phone and the order a screen reader follows. The default layout is exactly
+   that: three plain blocks down the page. Nothing here is needed for it to make sense.
+
+   From md up, with motion allowed, the same markup becomes one pinned screen: every word is
+   dealt into the first grid cell and every panel into the second, so the words hold still on the
+   left while the panels sit in a row running off to the right, clipped. The timeline slides them
+   one cell-width per beat. The media query matches the one bigWords() passes to useStage, so the
+   CSS and the timeline can never disagree about which layout is on screen (how.css does this
+   too). */
+
+@media (prefers-reduced-motion: no-preference) and (min-width: 768px) {
+  .lp-words-stage {
+    display: grid;
+    grid-template-columns: clamp(240px, 26vw, 360px) 1fr;
+    column-gap: clamp(2rem, 5vw, 5rem);
+    align-items: center;
+    height: 100svh;
+    padding-block: 0;
+    /* the window: panels two and three live off to the right until the scroll brings them in */
+    overflow: hidden;
+  }
+
+  /* every word in the same cell, so swapping one for the next moves nothing else */
+  .lp-words-head {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  /* before GSAP runs, only the first word shows. Three headings printed on top of each other
+     would be worse than one, and if the timeline never arrives the section still reads. */
+  .lp-words-head:not(:first-child) {
+    visibility: hidden;
+    opacity: 0;
+  }
+
+  /* every panel in the same cell too, then pushed one cell-width apart to form the row. Doing
+     it here rather than in JS means the row exists before any script does: without GSAP the
+     panels sit in their places, clipped, instead of printed on top of one another. */
+  .lp-words-panel {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    transform: translateX(calc(var(--i, 0) * 100%));
+  }
+}
