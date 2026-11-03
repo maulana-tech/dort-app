@@ -25,10 +25,18 @@ export type ScanInput = {
   value: string;
   /** set when the source came from a file the user chose */
   name?: string;
+  /**
+   * What the reader actually typed around the hash, when they typed anything. "what does 0x…
+   * do?" is a question about a transaction, not a bare subject, and throwing the words away
+   * would answer something they did not ask.
+   */
+  ask?: string;
 };
 
 const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 const TX = /^0x[0-9a-fA-F]{64}$/;
+/** the same two, found as a word inside a sentence rather than as the whole of it */
+const EMBEDDED = /\b0x(?:[0-9a-fA-F]{64}|[0-9a-fA-F]{40})\b/;
 
 /**
  * What the user pasted. An address and a transaction hash differ only in length, which is exactly
@@ -39,9 +47,31 @@ export function detect(text: string, name?: string): ScanInput | null {
   if (!t) return null;
   if (ADDRESS.test(t)) return { kind: "address", value: t.toLowerCase() };
   if (TX.test(t)) return { kind: "tx", value: t.toLowerCase() };
-  // anything else is source only if it looks like Solidity at all; a stray word is not a contract
+
+  // Solidity before any embedded hash: source is full of address literals, and a contract
+  // pasted in would otherwise be read as whichever address it happens to mention first
   if (/\b(contract|library|interface|pragma\s+solidity)\b/.test(t))
     return { kind: "source", value: text, name };
+
+  // a hash sitting inside a sentence. The box invites plain language, so "/scan 0x139c…" and
+  // "what does 0x162d… do?" have to work; requiring the whole box to be one bare token made
+  // the feature reachable only by people who already knew the trick.
+  const found = t.match(EMBEDDED);
+  if (found) {
+    const hit = found[0];
+    // a leading "/scan" is the command, not part of the question
+    const said = t
+      .replace(/^\/?(scan|read|check|audit|trace)\b[:\s]*/i, "")
+      .trim();
+    // the question goes to the model whole, hash and all: it is already in the context block
+    // above, and "what does do?" — the sentence with its subject cut out — is not a question
+    const words = said.replace(hit, " ").replace(/\s+/g, " ").trim();
+    return {
+      kind: hit.length === 42 ? "address" : "tx",
+      value: hit.toLowerCase(),
+      ...(words ? { ask: said } : {}),
+    };
+  }
   return null;
 }
 
@@ -319,6 +349,8 @@ export function scanPrompt(input: ScanInput, facts: ScanFacts): string {
       "Gas is in this chain's own units, which are not Ethereum's and are not comparable to mainnet costs. Treat a figure as evidence only against another figure in this same trace.",
     );
   }
+  if (input.ask)
+    head.push("", `The reader asked, in their own words: ${input.ask}`);
   head.push(
     "",
     "Not available to you here:",

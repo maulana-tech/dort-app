@@ -22,6 +22,13 @@ export const HISTORY_KEY = "dort.chat";
  */
 export const OPEN_KEY = "dort.chat.open";
 
+/**
+ * What OPEN_KEY holds when the reader pressed New: a deliberate empty box, not a missing cursor.
+ * Without it the two are indistinguishable, and restoring "the newest thread" would undo the one
+ * thing they just asked for.
+ */
+export const OPEN_NEW = "new";
+
 /** How many conversations are kept; the oldest fall off the end. */
 export const HISTORY_MAX = 30;
 

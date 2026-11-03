@@ -5,6 +5,8 @@ import {
   type Conversation,
   HISTORY_KEY,
   HISTORY_MAX,
+  OPEN_KEY,
+  OPEN_NEW,
   parseHistory,
   remove,
   titleOf,
@@ -159,6 +161,23 @@ assert.notEqual(
   whenLabel(older, now),
   whenLabel(now, now),
   "another day reads differently from today",
+);
+
+// ── the cursor, and the difference between "nothing open" and "I pressed New" ───────────────
+// Relying on the cursor alone lost the thread on reload: it is only written once a thread is
+// worth saving, so leaving mid-question came back to an empty box with the work one tab away.
+// The newest row is the fallback — but a reader who pressed New asked for an empty box, and the
+// two states have to be told apart or coming back would undo the one thing they just asked for.
+assert.equal(OPEN_KEY, "dort.chat.open");
+assert.notEqual(
+  OPEN_KEY,
+  HISTORY_KEY,
+  "the cursor gets its own key: it changes on every send",
+);
+assert.equal(OPEN_NEW, "new");
+assert.ok(
+  !/^c[a-z0-9]/.test(OPEN_NEW),
+  "the sentinel must never collide with a real id, which newId() always prefixes with c",
 );
 
 console.log("chat history ok");

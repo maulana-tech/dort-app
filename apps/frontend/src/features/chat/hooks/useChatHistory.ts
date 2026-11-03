@@ -6,6 +6,7 @@ import {
   type Conversation,
   HISTORY_KEY,
   OPEN_KEY,
+  OPEN_NEW,
   parseHistory,
   remove as removeOne,
   titleOf,
@@ -44,12 +45,15 @@ export function useChatHistory(): ChatHistory {
   const [list, setList] = useState<Conversation[]>([]);
   const id = useRef<string>(newId());
   const [current, setCurrent] = useState<string | null>(null);
+  /** the reader pressed New before leaving, so coming back must not undo it */
+  const chose = useRef(false);
 
   useEffect(() => {
     try {
       setList(parseHistory(localStorage.getItem(HISTORY_KEY)));
       const open = localStorage.getItem(OPEN_KEY);
-      if (open) {
+      if (open === OPEN_NEW) chose.current = true;
+      else if (open) {
         id.current = open;
         setCurrent(open);
       }
@@ -98,7 +102,8 @@ export function useChatHistory(): ChatHistory {
   const fresh = useCallback(() => {
     id.current = newId();
     setCurrent(null);
-    mark(null);
+    chose.current = true;
+    mark(OPEN_NEW);
   }, [mark]);
 
   const open = useCallback(
@@ -107,6 +112,7 @@ export function useChatHistory(): ChatHistory {
       if (!found) return null;
       id.current = found.id;
       setCurrent(found.id);
+      chose.current = false;
       mark(found.id);
       return found.turns;
     },
@@ -114,14 +120,27 @@ export function useChatHistory(): ChatHistory {
   );
 
   /**
-   * The thread to put back on screen after a refresh, or null when there is none to put back.
-   * Reads from `list`, so it only answers once storage has been read — the caller waits for it.
+   * The thread to put back on screen after a refresh.
+   *
+   * The cursor first, then simply the newest saved thread. Relying on the cursor alone was the
+   * bug: it is only written when a thread is saved, and a thread is only saved once it has an
+   * answer in it — so leaving mid-question, or on anything the builtin had not answered yet,
+   * came back to an empty box with the work one tab away. The newest row is what "where I was"
+   * means to a reader, and it is never wrong by more than one conversation.
+   *
+   * Reads from `list`, so it answers only once storage has been read; the caller waits for it.
+   * Returning a thread also moves the cursor onto it, so the next save edits that row instead
+   * of opening a second copy of the same conversation.
    */
-  const resume = useCallback(
-    () =>
-      current ? (list.find((c) => c.id === current)?.turns ?? null) : null,
-    [current, list],
-  );
+  const resume = useCallback((): Turn[] | null => {
+    if (chose.current) return null;
+    const found = (current && list.find((c) => c.id === current)) || list[0];
+    if (!found) return null;
+    id.current = found.id;
+    setCurrent(found.id);
+    mark(found.id);
+    return found.turns;
+  }, [current, list, mark]);
 
   const remove = useCallback(
     (removeId: string) => {

@@ -53,6 +53,39 @@ assert.equal(detect(""), null);
 assert.equal(detect("   "), null);
 assert.equal(detect("hello"), null);
 assert.equal(detect("0xdeadbeef"), null, "too short to be either");
+
+// ── a hash inside a sentence ───────────────────────────────────────────────────────────────
+// The box invites plain language, so requiring the whole of it to be one bare token made the
+// feature reachable only by someone who already knew the trick: "/scan 0x…" and "what does 0x…
+// do?" both came back as "that does not look like Solidity".
+assert.equal(detect(`/scan ${HASH}`)?.kind, "tx");
+assert.equal(detect(`scan ${HASH}`)?.value, HASH, "with or without the slash");
+assert.equal(detect(`please check ${ADDR} for me`)?.kind, "address");
+assert.equal(
+  detect(`/scan ${HASH}`)?.ask,
+  undefined,
+  "a bare command is not a question, so nothing is put in the model's mouth",
+);
+assert.equal(
+  detect(`what does ${ADDR} do?`)?.ask,
+  `what does ${ADDR} do?`,
+  "the question goes whole — the sentence with its subject cut out is not a question",
+);
+assert.match(
+  scanPrompt(must(detect(`what does ${ADDR} do?`)), { chain: "x" }),
+  /The reader asked, in their own words: what does 0x/,
+);
+assert.doesNotMatch(
+  scanPrompt(must(detect(`/scan ${HASH}`)), { chain: "x" }),
+  /The reader asked/,
+);
+
+// Solidity wins over any address it happens to contain — source is full of address literals,
+// and a pasted contract read as "the first address it mentions" would be the worst kind of wrong
+assert.equal(
+  detect(`pragma solidity ^0.8.24;\ncontract A { address x = ${ADDR}; }`)?.kind,
+  "source",
+);
 assert.match(whyNot(""), /Paste an address/);
 assert.match(whyNot("0xdeadbeef"), /8 hex characters.*40.*64/s);
 assert.match(whyNot("hello"), /does not look like Solidity/);
