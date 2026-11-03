@@ -26,7 +26,12 @@ export type DocPage = {
 
 export type DocGroup = { title: string; pages: DocPage[] };
 
-const SITE = "https://dort-app.vercel.app";
+/**
+ * Where the exporter scripts are downloaded from. There is no public deploy any more, so the
+ * commands name the Dort the reader is running — a URL pointing at a site this project does not
+ * control would hand them someone else's scripts to curl into their project root.
+ */
+const SITE = "http://localhost:3000";
 const DOWNLOAD = `curl -fsSLO -w "saved %{filename_effective}\\n" "${SITE}/exporter/dort-{export,lib,atlas,findings,coverage,chains,bridge}.mjs"`;
 
 export const GROUPS: DocGroup[] = [
@@ -73,7 +78,7 @@ export const GROUPS: DocGroup[] = [
       {
         slug: "quick-start",
         title: "Quick start",
-        lead: "From a Foundry project to its traces in Dort, on dort-app.vercel.app, with nothing to clone.",
+        lead: "From a Foundry project to its decoded run in Dort, in a few minutes.",
         blocks: [
           { h2: "Requirements" },
           {
@@ -100,7 +105,7 @@ export const GROUPS: DocGroup[] = [
           },
           { h2: "4. Load it" },
           {
-            p: "Open [dort-app.vercel.app/chat](/chat) and drop `dort-data.json` onto the panel there. The file is read in that tab only and never uploaded, and the badge in the header then reads **Your run**.",
+            p: "Open [Chat](/chat) and drop `dort-data.json` onto the panel there. The file is read in that tab only and never uploaded, and the badge in the header then reads **Your run**.",
           },
           { h2: "5. Optional: run tests from the page" },
           {
@@ -538,7 +543,7 @@ export const GROUPS: DocGroup[] = [
       {
         slug: "run-from-browser",
         title: "Run tests from the browser",
-        lead: "dort-bridge.mjs lets dort-app.vercel.app run forge on your computer.",
+        lead: "dort-bridge.mjs lets a Dort in your browser run forge on your computer.",
         blocks: [
           {
             p: "A website cannot start programs on your computer, and Dort's server never runs anyone's code. The bridge is a small script you start yourself in your Foundry project. It links the page to that project: the page asks, the bridge runs `node dort-export.mjs` on your machine and streams the result back. Nothing is uploaded.",
@@ -553,7 +558,7 @@ export const GROUPS: DocGroup[] = [
             ],
           },
           {
-            code: "node dort-bridge.mjs\n\nDort bridge · my-vault\nOpen this link in Chrome, Brave, Edge or Firefox (keep this window open):\n  https://dort-app.vercel.app/trace#bridge=7457.…",
+            code: "node dort-bridge.mjs --app http://localhost:3000\n\nDort bridge · my-vault\nOpen this link in Chrome, Brave, Edge or Firefox (keep this window open):\n  http://localhost:3000/chat#bridge=7457.…",
           },
           { h2: "Browsers" },
           {
@@ -629,12 +634,12 @@ export const GROUPS: DocGroup[] = [
           {
             p: "Only when you ask, and only for the selected piece or calls: their source lines, the connected pieces, open findings and your question, plus a fixed system prompt that keeps the model defensive (explain, list what to check, write a test of intended behaviour, never exploits).",
           },
-          { h2: "Local model on dort-app.vercel.app" },
+          { h2: "Local model in the browser" },
           {
             p: "The browser calls your local server directly, so it must allow the site. With Ollama:",
           },
           {
-            code: 'launchctl setenv OLLAMA_ORIGINS "https://dort-app.vercel.app"   # macOS, then restart Ollama\nollama pull llama3.1',
+            code: 'launchctl setenv OLLAMA_ORIGINS "http://localhost:3000"   # macOS, then restart Ollama\nollama pull llama3.1',
           },
           {
             p: "Then pick **Local model**, endpoint `http://localhost:11434/v1`, model `llama3.1`, and press Test connection. In LM Studio, turn on **Enable CORS** in the server settings.",
@@ -725,10 +730,10 @@ export const GROUPS: DocGroup[] = [
         lead: "The whole app on your machine, for Your Claude and a live link to one export.",
         blocks: [
           {
-            p: "Most of Dort works on dort-app.vercel.app. Run it locally when you want **Your Claude** (Ask answered by your own Claude Code and plan), or the app pointed at one project's export without a bridge.",
+            p: "Dort runs on your own machine. That is what makes **Your Claude** possible (answers from your own Claude Code and plan), and what lets the app read one project's export straight off disk, with no bridge in between.",
           },
           {
-            code: "git clone https://github.com/maulana-tech/dort-app.git\ncd dort/apps/frontend\npnpm install\nDORT_DATA_PATH=/abs/path/to/your-project/dort-data.json pnpm dev",
+            code: "git clone https://github.com/maulana-tech/dort-app.git\ncd dort-app/apps/frontend\npnpm install\nDORT_DATA_PATH=/abs/path/to/your-project/dort-data.json pnpm dev",
           },
           {
             p: "Open http://localhost:3000/chat. Start test runs the exporter next to that file, and Reload run (⌘R) re-reads it after every export.",
@@ -746,7 +751,7 @@ export const GROUPS: DocGroup[] = [
               "The exporter and the bridge run on your machine; your code is never uploaded.",
               "A dropped dort-data.json is read in your browser tab only.",
               "Triage notes, scenarios and AI settings are kept in your browser, per contract.",
-              "Dort's server only serves the app and the exporter scripts. Its local-only routes answer 404 on dort-app.vercel.app.",
+              "Dort's server only serves the app and the exporter scripts. Its local-only routes answer 404 on any public deploy.",
             ],
           },
           { h2: "Defensive by design" },
