@@ -42,81 +42,88 @@ export function Nav({ active = "product" }: { active?: "product" | "docs" }) {
     { label: "GitHub", href: GITHUB, mark: true },
   ];
   return (
-    <nav className="lh-up relative z-20 mx-auto flex h-[76px] max-w-[1240px] items-center justify-between px-4 md:px-6">
-      <Link href="/" className="flex items-center" aria-label="Dort">
-        <LogoText height={38} />
-      </Link>
-      {/* the landing's sections; the docs keep a quiet bar (onorca.dev/docs) without them */}
-      <ul
-        className={`absolute left-1/2 -translate-x-1/2 items-center gap-0.5 rounded-full border border-white/[.08] bg-gradient-to-b from-white/[.07] to-white/[.02] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,.08),0_10px_30px_rgba(3,28,78,.45)] ${docs ? "hidden" : "hidden md:flex"}`}
-      >
-        {items.map((i) => (
-          <li key={i.label}>
-            <a
-              href={i.href}
-              aria-current={i.on ? "page" : undefined}
-              className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] transition-colors ${
-                i.on
-                  ? "bg-white/[.1] text-on-canvas shadow-[inset_0_1px_0_rgba(255,255,255,.1)]"
-                  : "text-on-canvas-muted hover:text-on-canvas"
-              }`}
-            >
-              {i.mark && <GitHubMark className="size-3.5" />}
-              {i.label}
-            </a>
-          </li>
-        ))}
-      </ul>
-      <div className="flex items-center gap-2">
-        {/* on the docs, where to follow the project sits by the call to action as bare marks
-            (onorca.dev/docs: Discord, X and GitHub left of Download, no fill) */}
-        {docs && (
-          <span className="mr-2 flex items-center gap-1">
-            <a
-              href={GITHUB}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Dort on GitHub"
-              title="Dort on GitHub"
-              className="grid size-8 place-items-center text-on-canvas-muted transition-colors hover:text-on-canvas"
-            >
-              <GitHubMark className="size-[17px]" />
-            </a>
-          </span>
-        )}
-        {/* the app header's Connect AI capsule (header.css .hdr-pill.lit): the Dort starburst
-            where it has its sparkle, a caret pointing on */}
-        <Link href="/chat" className="group hdr-pill lit on-blue">
-          <svg
-            aria-hidden="true"
-            viewBox="-40 -40 80 80"
-            className="size-[15px] flex-none transition-transform duration-500 group-hover:rotate-[20deg] group-hover:scale-110 motion-reduce:transition-none"
-            stroke="currentColor"
-            strokeWidth="6"
-            strokeLinecap="round"
-          >
-            <path d="M0-9V-34M0 9V34M-9 0H-34M9 0H34" />
-            <path d="M8-8L21-21M-8 8L-21 21M-8-8L-21-21M8 8L21 21" />
-          </svg>
-          Launch app
-          <PhIcon d={PH.caretRight} className="size-3 text-on-canvas-dim" />
+    // sticky, not fixed: it keeps its 76px in the flow, which is what the hero body's
+    // min-h-[calc(100svh-76px)] is measured against. The bar carries the canvas colour because
+    // the wordmark is white and the page scrolls white cards underneath it.
+    <nav className="lh-up sticky top-0 z-50 flex h-[76px] items-center bg-canvas/95 px-4 md:px-6">
+      {/* the bar spans the viewport so it reads as one edge; its contents stay on the 1240
+          column, and the hairline and the two '+' marks hang off that column, not the window */}
+      <div className="relative mx-auto flex h-full w-full max-w-[1240px] items-center justify-between">
+        <Link href="/" className="flex items-center" aria-label="Dort">
+          <LogoText height={38} />
         </Link>
-      </div>
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-gradient-to-r from-transparent via-white/[.08] to-transparent md:inset-x-6"
-      />
-      {[0, 1].map((k) => (
-        <svg
-          key={k}
-          aria-hidden="true"
-          viewBox="0 0 11 11"
-          className={`pointer-events-none absolute -bottom-[5px] hidden size-[11px] text-white/30 md:block ${k ? "right-6 translate-x-1/2" : "left-6 -translate-x-1/2"}`}
-          stroke="currentColor"
+        {/* the landing's sections; the docs keep a quiet bar (onorca.dev/docs) without them */}
+        <ul
+          className={`absolute left-1/2 -translate-x-1/2 items-center gap-0.5 rounded-full border border-white/[.08] bg-gradient-to-b from-white/[.07] to-white/[.02] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,.08),0_10px_30px_rgba(3,28,78,.45)] ${docs ? "hidden" : "hidden md:flex"}`}
         >
-          <path d="M0 5.5h11M5.5 0v11" />
-        </svg>
-      ))}
+          {items.map((i) => (
+            <li key={i.label}>
+              <a
+                href={i.href}
+                aria-current={i.on ? "page" : undefined}
+                className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] transition-colors ${
+                  i.on
+                    ? "bg-white/[.1] text-on-canvas shadow-[inset_0_1px_0_rgba(255,255,255,.1)]"
+                    : "text-on-canvas-muted hover:text-on-canvas"
+                }`}
+              >
+                {i.mark && <GitHubMark className="size-3.5" />}
+                {i.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+        <div className="flex items-center gap-2">
+          {/* on the docs, where to follow the project sits by the call to action as bare marks
+            (onorca.dev/docs: Discord, X and GitHub left of Download, no fill) */}
+          {docs && (
+            <span className="mr-2 flex items-center gap-1">
+              <a
+                href={GITHUB}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Dort on GitHub"
+                title="Dort on GitHub"
+                className="grid size-8 place-items-center text-on-canvas-muted transition-colors hover:text-on-canvas"
+              >
+                <GitHubMark className="size-[17px]" />
+              </a>
+            </span>
+          )}
+          {/* the app header's Connect AI capsule (header.css .hdr-pill.lit): the Dort starburst
+            where it has its sparkle, a caret pointing on */}
+          <Link href="/chat" className="group hdr-pill lit on-blue">
+            <svg
+              aria-hidden="true"
+              viewBox="-40 -40 80 80"
+              className="size-[15px] flex-none transition-transform duration-500 group-hover:rotate-[20deg] group-hover:scale-110 motion-reduce:transition-none"
+              stroke="currentColor"
+              strokeWidth="6"
+              strokeLinecap="round"
+            >
+              <path d="M0-9V-34M0 9V34M-9 0H-34M9 0H34" />
+              <path d="M8-8L21-21M-8 8L-21 21M-8-8L-21-21M8 8L21 21" />
+            </svg>
+            Launch app
+            <PhIcon d={PH.caretRight} className="size-3 text-on-canvas-dim" />
+          </Link>
+        </div>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/[.08] to-transparent"
+        />
+        {[0, 1].map((k) => (
+          <svg
+            key={k}
+            aria-hidden="true"
+            viewBox="0 0 11 11"
+            className={`pointer-events-none absolute -bottom-[5px] hidden size-[11px] text-white/30 md:block ${k ? "right-0 translate-x-1/2" : "left-0 -translate-x-1/2"}`}
+            stroke="currentColor"
+          >
+            <path d="M0 5.5h11M5.5 0v11" />
+          </svg>
+        ))}
+      </div>
     </nav>
   );
 }
@@ -184,8 +191,9 @@ export async function Hero() {
   const demo = await chatDemo();
   return (
     <HeroExit>
-      <Nav />
-
+      {/* the nav is NOT here: HeroExit's header is overflow-hidden, which would make it the
+          sticky element's containing block and stop the bar at the end of the hero. It is
+          mounted at the page level instead (app/page.tsx), where its box is the whole page. */}
       <div
         data-lp="hero-body"
         className="relative z-10 mx-auto min-h-[calc(100svh-76px)] max-w-[1240px] px-4 pt-7 md:px-6 md:pt-9"

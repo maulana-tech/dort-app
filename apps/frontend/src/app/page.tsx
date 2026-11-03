@@ -11,7 +11,7 @@ import {
   Words,
 } from "@/components/landing";
 import "@/components/landing/landing.css";
-import { GITHUB } from "@/components/landing/Hero";
+import { GITHUB, Nav } from "@/components/landing/Hero";
 import {
   SITE_DESCRIPTION,
   SITE_NAME,
@@ -75,6 +75,9 @@ export default async function Home() {
         }}
       />
       <SmoothScroll>
+        {/* above the sections, not inside the hero: a sticky bar is held by the nearest
+            ancestor that clips, and the hero's own header does */}
+        <Nav />
         <Hero />
         <Product />
         <Words />
