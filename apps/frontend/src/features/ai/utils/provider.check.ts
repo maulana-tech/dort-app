@@ -10,6 +10,7 @@ import {
   configFor,
   isHostedUrl,
   NO_AI,
+  PROVIDERS,
   SYSTEM_PROMPT,
   textOf,
 } from "./provider.ts";
@@ -183,7 +184,12 @@ assert.equal(
 );
 const bb = JSON.parse(bd.init.body as string);
 assert.equal(bb.system, SYSTEM_PROMPT);
-assert.equal(bb.model, "anthropic.claude-sonnet-5");
+assert.equal(bb.model, PROVIDERS.bedrock.model);
+assert.match(
+  PROVIDERS.bedrock.model,
+  /^anthropic\./,
+  "the default stays on the Anthropic path; other vendors are opt-in by id",
+);
 assert.equal(bb.stream, true, "this endpoint streams ordinary SSE");
 assert.doesNotMatch(
   bd.init.body as string,
@@ -226,6 +232,63 @@ assert.equal(isHostedUrl(undefined), false);
 assert.equal(isHostedUrl(""), false);
 assert.equal(isHostedUrl("http://localhost:3000"), false);
 assert.equal(isHostedUrl("http://127.0.0.1:3020"), false);
+// ── a reader's own Bedrock key reaches more than Claude ────────────────────────────────────
+// Bedrock serves two APIs on one host; the model id picks between them. BYOK must make the same
+// split the hosted route makes, or a user with their own key could only ever reach Anthropic.
+{
+  const key = "KEY";
+  const claude = chatRequest(
+    {
+      kind: "bedrock",
+      baseUrl: "ap-southeast-1",
+      model: "anthropic.claude-haiku-5-5",
+      key,
+    },
+    "hi",
+  );
+  assert.match(claude.url, /\/anthropic\/v1\/messages$/);
+  assert.equal(
+    (claude.init.headers as Record<string, string>)["x-api-key"],
+    key,
+    "Anthropic's API takes the key in x-api-key",
+  );
+
+  const minimax = chatRequest(
+    {
+      kind: "bedrock",
+      baseUrl: "ap-southeast-1",
+      model: "minimax.minimax-m2.5",
+      key,
+    },
+    "hi",
+  );
+  assert.match(minimax.url, /\/openai\/v1\/chat\/completions$/);
+  const mh = minimax.init.headers as Record<string, string>;
+  assert.equal(mh.authorization, `Bearer ${key}`);
+  assert.ok(
+    !("x-api-key" in mh),
+    "and never both: the host rejects a request carrying two",
+  );
+  assert.match(
+    minimax.url,
+    /bedrock-mantle\.ap-southeast-1\.api\.aws/,
+    "the region is honoured",
+  );
+
+  // the region still comes from the config and nothing else can set the host
+  for (const hostile of ["https://evil.test", "javascript:alert(1)", ""]) {
+    const r = chatRequest(
+      { kind: "bedrock", baseUrl: hostile, model: "zai.glm-4.7-flash", key },
+      "hi",
+    );
+    assert.match(
+      r.url,
+      /^https:\/\/bedrock-mantle\.[a-z0-9-]+\.api\.aws\//,
+      `a hostile region never becomes a host: ${hostile}`,
+    );
+  }
+}
+
 assert.equal(isHostedUrl("https://dort.example"), true);
 assert.equal(isHostedUrl("https://www.dort.example/"), true);
 
