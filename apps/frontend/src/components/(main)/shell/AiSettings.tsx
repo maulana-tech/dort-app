@@ -22,16 +22,18 @@ import {
   saveAiConfig,
   testConnection,
   useAiConfig,
+  useHostedAi,
 } from "@/features/ai";
 import "./ai-settings.css";
 
-type Mode = "none" | "claude" | "local" | "key";
+type Mode = "none" | "dort" | "claude" | "local" | "key";
 const modeOf = (k: AiKind): Mode =>
-  k === "none" || k === "claude" || k === "local" ? k : "key";
+  k === "none" || k === "dort" || k === "claude" || k === "local" ? k : "key";
 const KEYED: AiKind[] = ["anthropic", "bedrock", "openai", "openrouter"];
 
 const NOTE: Record<Mode, string> = {
-  none: "Ask answers come from Dort's built-in text. Nothing leaves your machine.",
+  none: "Answers come from Dort's built-in text, composed from the run's own figures. No model, no request, nothing leaves your machine — and nothing that needs the code read.",
+  dort: "This Dort's own Amazon Bedrock, paid for by whoever runs it. Your question, and any code you send with it, go through that AWS account and appear in its logs if model invocation logging is on there. Fine for a look around; if you are reviewing a contract that has not been published, bring your own key instead — every other provider here is yours alone.",
   claude:
     "Ask runs your own Claude Code on this laptop, signed in with your own Claude plan, like Orca runs the agents you already pay for. Dort never sees or stores your login. Answers use your plan's limits. Works while Dort runs locally (pnpm dev).",
   local:
@@ -72,6 +74,7 @@ export const openAiSettings = () => dispatchEvent(new Event(OPEN));
 
 /** "AI provider" settings: none (canned answers), a local model, or the user's own API key. */
 export function AiSettings() {
+  const hostedAi = useHostedAi();
   const saved = useAiConfig();
   const dialog = useRef<HTMLDialogElement>(null);
   const [draft, setDraft] = useState<AiConfig>(NO_AI);
@@ -233,6 +236,17 @@ export function AiSettings() {
             onChange={(m) => pick(m === "key" ? "anthropic" : m)}
             options={[
               { value: "none", label: "None" },
+              // only offered where the deployment actually has a key (app/api/bedrock)
+              ...(hostedAi
+                ? [
+                    {
+                      value: "dort" as const,
+                      label: "Dort's model",
+                      title:
+                        "This deployment's own Bedrock — no key needed, but it runs through its AWS account",
+                    },
+                  ]
+                : []),
               // only a local Dort can run your Claude Code (CLAUDE_HERE)
               ...(CLAUDE_HERE
                 ? [
