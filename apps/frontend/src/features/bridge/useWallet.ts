@@ -94,6 +94,11 @@ export type Wallet = {
   codeAt: (address: Address) => Promise<string | null>;
   /** switch, adding the chain first when the wallet has never heard of it */
   switchTo: (id: BridgeChainId) => Promise<void>;
+  /**
+   * Sign a line of text — personal_sign, which can move nothing and which a wallet shows as
+   * words. The one thing Dort asks a wallet to sign with no transaction behind it.
+   */
+  sign: (message: string) => Promise<`0x${string}`>;
   /** send one transaction and return its hash; `value` is for a payable call (a native swap) */
   send: (tx: {
     to: Address;
@@ -307,6 +312,25 @@ export function useWalletState(): Wallet {
     [chosen],
   );
 
+  /**
+   * Sign a line of text with the connected wallet.
+   *
+   * personal_sign and nothing else: it cannot move anything, and a wallet shows the words as
+   * words. Used to prove this reader holds the address they claim (features/ai allowance), which
+   * is the only thing Dort ever asks a wallet to sign without a transaction behind it.
+   */
+  const sign = useCallback(
+    async (message: string): Promise<`0x${string}`> => {
+      const p = chosen?.provider;
+      if (!p || !account) throw new Error("Connect a wallet first.");
+      return (await p.request({
+        method: "personal_sign",
+        params: [message, account],
+      } as never)) as `0x${string}`;
+    },
+    [account, chosen],
+  );
+
   const send = useCallback(
     async (tx: {
       to: Address;
@@ -346,6 +370,7 @@ export function useWalletState(): Wallet {
     codeAt,
     switchTo,
     send,
+    sign,
   };
 }
 

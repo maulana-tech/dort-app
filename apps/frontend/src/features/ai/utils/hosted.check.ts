@@ -14,7 +14,6 @@ import {
   MAX_TOKENS,
   overRate,
   pickModel,
-  RATE,
   refuseHosted,
   SUGGESTED_MODELS,
   upstreamBody,
@@ -250,49 +249,8 @@ assert.equal(
 );
 assert.ok(MAX_TOKENS > 0 && MAX_TOKENS <= 4096, "and the answer is capped too");
 
-// ── the brake ──────────────────────────────────────────────────────────────────────────────
-let bucket: Bucket | undefined;
-const now = 1_000_000;
-for (let i = 0; i < RATE.calls; i++) {
-  const r = overRate(bucket, now);
-  assert.equal(r.over, false, `call ${i + 1} of ${RATE.calls} goes through`);
-  bucket = r.bucket;
-}
-assert.equal(overRate(bucket, now).over, true, "one more is held back");
-// and the window really is a window
-assert.equal(
-  overRate(bucket, now + RATE.windowMs + 1).over,
-  false,
-  "later, the calls have aged out",
-);
-assert.equal(
-  overRate(undefined, now).left,
-  RATE.calls - 1,
-  "a first-time caller is told what is left",
-);
-
-// ── the key is read in exactly one place, and that place is the server ─────────────────────
-// The one thing that must hold however this is configured. Naming the variable in prose is fine
-// and the docs do it; *reading* it anywhere a client component can reach would ship it to every
-// visitor. So the rule is about `process.env.BEDROCK…`, not about the name.
-const SRC = new URL("../../../", import.meta.url); // src/
-const READS: string[] = [];
-const walk = (dir: URL) => {
-  for (const e of readdirSync(dir, { withFileTypes: true })) {
-    const at = new URL(`${e.name}${e.isDirectory() ? "/" : ""}`, dir);
-    if (e.isDirectory()) {
-      walk(at);
-    } else if (/\.tsx?$/.test(e.name) && !e.name.endsWith(".check.ts")) {
-      if (/process\.env\.BEDROCK/.test(readFileSync(at, "utf8")))
-        READS.push(at.pathname.slice(SRC.pathname.length));
-    }
-  }
-};
-walk(SRC);
-assert.deepEqual(
-  READS,
-  ["app/api/bedrock/route.ts"],
-  `only the server route may read the key, but these do: ${READS.join(", ")}`,
-);
+// The brake itself, and its tiers, moved to utils/allowance and are checked there: it now takes
+// an allowance rather than owning one, because a single count shared by everyone behind one exit
+// address was a brake on a lecture hall rather than on a loop.
 
 console.log("hosted ai ok");

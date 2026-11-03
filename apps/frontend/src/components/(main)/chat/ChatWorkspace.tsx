@@ -12,6 +12,7 @@ import {
 import { Chip, Dropdown, PH, PhIcon, Tabs } from "@/components/ui";
 import { useAiConfig } from "@/features/ai/hooks/useAiConfig";
 import { useHostedAi } from "@/features/ai/hooks/useHostedAi";
+import { useWalletProof } from "@/features/ai/hooks/useWalletProof";
 import { DORT_AI } from "@/features/ai/utils/provider";
 import type { ToolCall } from "@/features/ai/utils/tools";
 import { PORTALDOT_ID, VAULT_CHAINS } from "@/features/bridge/chains";
@@ -110,7 +111,10 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
   // the one picked on the left, never one the model names: a tool that took an endpoint would be
   // a model-controlled request from the reader's own browser.
   const run = useCallback((call: ToolCall) => runTool(call, chain), [chain]);
-  const chat = useChat(cfg, digest, run);
+  // the proof is signed on request and never on its own: a wallet popup nobody asked for is
+  // how a page teaches people to click through them
+  const proof = useWalletProof();
+  const chat = useChat(cfg, digest, run, proof.claim);
   const [subject, setSubject] = useState<ScanInput | null>(null);
   const [facts, setFacts] = useState<ScanFacts | null>(null);
   const [traceNote, setTraceNote] = useState<string | null>(null);
@@ -812,6 +816,11 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
                   <dl className="mb-2 grid gap-1">
                     {[
                       ["Answered by", chat.hosted ? "this Dort" : "your model"],
+                      ...(chat.allowance
+                        ? ([
+                            ["Left this hour", String(chat.allowance.left)],
+                          ] as [string, string][])
+                        : []),
                       ...(last.usage
                         ? ([
                             [
@@ -836,6 +845,31 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
                       </div>
                     ))}
                   </dl>
+                  {/* how many are left and how to have more, said while there are still some
+                      left: a limit a reader meets without warning reads as the app breaking */}
+                  {chat.hosted && chat.allowance && (
+                    <p className="mb-2 text-[12px] text-dim leading-normal">
+                      {chat.allowance.note}
+                      {proof.can && !proof.claim && (
+                        <>
+                          {" "}
+                          <button
+                            type="button"
+                            disabled={proof.signing}
+                            onClick={() => void proof.prove()}
+                            className="text-fg underline underline-offset-2 disabled:opacity-50"
+                          >
+                            {proof.signing
+                              ? "Check your wallet…"
+                              : "Prove this wallet"}
+                          </button>
+                          {
+                            " — one signature, good for the hour. It moves nothing."
+                          }
+                        </>
+                      )}
+                    </p>
+                  )}
                   {last.thinking ? (
                     <>
                       <p className="mt-2.5 mb-1 text-[12px] text-muted">

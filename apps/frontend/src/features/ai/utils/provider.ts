@@ -1,4 +1,10 @@
-import type { AiConfig, AiKind, AiQuestion, AskContext } from "../types";
+import type {
+  AiConfig,
+  AiKind,
+  AiQuestion,
+  AskContext,
+  WalletClaim,
+} from "../types";
 import {
   isAnthropicModel,
   upstreamBody,
@@ -263,7 +269,11 @@ export type ChatMessage = { role: "user" | "assistant"; content: string };
 export function chatRequest(
   cfg: AiConfig,
   user: string | ChatMessage[],
-  { stream = true, maxTokens = 2048 } = {},
+  {
+    stream = true,
+    maxTokens = 2048,
+    wallet,
+  }: { stream?: boolean; maxTokens?: number; wallet?: WalletClaim } = {},
 ): { url: string; init: RequestInit } {
   const messages: ChatMessage[] =
     typeof user === "string" ? [{ role: "user", content: user }] : user;
@@ -279,6 +289,9 @@ export function chatRequest(
         body: JSON.stringify({
           messages,
           ...(cfg.model.trim() ? { model: cfg.model.trim() } : {}),
+          // what the reader proved about their wallet, so the server counts against that
+          // rather than against everyone behind one exit address. A claim, checked there.
+          ...(wallet ? { wallet } : {}),
         }),
       },
     };

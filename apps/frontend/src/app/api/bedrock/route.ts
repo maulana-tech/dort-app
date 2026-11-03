@@ -1,3 +1,4 @@
+import { tierOf } from "@/features/ai/services/wallet-tier";
 import { sse } from "@/features/ai/utils/claude-bridge";
 import {
   type Bucket,
@@ -71,36 +72,49 @@ export async function POST(req: Request): Promise<Response> {
   if (why)
     return fail(why, why.startsWith("This Dort has no model") ? 503 : 403);
 
-  const now = Date.now();
-  const rate = overRate(seen.get(who(req)), now);
-  seen.set(who(req), rate.bucket);
-  if (rate.over)
-    return fail(
-      "This Dort's own model is busy with other people for now. Open AI settings to use your own — it has no limit but your provider's.",
-      429,
-    );
-
   let messages: unknown;
   let wanted: unknown;
   let useTools = false;
   let streaming = true;
+  let claim: unknown;
   try {
     const parsed = JSON.parse(body) as {
       messages?: unknown;
       model?: unknown;
       tools?: unknown;
       stream?: unknown;
+      wallet?: unknown;
     };
     messages = parsed.messages;
     wanted = parsed.model;
     // a boolean, not schemas: the caller says it can run tools and the server says which
     useTools = parsed.tools === true;
     streaming = parsed.stream !== false;
+    claim = parsed.wallet;
   } catch {
     return fail("That request was not readable.", 400);
   }
   if (!Array.isArray(messages) || messages.length === 0)
     return fail("Nothing to ask.", 400);
+
+  // who is asking, and therefore how many they may ask. A wallet that proved itself is counted
+  // on its own; everyone else shares their exit address, which is what the brake used to do to
+  // everybody. The signature is checked on this side — the browser's word is only a claim.
+  const now = Date.now();
+  const { tier, key, allow } = await tierOf(
+    claim as Parameters<typeof tierOf>[0],
+    who(req),
+    now,
+  );
+  const rate = overRate(seen.get(key), now, allow);
+  seen.set(key, rate.bucket);
+  if (rate.over)
+    return fail(
+      tier === "anon"
+        ? "That is this hour's share for this address. Connect a wallet for your own count, or open AI settings to use your own model — that one has no limit but your provider's."
+        : "That is this hour's share for this wallet. Open AI settings to use your own model, which has no limit but your provider's.",
+      429,
+    );
 
   // the region and the token budget are this deployment's, and the model may only be one the
   // operator put on offer — `pickModel` falls back to the default for anything else, so a body
@@ -151,6 +165,10 @@ export async function POST(req: Request): Promise<Response> {
       "content-type": type,
       "cache-control": "no-store",
       "x-dort-calls-left": String(rate.left),
+      // the tier and the count, and no prose: a header is a ByteString, and the sentence that
+      // explains an allowance has an em dash in it. The page composes it with tierLine, which
+      // it already has — a server has no business shipping English in a header anyway.
+      "x-dort-tier": tier,
     },
   });
 }

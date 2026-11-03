@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { askWithTools } from "@/features/ai/services/ask";
-import type { AiConfig } from "@/features/ai/types";
+import type { AiConfig, WalletClaim } from "@/features/ai/types";
 import { aiReady } from "@/features/ai/utils/provider";
 import type { ToolCall } from "@/features/ai/utils/tools";
 import { builtinAnswer } from "../utils/builtin";
@@ -38,6 +38,8 @@ export type ChatState = {
   reset: () => void;
   /** put a saved conversation back on screen (features/chat history) */
   load: (turns: Turn[]) => void;
+  /** what this hour has left of the hosted model, and how to raise it; null until one is asked */
+  allowance: { left: number; note: string } | null;
 };
 
 export function useChat(
@@ -45,10 +47,16 @@ export function useChat(
   digest: RunDigest,
   /** runs a tool the model asked for; without it the model is never offered any */
   runTool?: (call: ToolCall) => Promise<string>,
+  /** what the reader proved about their wallet, which decides this hour's allowance */
+  wallet?: WalletClaim,
 ): ChatState {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [allowance, setAllowance] = useState<{
+    left: number;
+    note: string;
+  } | null>(null);
   const abort = useRef<AbortController | null>(null);
 
   const stop = useCallback(() => {
@@ -137,6 +145,8 @@ export function useChat(
                   thinking: (last.thinking ?? "") + t,
                 })),
               onUsage: (u) => onLast((last) => ({ ...last, usage: u })),
+              wallet,
+              onAllowance: (n, note) => setAllowance({ left: n, note }),
             },
             (name, arg) =>
               onLast((last) => ({
@@ -187,5 +197,6 @@ export function useChat(
     stop,
     reset,
     load,
+    allowance,
   };
 }

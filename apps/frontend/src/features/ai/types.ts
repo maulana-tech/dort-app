@@ -16,6 +16,13 @@ export type AiKind =
   | "openrouter";
 
 /** Kept only in this browser's localStorage (`dort.ai`). */
+/** What a reader proved about the wallet they are asking from (features/ai allowance). */
+export type WalletClaim = {
+  address: string;
+  hour: number;
+  signature: string;
+};
+
 export type AiConfig = {
   kind: AiKind;
   /**

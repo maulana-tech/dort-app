@@ -143,22 +143,18 @@ export const MAX_BODY = 128 * 1024;
 export const MAX_TOKENS = 1536;
 
 /** One caller's recent calls, for the window below. */
-export type Bucket = { at: number[] };
-
-/** How many calls one address may make, and over what window. */
-export const RATE = { calls: 20, windowMs: 60 * 60_000 };
-
 /**
- * Whether this caller has had their share for now, and what is left. In memory and per instance,
- * so it is a brake rather than a lock — enough that one page cannot spend the operator's budget
- * in a loop, not a claim to be a quota system.
+ * The brake moved to utils/allowance, where it takes the allowance as an argument: one count for
+ * everybody behind a shared exit address was a brake on a lecture hall, not on a loop.
  */
-export function overRate(
-  bucket: Bucket | undefined,
-  now: number,
-): { over: boolean; bucket: Bucket; left: number } {
-  const at = (bucket?.at ?? []).filter((t) => now - t < RATE.windowMs);
-  if (at.length >= RATE.calls) return { over: true, bucket: { at }, left: 0 };
-  at.push(now);
-  return { over: false, bucket: { at }, left: RATE.calls - at.length };
-}
+export {
+  type Allowance,
+  allowanceOf,
+  type Bucket,
+  overRate,
+  TIERS,
+  type Tier,
+  tierLine,
+  // the explicit extension is what lets Node run the sibling .check.ts files against this
+  // module, which is the same reason bedrock-api.ts is imported that way
+} from "./allowance.ts";

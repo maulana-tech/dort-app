@@ -1,4 +1,5 @@
-import type { AiConfig } from "../types";
+import type { AiConfig, WalletClaim } from "../types";
+import { isTier, tierLine } from "../utils/allowance";
 import {
   type ChatMessage,
   chatRequest,
@@ -41,6 +42,10 @@ function reach(cfg: AiConfig, e: unknown): Error {
 export type StreamMeta = {
   onThinking?: (piece: string) => void;
   onUsage?: (usage: Usage) => void;
+  /** what the reader proved about their wallet, which decides this hour's allowance */
+  wallet?: WalletClaim;
+  /** what the server said is left, and in whose terms */
+  onAllowance?: (left: number, note: string) => void;
 };
 
 /** Streams the answer text, browser → provider directly (your Claude: through this app's own local bridge). */
@@ -50,7 +55,7 @@ export async function* askStream(
   signal?: AbortSignal,
   meta?: StreamMeta,
 ): AsyncGenerator<string> {
-  const { url, init } = chatRequest(cfg, user);
+  const { url, init } = chatRequest(cfg, user, { wallet: meta?.wallet });
   let res: Response;
   try {
     res = await fetch(url, { ...init, signal });
@@ -58,6 +63,12 @@ export async function* askStream(
     throw reach(cfg, e);
   }
   if (!res.ok || !res.body) throw await failure(res);
+  // what is left of this hour, as the server counted it — the page says so rather than letting
+  // a reader meet the limit without warning
+  const left = res.headers.get("x-dort-calls-left");
+  const tier = res.headers.get("x-dort-tier");
+  if (left !== null && isTier(tier))
+    meta?.onAllowance?.(Number(left), tierLine(tier, Number(left)));
   const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
   let buf = "";
   for (;;) {
@@ -133,6 +144,7 @@ export async function* askWithTools(
         tools: true,
         stream: false,
         ...(cfg.model ? { model: cfg.model } : {}),
+        ...(meta?.wallet ? { wallet: meta.wallet } : {}),
       }),
       signal,
     });
