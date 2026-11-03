@@ -333,6 +333,10 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
                   onClick={() => picker.current?.click()}
                   className="mt-2.5 w-full rounded-tile bg-raised px-3 py-2 text-[12.5px] text-muted transition-colors hover:bg-hover hover:text-fg disabled:pointer-events-none disabled:opacity-40"
                 >
+                  <PhIcon
+                    d={PH.paperclip}
+                    className="mr-1.5 inline size-[14px] align-[-2px]"
+                  />
                   Choose .sol files
                 </button>
               </section>
@@ -610,13 +614,13 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
             />
             <button
               type="button"
-              aria-label="Hand in .sol files"
-              title="Hand in .sol files"
+              aria-label="Attach .sol files"
+              title="Attach .sol files — read in this tab, never uploaded"
               disabled={!chat.ready || reading || chat.busy}
               onClick={() => picker.current?.click()}
               className="grid h-[52px] w-11 flex-none place-items-center rounded-chip bg-raised text-muted outline-none transition-colors hover:bg-hover hover:text-fg focus-visible:ring-2 focus-visible:ring-white/25 disabled:pointer-events-none disabled:opacity-40"
             >
-              <PhIcon d={PH.code} className="size-[17px]" />
+              <PhIcon d={PH.paperclip} className="size-[18px]" />
             </button>
             <button
               type="button"
