@@ -8,8 +8,11 @@ import {
   overRate,
   pickModel,
   refuseHosted,
+  upstreamBody,
+  upstreamHeaders,
+  upstreamUrl,
 } from "@/features/ai/utils/hosted";
-import { bedrockUrl, SYSTEM_PROMPT } from "@/features/ai/utils/provider";
+import { SYSTEM_PROMPT } from "@/features/ai/utils/provider";
 
 /*
  * This deployment's own Amazon Bedrock, so a visitor with no key can still ask something.
@@ -90,23 +93,19 @@ export async function POST(req: Request): Promise<Response> {
 
   // the region and the token budget are this deployment's, and the model may only be one the
   // operator put on offer — `pickModel` falls back to the default for anything else, so a body
-  // can never spend their money on a model they did not choose to pay for
+  // can never spend their money on a model they did not choose to pay for. The model also
+  // decides which of Bedrock's two APIs answers: Anthropic's own, or the OpenAI-compatible one
+  // every other vendor there speaks.
+  const model = pickModel(e, wanted);
+  const region = hostedRegion(e);
   let upstream: Response;
   try {
-    upstream = await fetch(`${bedrockUrl(hostedRegion(e))}/messages`, {
+    upstream = await fetch(upstreamUrl(region, model), {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": e.key as string,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: pickModel(e, wanted),
-        max_tokens: MAX_TOKENS,
-        stream: true,
-        system: SYSTEM_PROMPT,
-        messages,
-      }),
+      headers: upstreamHeaders(e.key as string, model),
+      body: JSON.stringify(
+        upstreamBody(model, messages, SYSTEM_PROMPT, MAX_TOKENS),
+      ),
       signal: AbortSignal.timeout(120_000),
     });
   } catch {
@@ -117,7 +116,7 @@ export async function POST(req: Request): Promise<Response> {
     // the upstream text can carry account detail, so the caller gets the status and nothing else
     return new Response(
       sse({
-        error: `This Dort's own model answered ${upstream.status}. Connect AI in the header to use your own instead.`,
+        error: `${model} answered ${upstream.status}. Pick another model, or Connect AI in the header to use your own.`,
       }),
       {
         status: 200,
