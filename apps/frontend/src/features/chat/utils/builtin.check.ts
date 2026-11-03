@@ -85,7 +85,7 @@ for (const q of [
 ]) {
   assert.match(
     builtinAnswer(real, q),
-    /Connect AI/,
+    /AI settings/,
     `a judgement about code points at the reader's own model: ${q}`,
   );
 }
