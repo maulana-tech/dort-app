@@ -158,7 +158,7 @@ export function Views({
             "Grounded in the Foundry run you have loaded — its tests, its failures, and the contracts the calls went through.",
             "Hand in a transaction and Dort reads the chain first: the real call tree from the node, not a guess from a function name.",
             "What comes back is candidates to check and what it could not look at. Never a verdict, never a score.",
-            "Your own model by default. Nothing you hand in is uploaded anywhere but to it.",
+            "Answered by your own model, or by this Dort's if you have chosen none — and the page says which of the two replied.",
           ]}
         />
       </Split>

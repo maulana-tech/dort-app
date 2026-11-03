@@ -153,9 +153,9 @@ export function ScatterGrow({
     <section ref={ref} id="product" data-tone="product" className="lp-sg">
       <div data-lp="head" className="lp-sg-head px-4 text-center">
         <h2 className="font-medium text-[clamp(30px,4vw,50px)] text-on-canvas leading-[1.04] tracking-[-0.03em]">
-          Start from something real,
+          The code you have to trust
           <br />
-          <span className="text-white/70">not a blank file.</span>
+          <span className="text-white/70">is rarely yours to read.</span>
         </h2>
       </div>
 
@@ -165,34 +165,46 @@ export function ScatterGrow({
       <div className="lp-sg-bento mx-auto grid w-full max-w-[1080px] gap-3 px-4 md:grid-cols-2 md:px-6 lg:grid-cols-6">
         <div aria-hidden="true" data-lp="bg" className="lp-bento-bg" />
 
+        {/* The problem, then what this is. The section opens the page's argument and the
+            close-up below shows it running; what you can DO with what you read belongs to
+            OnChain further down, which already opens with "Reading is half of it." */}
         <article data-lp="card" className="lp-bento lg:col-span-4">
-          <span className="lp-bento-mark">{marks[0]?.node}</span>
-          <h3 className="mt-4 font-medium text-[21px] text-on-canvas tracking-[-0.01em]">
-            Your own <code className="font-mono text-[19px]">forge test</code>
+          <h3 className="font-medium text-[21px] text-on-canvas tracking-[-0.01em]">
+            Two bad answers, and nothing in between
           </h3>
           <p className="mt-2.5 max-w-[62ch] text-[13.5px] text-on-canvas-muted leading-relaxed">
-            One command writes one file. It runs your suite, decodes every frame
-            with your project&rsquo;s own ABIs and solc source maps, and writes{" "}
-            <code className="font-mono text-[13px]">dort-data.json</code>. Dort
-            reads that file and draws it — it never runs analysis of its own, so
-            there is nothing of ours between you and what Foundry said.
+            Most of the code you have to trust was written by someone else, and
+            the usual ways to look at it are a wall of addresses and opcodes, or
+            a chatbot with nothing behind what it says. One cannot be read; the
+            other cannot be checked. Dort is the workbench in between: the
+            evidence on screen, beside the explanation of it.
           </p>
-          <p className="lp-bento-cmd mt-4 self-start rounded-full border border-white/[.12] bg-white/[.06] px-3.5 py-1.5 font-mono text-[12.5px] text-on-canvas">
-            node dort-export.mjs
+        </article>
+
+        <article data-lp="card" className="lp-bento lg:col-span-2">
+          <h3 className="font-medium text-[18px] text-on-canvas">
+            One box, whatever you arrived with
+          </h3>
+          <p className="mt-2 text-[13.5px] text-on-canvas-muted leading-relaxed">
+            A question, a contract address, a transaction hash, or your own{" "}
+            <code className="font-mono text-[12.5px]">.sol</code> files. Dort
+            works out which it is; you never have to say.
           </p>
         </article>
 
         <article data-lp="card" className="lp-bento lg:col-span-2">
           <span className="lp-bento-mark">{marks[2]?.node}</span>
           <h3 className="mt-4 font-medium text-[18px] text-on-canvas">
-            Seven testnets, forked
+            Evidence under every answer
           </h3>
           <p className="mt-2 text-[13.5px] text-on-canvas-muted leading-relaxed">
+            Your own <code className="font-mono text-[12.5px]">forge test</code>
+            , or the chain&rsquo;s own call tree read with{" "}
             <code className="font-mono text-[12.5px]">
-              --chain base-sepolia
-            </code>{" "}
-            runs the same suite against a fork, so the balances and the code are
-            the chain&rsquo;s, not a fixture&rsquo;s.
+              debug_traceTransaction
+            </code>
+            . Seven testnets can be forked, so the balances and the code are the
+            chain&rsquo;s and not a fixture&rsquo;s.
           </p>
           <ul className="mt-3 flex flex-wrap gap-1.5">
             {CHAINS.map((c) => (
@@ -206,34 +218,17 @@ export function ScatterGrow({
           </ul>
         </article>
 
-        {/* no mark: the Solidity one sat here while this card was about source lines, and a
-            logo that no longer matches its card is worse than none */}
-        <article data-lp="card" className="lp-bento lg:col-span-2">
-          <h3 className="font-medium text-[18px] text-on-canvas">
-            Or a transaction that already happened
-          </h3>
-          <p className="mt-2 text-[13.5px] text-on-canvas-muted leading-relaxed">
-            Paste a hash and Dort asks the node for the call tree —{" "}
-            <code className="font-mono text-[12.5px]">
-              debug_traceTransaction
-            </code>{" "}
-            on Portaldot V3 — then reads what the transaction actually did,
-            rather than guessing from a function name.
-          </p>
-        </article>
-
         <article data-lp="card" className="lp-bento lg:col-span-4">
           <h3 className="font-medium text-[18px] text-on-canvas">
-            Or the contract itself, even if it isn&rsquo;t yours
+            Candidates to check — never a verdict
           </h3>
-          <p className="mt-2 text-[13.5px] text-on-canvas-muted leading-relaxed">
-            Drop your <code className="font-mono text-[12.5px]">.sol</code>{" "}
-            files into the same box, or paste an address and let Dort ask the
-            chain what is deployed there. What comes back is a list of things
-            worth checking, each with the way to confirm it — and, beside it,
-            what the reading could not look at. Never a verdict, never a score:
-            a tool believed when it says &ldquo;no issues found&rdquo; is worse
-            than no tool.
+          <p className="mt-2 max-w-[62ch] text-[13.5px] text-on-canvas-muted leading-relaxed">
+            Every reading comes back as a list of things worth checking, each
+            with the concrete way to confirm or rule it out, and beside it what
+            the reading could not look at. No score, no clean bill of health: a
+            tool believed when it says &ldquo;no issues found&rdquo; is worse
+            than no tool at all, because the person ships, the money goes, and
+            the tool caused it.
           </p>
         </article>
       </div>
