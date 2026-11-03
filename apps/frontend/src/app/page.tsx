@@ -1,5 +1,4 @@
 import {
-  Ask,
   Compare,
   Faq,
   Features,
@@ -7,7 +6,6 @@ import {
   Hero,
   OnChain,
   Product,
-  Run,
   SmoothScroll,
   Tests,
   Words,
@@ -80,12 +78,10 @@ export default async function Home() {
       <SmoothScroll>
         <Hero />
         <Product />
-        <Run />
         <Words />
         <Features />
         <OnChain />
         <Tests />
-        <Ask />
         <Compare />
         <Faq />
         <Finale />
