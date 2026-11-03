@@ -30,3 +30,4 @@ export {
   inlineOf,
   parseMarkdown,
 } from "./utils/markdown";
+export { SHARE_TITLE, shareText, shareUrl } from "./utils/share";

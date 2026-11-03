@@ -55,6 +55,7 @@ import { CopyPill } from "../shell/CopyPill";
 import { Sidebar } from "../shell/Sidebar";
 import { TraceRow } from "../trace/TraceRow";
 import { Markdown } from "./Markdown";
+import { ShareButton } from "./ShareButton";
 
 const fromFile = (data: RunFile): TraceSource => ({ data, origin: "file" });
 
@@ -517,15 +518,20 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
                 ? "Dort's model"
                 : "Your model"}
           </span>
-          {!empty && (
-            <button
-              type="button"
-              onClick={startFresh}
-              className="ml-auto rounded-tile bg-raised px-3 py-1.5 text-[12.5px] text-muted transition-colors hover:bg-hover hover:text-fg"
-            >
-              New
-            </button>
-          )}
+          {/* both controls in one group, so New arriving with the first answer does not shove
+              Share sideways mid-conversation */}
+          <div className="ml-auto flex flex-none items-center gap-1.5">
+            <ShareButton />
+            {!empty && (
+              <button
+                type="button"
+                onClick={startFresh}
+                className="rounded-tile bg-raised px-3 py-1.5 text-[12.5px] text-muted transition-colors hover:bg-hover hover:text-fg"
+              >
+                New
+              </button>
+            )}
+          </div>
         </header>
 
         <div ref={thread} className="min-h-0 flex-1 overflow-auto px-5 pb-4">
