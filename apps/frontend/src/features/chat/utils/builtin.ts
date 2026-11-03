@@ -8,7 +8,7 @@
  * `aiAnswer`). This is that, for the conversation.
  *
  * Every sentence below is composed from the run's own figures. Nothing is inferred, nothing is
- * invented, and where the question is beyond arithmetic it says so and points at Connect AI
+ * invented, and where the question is beyond arithmetic it says so and points at the AI settings page
  * instead of guessing — a confident wrong answer is the one failure this product exists to argue
  * against.
  */
@@ -47,10 +47,10 @@ const list = (xs: string[], max = 6) =>
     : `${xs.slice(0, max).join(", ")} and ${xs.length - max} more`;
 
 const NEEDS_MODEL =
-  "That one needs a model that can read the code, which Dort does not host. Press Connect AI in the header to use your own Claude Code, a local model, or your own key — then ask it again.";
+  "That one needs a model that can read the code, which Dort does not host. Open AI settings and bring your own Claude Code, a local model, or your own key — then ask it again.";
 
 const WHO =
-  "Nobody yet: this answer is Dort's own built-in text, composed from the run's figures, with no model involved and nothing sent anywhere. Connect AI in the header to have your own model answer instead — your Claude Code, a local model, or your own key. Dort never calls a model of its own, so a contract you have not published never passes through anyone else's logs.";
+  "Nobody yet: this answer is Dort's own built-in text, composed from the run's figures, with no model involved and nothing sent anywhere. Open AI settings to have your own model answer instead — your Claude Code, a local model, or your own key. Dort never calls a model of its own, so a contract you have not published never passes through anyone else's logs.";
 
 /**
  * The built-in answer, or null when the question is beyond what figures alone can settle. The
