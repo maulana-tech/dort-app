@@ -619,7 +619,7 @@ export const GROUPS: DocGroup[] = [
                 [
                   "**Dort's model** (default where offered)",
                   "This deployment's own Amazon Bedrock — Claude Haiku by default, since whoever runs it pays",
-                  "Your question and any code with it, to **that operator's AWS account** — and into its logs if model invocation logging is on there. Only offered when the server has `BEDROCK_API_KEY` set. The operator may offer more models with `BEDROCK_MODELS`, and nothing outside that list can be asked for. Bring your own key for anything unpublished",
+                  "Your question and any code with it, to **that operator's AWS account** — and into its logs if model invocation logging is on there. Only offered when the server has `BEDROCK_API_KEY` set. Other vendors — MiniMax, GLM, Qwen, Kimi, DeepSeek — can be picked beside it, and the operator sets which with `BEDROCK_MODELS`; nothing outside that list can be asked for. Bring your own key for anything unpublished",
                 ],
                 [
                   "Local model",
