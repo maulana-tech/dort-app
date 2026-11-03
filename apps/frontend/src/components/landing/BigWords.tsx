@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { type ReactNode, useRef } from "react";
 import { ICON_PATH, type IconKey } from "@/features/atlas/utils/icons";
-import { type Gsap, Lazy, MOTION_MQ, useStage } from "./motion";
+import { type Gsap, Lazy, useStage } from "./motion";
 import "./words.css";
 import type { ChatDemo } from "./stats";
 
@@ -28,6 +28,15 @@ type Word = {
 
 /** a letter's tumble while it drops in (the last letters trail, like Genie's 'Creat e') */
 const TILT = [-14, 9, -6, 12, -10, 16];
+
+/**
+ * The row only exists where it can work: wide enough for a word and a card side by side, and
+ * only when motion is allowed. words.css carries the same query, so the layout and the timeline
+ * can never disagree about which one is on screen — gated on motion alone, the script pinned
+ * and translated a vertical stack sideways on every phone.
+ */
+const WORDS_MQ =
+  "(prefers-reduced-motion: no-preference) and (min-width: 768px)";
 
 /**
  * Genie: three giant words, each letter dropping in on its own with the scroll, mascots beside
@@ -163,7 +172,7 @@ export function BigWords({
   incidents: { name: string; year: string; loss: string }[];
 }) {
   const ref = useRef<HTMLElement>(null);
-  useStage(ref, bigWords, MOTION_MQ);
+  useStage(ref, bigWords, WORDS_MQ);
   const words: Word[] = [
     {
       word: "Ask",
@@ -202,12 +211,18 @@ export function BigWords({
   return (
     <section ref={ref} data-tone="words" aria-label="Ask, move, learn">
       <div className="lp-words-stage mx-auto w-full max-w-[1320px] px-4 py-20 md:px-6">
-        <div className="lp-words-track flex flex-col gap-16 md:gap-0">
+        <div
+          data-lp="track"
+          className="lp-words-track flex flex-col gap-16 md:gap-0"
+        >
           {words.map((w, i) => (
             // one point, one slide: the word and its card travel together, so nothing can ever
             // be printed over anything else however far the row moves
             <div key={w.word} data-lp="slide" className="lp-words-slide">
-              <article className="grid items-center gap-8 rounded-[32px] bg-white p-6 shadow-float md:grid-cols-[minmax(0,clamp(260px,26vw,380px))_1fr] md:gap-12 md:p-16">
+              {/* every slide is the same card: one height for all three, so the row does not
+                  change shape as it moves and nothing is taller than the window that clips it.
+                  Sized off the viewport, since that window is exactly one screen tall. */}
+              <article className="grid items-center gap-8 rounded-[32px] bg-white p-6 shadow-float md:h-[min(78svh,720px)] md:grid-cols-[minmax(0,clamp(260px,26vw,380px))_1fr] md:gap-12 md:p-14">
                 <div data-lp="head" className="min-w-0">
                   <p className="mb-4 font-mono text-[12px] text-primary/55 tracking-[0.08em]">
                     {`${String(i + 1).padStart(2, "0")} / ${String(words.length).padStart(2, "0")}`}
@@ -238,17 +253,19 @@ export function BigWords({
 
                 {/* the badges hang off the visual's corners; the card's padding is what keeps
                     them inside the slide, where the window cannot cut them */}
-                <div className="relative min-w-0">
-                  {w.glyphs.map((g) => (
-                    <Glyph key={g.icon} {...g} />
-                  ))}
-                  <Lazy
-                    className={`w-full ${w.min} md:min-h-0`}
-                    margin="100% 200%"
-                    wait={w.wait}
-                  >
-                    {w.visual}
-                  </Lazy>
+                <div className="flex min-w-0 items-center justify-center md:h-full md:overflow-hidden">
+                  <div className="relative w-full">
+                    {w.glyphs.map((g) => (
+                      <Glyph key={g.icon} {...g} />
+                    ))}
+                    <Lazy
+                      className={`w-full ${w.min} md:min-h-0`}
+                      margin="100% 200%"
+                      wait={w.wait}
+                    >
+                      {w.visual}
+                    </Lazy>
+                  </div>
                 </div>
               </article>
             </div>
