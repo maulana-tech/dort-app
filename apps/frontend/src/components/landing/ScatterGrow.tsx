@@ -153,7 +153,7 @@ export function ScatterGrow({
     <section ref={ref} id="product" data-tone="product" className="lp-sg">
       <div data-lp="head" className="lp-sg-head px-4 text-center">
         <h2 className="font-medium text-[clamp(30px,4vw,50px)] text-on-canvas leading-[1.04] tracking-[-0.03em]">
-          Start from your own run,
+          Start from something real,
           <br />
           <span className="text-white/70">not a blank file.</span>
         </h2>
@@ -224,14 +224,16 @@ export function ScatterGrow({
 
         <article data-lp="card" className="lp-bento lg:col-span-4">
           <h3 className="font-medium text-[18px] text-on-canvas">
-            Plain Node, nothing else
+            Or the contract itself, even if it isn&rsquo;t yours
           </h3>
           <p className="mt-2 text-[13.5px] text-on-canvas-muted leading-relaxed">
-            The exporter is a handful of{" "}
-            <code className="font-mono text-[12.5px]">.mjs</code> files you curl
-            into your project. They import each other and{" "}
-            <code className="font-mono text-[12.5px]">node:</code>, and nothing
-            from npm — so there is no install to audit before you can run it.
+            Drop your <code className="font-mono text-[12.5px]">.sol</code>{" "}
+            files into the same box, or paste an address and let Dort ask the
+            chain what is deployed there. What comes back is a list of things
+            worth checking, each with the way to confirm it — and, beside it,
+            what the reading could not look at. Never a verdict, never a score:
+            a tool believed when it says &ldquo;no issues found&rdquo; is worse
+            than no tool.
           </p>
         </article>
       </div>
