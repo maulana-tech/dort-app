@@ -2,7 +2,7 @@ import { execFile, spawn } from "node:child_process";
 import { refuse } from "@/features/ai/utils/claude-bridge";
 
 /*
- * Sign Claude Code itself in or out on this laptop, from the Connect AI dialog (docs/ai-provider.md,
+ * Sign Claude Code itself in or out on this laptop, from the AI settings page (docs/ai-provider.md,
  * "Your Claude"). Both run Claude Code's own commands; Dort still never sees the login:
  *  - logout: `claude auth logout`, the same as typing it in a terminal. It signs Claude Code out
  *    everywhere on this machine (terminals, Orca, Dort), not only in Dort.
