@@ -24,11 +24,16 @@ export const isAnthropicModel = (model: string) =>
 
 const host = (region: string) => `https://bedrock-mantle.${region}.api.aws`;
 
+/**
+ * The OpenAI-shaped route is `/v1/chat/completions`, with no vendor prefix. `/openai/v1/...`
+ * exists on the host and answers in the right shape, which is how it came to be written here —
+ * but it 404s every model, including the ones `/v1/chat/completions` serves happily. Probed
+ * against the live Sydney host: minimax, zai, qwen, moonshotai and deepseek all answer 200
+ * there, and 400 "isn't supported on this route" on the prefixed one.
+ */
 export const upstreamUrl = (region: string, model: string) =>
   `${host(region)}${
-    isAnthropicModel(model)
-      ? "/anthropic/v1/messages"
-      : "/openai/v1/chat/completions"
+    isAnthropicModel(model) ? "/anthropic/v1/messages" : "/v1/chat/completions"
   }`;
 
 /**

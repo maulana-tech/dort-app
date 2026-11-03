@@ -112,9 +112,10 @@ for (const wanted of [
   );
 
 // ── one host, two APIs, chosen by the model's own id ───────────────────────────────────────
-// Probed against the live host: /anthropic/v1/messages answers in Anthropic's error shape and
-// /openai/v1/chat/completions in OpenAI's, so the split is real. Sending a model down the wrong
-// one would fail in a way no error message would explain.
+// Probed against the live host: /anthropic/v1/messages answers in Anthropic's error shape, and
+// the OpenAI-shaped route is /v1/chat/completions with no vendor prefix. /openai/v1/... exists
+// and answers in the right shape too, which is how it came to be written here — but it 404s
+// every model that /v1/chat/completions serves, so the prefix was a silent dead end.
 assert.equal(isAnthropicModel("anthropic.claude-haiku-5-5"), true);
 for (const m of SUGGESTED_MODELS)
   assert.equal(isAnthropicModel(m), false, `${m} is not an Anthropic model`);
@@ -125,7 +126,7 @@ assert.match(
 );
 assert.match(
   upstreamUrl("ap-southeast-1", "minimax.minimax-m2.5"),
-  /^https:\/\/bedrock-mantle\.ap-southeast-1\.api\.aws\/openai\/v1\/chat\/completions$/,
+  /^https:\/\/bedrock-mantle\.ap-southeast-1\.api\.aws\/v1\/chat\/completions$/,
 );
 
 // the host refuses a request carrying both auth headers, so exactly one must be present

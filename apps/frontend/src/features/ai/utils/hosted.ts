@@ -79,7 +79,7 @@ export const SUGGESTED_MODELS = [
   "zai.glm-4.7-flash",
   "qwen.qwen3-coder-next",
   "moonshotai.kimi-k2.5",
-  "deepseek.deepseek-v3.2",
+  "deepseek.v3.2",
 ];
 
 export function hostedModels(env: HostedEnv): string[] {

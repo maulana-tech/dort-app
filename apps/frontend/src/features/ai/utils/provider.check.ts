@@ -262,7 +262,8 @@ assert.equal(isHostedUrl("http://127.0.0.1:3020"), false);
     },
     "hi",
   );
-  assert.match(minimax.url, /\/openai\/v1\/chat\/completions$/);
+  // the OpenAI-shaped route carries no vendor prefix; /openai/v1/... 404s every model
+  assert.match(minimax.url, /\.api\.aws\/v1\/chat\/completions$/);
   const mh = minimax.init.headers as Record<string, string>;
   assert.equal(mh.authorization, `Bearer ${key}`);
   assert.ok(
