@@ -33,7 +33,7 @@ import {
   txUrl,
 } from "@/features/bridge/chains";
 import { useBridge } from "@/features/bridge/useBridge";
-import { useWallet } from "@/features/bridge/useWallet";
+import { useWallet } from "@/features/bridge/WalletProvider";
 
 /**
  * Bridge: lock an asset on its home chain, use the wrapped copy on Portaldot V3, send it back.
