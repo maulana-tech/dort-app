@@ -66,7 +66,7 @@ export const GROUPS: DocGroup[] = [
               "**Not an exploit tool.** It never writes attack contracts, calldata or attack steps. Tests it helps you write check intended behaviour.",
               "**Not a hosted scanner.** Your code is never uploaded. The exporter runs on your machine and the app reads the file in your browser tab.",
               "**Not a replacement for forge, Slither or Aderyn.** It reads their output and answers from it.",
-              "**Not an AI.** Dort hosts no model. Ask AI uses one you bring, or built-in text.",
+              "**Not an AI company.** Dort has no model of its own. A deployment may offer one it pays for, which the page says so about; everything else is a model you bring, or built-in text.",
             ],
           },
           { h2: "Next steps" },
@@ -604,14 +604,23 @@ export const GROUPS: DocGroup[] = [
       {
         slug: "ai",
         title: "Ask AI providers",
-        lead: "Dort hosts no AI: Ask answers from built-in text, or a model you bring.",
+        lead: "Bring your own model — or use this deployment's, if whoever runs it provided one.",
         blocks: [
           { p: "Open **Connect AI** in the app's top bar." },
           {
             table: {
               head: ["Option", "What answers", "What leaves your machine"],
               rows: [
-                ["None (default)", "Dort's built-in text", "Nothing"],
+                [
+                  "None",
+                  "Dort's built-in text, composed from the run's own figures",
+                  "Nothing",
+                ],
+                [
+                  "**Dort's model** (default where offered)",
+                  "This deployment's own Amazon Bedrock, paid for by whoever runs it",
+                  "Your question and any code with it, to **that operator's AWS account** — and into its logs if model invocation logging is on there. Only offered when the server has `BEDROCK_API_KEY` set; bring your own key for anything unpublished",
+                ],
                 [
                   "Local model",
                   "Ollama, LM Studio or any OpenAI-compatible server you run",
@@ -751,7 +760,8 @@ export const GROUPS: DocGroup[] = [
               "The exporter and the bridge run on your machine; your code is never uploaded.",
               "A dropped dort-data.json is read in your browser tab only.",
               "Triage notes, scenarios and AI settings are kept in your browser, per contract.",
-              "Dort's server only serves the app and the exporter scripts. Its local-only routes answer 404 on any public deploy.",
+              "Dort's server serves the app and the exporter scripts. Its local-only routes answer 404 on any public deploy.",
+              "One route is not local-only: if the deployment sets `BEDROCK_API_KEY`, **Dort's model** answers through that operator's AWS account, so your question — and any code you send with it — leaves your browser for them. It is the default only while you have chosen no provider, the page says so wherever it answers, and picking any other provider in Connect AI stops it. Reviewing something unpublished? Bring your own key.",
             ],
           },
           { h2: "Defensive by design" },
