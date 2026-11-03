@@ -74,7 +74,7 @@ export const openAiSettings = () => dispatchEvent(new Event(OPEN));
 
 /** "AI provider" settings: none (canned answers), a local model, or the user's own API key. */
 export function AiSettings() {
-  const hostedAi = useHostedAi();
+  const { ready: hostedAi, models: hostedModels } = useHostedAi();
   const saved = useAiConfig();
   const dialog = useRef<HTMLDialogElement>(null);
   const [draft, setDraft] = useState<AiConfig>(NO_AI);
@@ -302,7 +302,22 @@ export function AiSettings() {
                 />
               )}
               <Row label="Model">
-                {mode === "claude" ? (
+                {mode === "dort" ? (
+                  // a list, never a free field: the route honours only what the operator offers,
+                  // so typing a model here would just be silently ignored
+                  <Dropdown
+                    ariaLabel="Model"
+                    value={draft.model || hostedModels[0] || ""}
+                    onChange={(m) => edit({ model: m })}
+                    className="w-full"
+                    mono
+                    options={hostedModels.map((m, i) => ({
+                      value: m,
+                      label: i === 0 ? `${m} · default` : m,
+                      text: m,
+                    }))}
+                  />
+                ) : mode === "claude" ? (
                   <Dropdown
                     ariaLabel="Model"
                     value={draft.model || "default"}
@@ -325,7 +340,7 @@ export function AiSettings() {
                   />
                 )}
               </Row>
-              {mode !== "claude" && (
+              {mode !== "claude" && mode !== "dort" && (
                 <Row label={mode === "local" ? "Key (optional)" : "API key"}>
                   <Input
                     type="password"
