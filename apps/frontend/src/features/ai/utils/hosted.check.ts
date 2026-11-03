@@ -2,7 +2,6 @@
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import {
-  type Bucket,
   HOSTED_MODEL,
   HOSTED_REGION,
   hostedModel,
@@ -12,7 +11,6 @@ import {
   isAnthropicModel,
   MAX_BODY,
   MAX_TOKENS,
-  overRate,
   pickModel,
   refuseHosted,
   SUGGESTED_MODELS,
@@ -252,5 +250,34 @@ assert.ok(MAX_TOKENS > 0 && MAX_TOKENS <= 4096, "and the answer is capped too");
 // The brake itself, and its tiers, moved to utils/allowance and are checked there: it now takes
 // an allowance rather than owning one, because a single count shared by everyone behind one exit
 // address was a brake on a lecture hall rather than on a loop.
+
+// ── the key is read in exactly one place, and that place is the server ─────────────────────
+// The one thing that must hold however this is configured. Naming the variable in prose is fine
+// and the docs do it; *reading* it anywhere a client component can reach would ship an AWS
+// credential to every visitor. So the rule is about `process.env.BEDROCK…`, not about the name.
+//
+// This walks the source rather than the build, on purpose: a bundle can only be scanned after
+// `next build`, and a check that needs a build is a check that does not run. The import
+// boundary is where the mistake is made — one `"use client"` above a module that reads the key
+// — and that is visible here.
+const SRC = new URL("../../../", import.meta.url); // src/
+const READS: string[] = [];
+const walk = (dir: URL) => {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const at = new URL(`${e.name}${e.isDirectory() ? "/" : ""}`, dir);
+    if (e.isDirectory()) {
+      walk(at);
+    } else if (/\.tsx?$/.test(e.name) && !e.name.endsWith(".check.ts")) {
+      if (/process\.env\.BEDROCK/.test(readFileSync(at, "utf8")))
+        READS.push(at.pathname.slice(SRC.pathname.length));
+    }
+  }
+};
+walk(SRC);
+assert.deepEqual(
+  READS,
+  ["app/api/bedrock/route.ts"],
+  `only the server route may read the key, but these do: ${READS.join(", ")}`,
+);
 
 console.log("hosted ai ok");
