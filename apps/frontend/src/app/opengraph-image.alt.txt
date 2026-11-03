@@ -1,1 +1,1 @@
-Dort: see what your smart contract actually does. The landing page with the contract graph of a sample vault.
+Dort: see what your smart contract actually does. A live transaction, or your own Foundry run — decoded call by call. AI explains. You judge.
