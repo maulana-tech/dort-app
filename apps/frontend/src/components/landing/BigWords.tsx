@@ -3,17 +3,14 @@
 import dynamic from "next/dynamic";
 import { type ReactNode, useRef } from "react";
 import { ICON_PATH, type IconKey } from "@/features/atlas/utils/icons";
-import type { Frame } from "@/features/trace";
-import { loadAtlas } from "./atlas";
 import { type Gsap, Lazy, MOTION_MQ, useStage } from "./motion";
-import type { LabDemo } from "./stats";
+import type { ChatDemo } from "./stats";
 
-// the visuals are their own chunk, fetched (with the atlas the Triage one reads) as their spot nears
+// the visuals are their own chunk, fetched as their spot nears
 const visuals = () => import("./WordVisuals");
-const TraceVisual = dynamic(() => visuals().then((m) => m.TraceVisual));
-const TestVisual = dynamic(() => visuals().then((m) => m.TestVisual));
-const TriageVisual = dynamic(() => visuals().then((m) => m.TriageVisual));
-const triageReady = () => Promise.all([visuals(), loadAtlas()]);
+const AskVisual = dynamic(() => visuals().then((m) => m.AskVisual));
+const MoveVisual = dynamic(() => visuals().then((m) => m.MoveVisual));
+const LearnVisual = dynamic(() => visuals().then((m) => m.LearnVisual));
 
 type Layout = "left" | "right" | "top";
 
@@ -173,56 +170,56 @@ const GRID: Record<Layout, string> = {
 };
 
 export function BigWords({
-  trace,
-  scenario,
-  sol,
+  chat,
+  protocols,
+  incidents,
 }: {
-  trace: { test: string; frames: Frame[] };
-  scenario: LabDemo | null;
-  sol: { file: string; lines: string[] } | null;
+  chat: ChatDemo;
+  protocols: string[];
+  incidents: { name: string; year: string; loss: string }[];
 }) {
   const ref = useRef<HTMLElement>(null);
   useStage(ref, bigWords, MOTION_MQ);
   const words: Word[] = [
     {
-      word: "Trace",
-      line: "Every call, event and cheatcode decoded with your own ABIs.",
+      word: "Ask",
+      line: "A question in your own words, answered from the run that really happened.",
       layout: "left",
       glyphs: [
         { icon: "waves", at: "-top-12 left-3 md:-top-16 md:-left-4" },
         { icon: "fn", at: "-bottom-12 right-3 md:-right-4 md:-bottom-16" },
       ],
-      min: "min-h-[494px] md:min-h-[517px] lg:min-h-[722px] xl:min-h-[837px]",
-      visual: <TraceVisual {...trace} />,
+      min: "min-h-[494px] md:min-h-[517px] lg:min-h-[640px] xl:min-h-[700px]",
+      visual: <AskVisual demo={chat} />,
       wait: visuals,
     },
     {
-      word: "Test",
-      line: "Wire actors and calls, export the scenario as a .t.sol.",
+      word: "Move",
+      line: "Deposit, swap and bridge on Portaldot V3 — told what happens first.",
       layout: "right",
       glyphs: [
         { icon: "plug", at: "-top-12 right-3 md:-top-16 md:-right-4" },
         { icon: "user", at: "-bottom-12 left-3 md:-bottom-16 md:-left-4" },
       ],
-      min: "min-h-[474px] md:min-h-[491px] lg:min-h-[680px] xl:min-h-[729px]",
-      visual: scenario && <TestVisual scenario={scenario} sol={sol} />,
+      min: "min-h-[474px] md:min-h-[491px] lg:min-h-[620px] xl:min-h-[660px]",
+      visual: <MoveVisual />,
       wait: visuals,
     },
     {
-      word: "Triage",
-      line: "Slither and Aderyn merged into one finding per issue.",
+      word: "Learn",
+      line: "How the protocols you depend on work, and how others lost the money.",
       layout: "top",
       glyphs: [
         { icon: "warn", at: "-top-12 left-3 md:-top-16 md:-left-4", bad: true },
         { icon: "check", at: "-bottom-12 right-3 md:-right-4 md:-bottom-16" },
       ],
-      min: "min-h-[861px] md:min-h-[505px] lg:min-h-[634px] xl:min-h-[674px]",
-      visual: <TriageVisual />,
-      wait: triageReady,
+      min: "min-h-[700px] md:min-h-[505px] lg:min-h-[634px] xl:min-h-[674px]",
+      visual: <LearnVisual protocols={protocols} incidents={incidents} />,
+      wait: visuals,
     },
   ];
   return (
-    <section ref={ref} data-tone="words" aria-label="Trace, test, triage">
+    <section ref={ref} data-tone="words" aria-label="Ask, move, learn">
       {words.map((w) => (
         <div
           key={w.word}
