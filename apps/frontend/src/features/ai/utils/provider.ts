@@ -1,14 +1,22 @@
 import type { AiConfig, AiKind, AiQuestion, AskContext } from "../types";
+import {
+  isAnthropicModel,
+  upstreamBody,
+  upstreamHeaders,
+  upstreamUrl,
+} from "./bedrock-api.ts";
 
 /**
  * Amazon Bedrock, with the AUDITOR'S own AWS key — never ours. Dort hosts no model, so a Bedrock
  * call made with a Dort-owned AWS account would put a client's unpublished contract source
  * through our infrastructure, our logs and our bill. BYOK is the only shape allowed here.
  *
- * It speaks Anthropic's Messages API ("Claude in Amazon Bedrock"), so the request below is the
- * Anthropic one with a different host and a bearer key in `x-api-key`; streaming is ordinary SSE,
- * which is why `textOf` needs no Bedrock case. The older InvokeModel path is NOT used: it wants
- * SigV4 and answers with the AWS binary event stream, neither of which belongs in a browser.
+ * Bedrock serves two APIs on one host and the model's id picks between them: Anthropic's models
+ * answer the Messages API, every other vendor there — MiniMax, GLM, Qwen, Kimi, DeepSeek — an
+ * OpenAI-compatible one (utils/bedrock-api). Streaming is ordinary SSE either way, which is why
+ * `textOf` needs no Bedrock case: it already reads both shapes. The older InvokeModel path is NOT
+ * used: it wants SigV4 and answers with the AWS binary event stream, neither of which belongs in
+ * a browser.
  *
  * Measured from a page on this app before it was written: the endpoint answers browser requests
  * with CORS allowed and an Anthropic-shaped error body.
@@ -31,6 +39,20 @@ export const bedrockUrl = (region: string) =>
  * https, falls back to the default region. This is the same rule the other API providers get for
  * free by ignoring `baseUrl` entirely.
  */
+/** The region a Bedrock config names, falling back exactly as `bedrockBase` does. */
+export function bedrockRegion(value: string): string {
+  const v = value.trim();
+  if (REGION.test(v)) return v;
+  try {
+    const u = new URL(v);
+    if (u.protocol === "https:" && BEDROCK_HOST.test(u.hostname)) {
+      const m = /^bedrock-mantle\.([a-z0-9-]+)\.api\.aws$/.exec(u.hostname);
+      if (m) return m[1];
+    }
+  } catch {}
+  return BEDROCK_REGION;
+}
+
 export function bedrockBase(value: string): string {
   const v = value.trim().replace(/\/+$/, "");
   if (REGION.test(v)) return bedrockUrl(v);
@@ -77,7 +99,13 @@ export const PROVIDERS: Record<
     label: "Amazon Bedrock",
     /** the AWS region, not a URL: bedrockBase builds the host from it */
     baseUrl: BEDROCK_REGION,
-    model: "anthropic.claude-sonnet-5",
+    /**
+     * Any model your account can invoke, not only Anthropic's: `minimax.minimax-m2.5`,
+     * `zai.glm-4.7-flash`, `qwen.qwen3-coder-next`, `moonshotai.kimi-k2.5` and
+     * `deepseek.deepseek-v3.2` all work — the id decides which of Bedrock's two APIs answers
+     * (utils/bedrock-api). The default is the cheap current Claude.
+     */
+    model: "anthropic.claude-haiku-5-5",
     keyHint: "your Bedrock API key",
   },
   openai: {
@@ -269,6 +297,24 @@ export function chatRequest(
   )
     .trim()
     .replace(/\/+$/, "");
+  // the reader's own Bedrock key, on a model that is not Anthropic's: Bedrock answers those on
+  // an OpenAI-compatible API at a different path, with the key in a different header. Same split
+  // the hosted route makes (utils/bedrock-api), so BYOK reaches MiniMax, GLM, Qwen, Kimi and
+  // DeepSeek exactly as this deployment's own key does.
+  if (cfg.kind === "bedrock" && !isAnthropicModel(cfg.model.trim())) {
+    const region = bedrockRegion(cfg.baseUrl);
+    const model = cfg.model.trim();
+    return {
+      url: upstreamUrl(region, model),
+      init: {
+        method: "POST",
+        headers: upstreamHeaders(cfg.key, model),
+        body: JSON.stringify(
+          upstreamBody(model, messages, SYSTEM_PROMPT, maxTokens),
+        ),
+      },
+    };
+  }
   // Anthropic's Messages API, first-party or through the user's own Bedrock: one body, two hosts.
   // Bedrock carries the key as a bearer token in the same header and needs no direct-browser
   // opt-in, so the only differences are the host and that one header.
