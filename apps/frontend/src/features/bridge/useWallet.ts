@@ -103,7 +103,12 @@ export type Wallet = {
   }) => Promise<`0x${string}`>;
 };
 
-export function useWallet(): Wallet {
+/**
+ * The wallet state itself. One of these exists, inside WalletProvider — call `useWallet` to read
+ * it. Mounting two would be two separate connections: the header would show an address while the
+ * page still asked you to connect, which is exactly the bug this split exists to prevent.
+ */
+export function useWalletState(): Wallet {
   const [wallets, setWallets] = useState<DiscoveredWallet[]>([]);
   const [chosen, setChosen] = useState<DiscoveredWallet | null>(null);
   const [account, setAccount] = useState<Address | null>(null);
