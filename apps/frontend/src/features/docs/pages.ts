@@ -126,7 +126,7 @@ export const GROUPS: DocGroup[] = [
           {
             steps: [
               "Open **Chat**. With nothing loaded it answers generally — press **Try the sample vault** or drop your own `dort-data.json` to change that.",
-              "Connect your own AI with **Connect AI** in the header: your Claude Code, a local model, or your own key.",
+              "Connect your own AI on the [settings page](/settings): your Claude Code, a local model, or your own key.",
               "Start with one of the suggested questions, then follow up in your own words. The header badge always says whether you are reading your run, the sample, or nothing.",
             ],
           },
@@ -199,7 +199,7 @@ export const GROUPS: DocGroup[] = [
           },
           { h2: "Whose model answers" },
           {
-            p: "Yours. Press **Connect AI** in the header and pick your Claude Code, a local model, or your own API key — the same setting the rest of the app uses, described in [Ask AI providers](/docs/ai). Your question and your code go straight from the browser to the provider you chose. Dort never calls a model of its own, because a chat box is exactly where an auditor's unpublished source would otherwise end up in someone else's logs.",
+            p: "Yours, unless this deployment offers its own. Open [AI settings](/settings) and pick your Claude Code, a local model, or your own API key — the same setting the rest of the app uses, described in [Ask AI providers](/docs/ai). Your question and your code go straight from the browser to the provider you chose. Dort never calls a model of its own, because a chat box is exactly where an auditor's unpublished source would otherwise end up in someone else's logs.",
           },
           {
             p: "Like everywhere else in Dort, the assistant does defensive review only: it explains code and writes Foundry tests for intended behaviour, and refuses to write exploits or proof-of-concept attacks.",
@@ -606,7 +606,9 @@ export const GROUPS: DocGroup[] = [
         title: "Ask AI providers",
         lead: "Bring your own model — or use this deployment's, if whoever runs it provided one.",
         blocks: [
-          { p: "Open **Connect AI** in the app's top bar." },
+          {
+            p: "Open the [settings page](/settings), or the **AI** link in the top bar.",
+          },
           {
             table: {
               head: ["Option", "What answers", "What leaves your machine"],
@@ -761,7 +763,7 @@ export const GROUPS: DocGroup[] = [
               "A dropped dort-data.json is read in your browser tab only.",
               "Triage notes, scenarios and AI settings are kept in your browser, per contract.",
               "Dort's server serves the app and the exporter scripts. Its local-only routes answer 404 on any public deploy.",
-              "One route is not local-only: if the deployment sets `BEDROCK_API_KEY`, **Dort's model** answers through that operator's AWS account, so your question — and any code you send with it — leaves your browser for them. It is the default only while you have chosen no provider, the page says so wherever it answers, and picking any other provider in Connect AI stops it. Reviewing something unpublished? Bring your own key.",
+              "One route is not local-only: if the deployment sets `BEDROCK_API_KEY`, **Dort's model** answers through that operator's AWS account, so your question — and any code you send with it — leaves your browser for them. It is the default only while you have chosen no provider, the page says so wherever it answers, and picking any other provider on the settings page stops it. Reviewing something unpublished? Bring your own key.",
             ],
           },
           { h2: "Defensive by design" },
