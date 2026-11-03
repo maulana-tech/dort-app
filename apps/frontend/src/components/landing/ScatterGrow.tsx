@@ -203,8 +203,14 @@ export function ScatterGrow({
             <code className="font-mono text-[12.5px]">
               debug_traceTransaction
             </code>
-            . Seven testnets can be forked, so the balances and the code are the
-            chain&rsquo;s and not a fixture&rsquo;s.
+            {" — "}
+            <span className="text-on-canvas">
+              which, of the four chains here, only Portaldot V3 will answer
+            </span>
+            . Base Sepolia refuses it by filter; Ethereum and Arbitrum Sepolia
+            do not have the method at all. Seven testnets can still be forked,
+            so the balances and the code are the chain&rsquo;s and not a
+            fixture&rsquo;s.
           </p>
           <ul className="mt-3 flex flex-wrap gap-1.5">
             {CHAINS.map((c) => (

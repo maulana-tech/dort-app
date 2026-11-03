@@ -304,6 +304,35 @@ decoded against its ABI like on any EVM chain.
 | Node console | [node-console.portaldot.dev](https://node-console.portaldot.dev/) |
 | Own endpoint | `DORT_RPC_PORTALDOT_TESTNET=https://…` |
 
+#### Dort's main feature only works here
+
+Paste a transaction hash into Chat and Dort asks the node for the call tree, then reads what the
+transaction actually did instead of guessing from a function name. That needs
+`debug_traceTransaction` with the `callTracer`, and of the four chains Dort supports, **only
+Portaldot V3 will answer it**. Measured against each chain's public RPC on 3 November 2026:
+
+| Chain | `debug_traceTransaction` |
+|---|---|
+| **Portaldot V3** | **allowed — returns the call tree** |
+| Base Sepolia | rejected: `-32611 rejected due to request filter settings` |
+| Ethereum Sepolia | `the method debug_traceTransaction does not exist` |
+| Arbitrum Sepolia | `the method debug_traceTransaction does not exist` |
+
+Anyone can deploy a contract on any chain, and a deployment proves nothing about where a product
+belongs. This is the other kind of argument: the thing Dort is for cannot be done on the other
+three. Reproduce it with the same request Dort makes —
+
+```bash
+cast rpc debug_traceTransaction \
+  0x139c4838121202a79fd96018367194b93957d10df20c39d740fea8b1738d827e \
+  '{"tracer":"callTracer"}' \
+  --rpc-url https://test-evm-rpc-v3.portaldot.dev
+```
+
+That transaction is a real one: six calls two levels deep, one event, and five `STATICCALL`s into
+the ecrecover precompile at `0x…0001` — five signature recoveries, which is the kind of thing a
+reader has no way to see without the tracer.
+
 ```bash
 node dort-export.mjs --chain portaldot-testnet     # the suite on a fork of Portaldot V3
 forge test --fork-url https://test-evm-rpc-v3.portaldot.dev --mc PortaldotTest -vvv
