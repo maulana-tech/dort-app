@@ -11,7 +11,7 @@
 //
 // Coverage (atlas.coverage) comes from dort-coverage.mjs. No dependencies; needs `forge` on PATH.
 import { execFile, execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { availableParallelism, tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -127,12 +127,20 @@ for (const [suiteId, suite] of Object.entries(results)) for (const [testName, t]
   const [file, contract] = suiteId.split(':'), dump = join(TMP, `${jobs.length}.json`);
   jobs.push({ key: suiteId + '#' + testName, dump, args: ['test', '--debug', '--mp', file, '--mc', `^${esc(contract)}$`, '--mt', `^${esc(testName)}$`, '--dump', dump, ...passthrough] });
 }
-console.log(`dort: tracing ${jobs.length} unit tests step by step`);
+const stepJobs = jobs.length;
+console.log(`dort: tracing ${stepJobs} unit tests step by step`);
 await Promise.all(Array.from({ length: Math.min(availableParallelism(), jobs.length) }, async () => {
   // failing tests exit non-zero but still dump, so errors are ignored and the file decides
   for (let j; (j = jobs.shift());) await new Promise(res => execFile('forge', j.args, { cwd: ROOT, maxBuffer: 64 * 1024 * 1024 }, () => res()))
-    .then(() => { if (existsSync(j.dump)) dumps[j.key] = j.dump; });
+    // forge 1.9 removed the built-in debugger, and its --dump now writes a SolDB bundle
+    // *directory* where 1.8.x wrote the single JSON file read below (foundry-rs/foundry#17429).
+    // existsSync says yes to that directory, so this used to hand readFileSync a directory and
+    // die of EISDIR — taking the whole export with it, over one section of it. isFile() is the
+    // honest question: either the file this understands is there, or this section is skipped.
+    .then(() => { if (existsSync(j.dump) && statSync(j.dump).isFile()) dumps[j.key] = j.dump; });
 }));
+if (stepJobs && !Object.keys(dumps).length)
+  console.warn('dort: step-by-step source lines skipped \u2014 no `forge test --debug --dump` file was written. forge 1.9 dumps a SolDB bundle directory instead; Dort reads the single JSON file forge 1.8.x wrote, so traces ship without per-line steps.');
 
 const CALL_OPS = new Set([0xf0, 0xf1, 0xf2, 0xf4, 0xf5, 0xfa]), STORAGE_OPS = { 0x54: 'SLOAD', 0x55: 'SSTORE' };
 /** Re-join the flattened debug arena (a call's steps are split around each sub-call) into one entry per call. */

@@ -53,6 +53,13 @@ CI runs `pnpm check` (and the exporter's `node --test *.test.mjs`), so a broken 
 
 To develop the app against a live run: `DORT_DATA_PATH=/abs/path/dort-data.json pnpm dev`.
 
+**The exporter wants forge 1.8.x for step data.** forge 1.9 removed the built-in debugger, and
+its `--dump` writes a SolDB bundle directory where 1.8.x wrote the single JSON file
+`dort-export.mjs` decodes into per-line steps. On 1.9 the export still writes its traces and
+prints `dort: step-by-step source lines skipped — …`, so nothing breaks; the trace view just
+loses the source lines it teaches on. CI is pinned to `v1.8.7` for that reason. Reading the
+bundle format is the real fix and has not been done.
+
 ## Architecture
 
 ### `dort-data.json` is the contract

@@ -56,7 +56,14 @@ jobs:
         working-directory: foundry
     steps:
       - uses: actions/checkout@v4
+      # Pinned, because the exporter reads one forge output that moved. forge 1.9 removed the
+      # built-in debugger and `--dump` now writes a SolDB bundle directory where 1.8.x wrote a
+      # single JSON file, which is what dort-export.mjs decodes into per-line steps. On 1.9 the
+      # export still writes its traces and says the step data was skipped, so this pin is about
+      # CI testing the whole exporter rather than about the exporter needing 1.8.
       - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.8.7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
