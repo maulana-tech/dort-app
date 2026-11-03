@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Chip, Dropdown, PH, PhIcon, Tabs } from "@/components/ui";
 import { useAiConfig } from "@/features/ai/hooks/useAiConfig";
+import { useHostedAi } from "@/features/ai/hooks/useHostedAi";
+import { DORT_AI } from "@/features/ai/utils/provider";
 import {
   canSend,
   digestOf,
@@ -51,7 +53,12 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
       shown.source ? digestOf(shown.source.data, shown.origin) : EMPTY_DIGEST,
     [shown],
   );
-  const cfg = useAiConfig();
+  // with nothing chosen, this Dort's own model answers when it has one — so a first-time visitor
+  // can ask something without opening an AWS console first. Choosing any provider in Connect AI
+  // replaces it, and the page says which of the two is answering either way.
+  const stored = useAiConfig();
+  const hostedAi = useHostedAi();
+  const cfg = stored.kind === "none" && hostedAi ? DORT_AI : stored;
   const chat = useChat(cfg, digest);
   const history = useChatHistory();
   const [draft, setDraft] = useState("");
@@ -269,7 +276,11 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
             {modeBadge(digest)}
           </Chip>
           <span className="text-[12px] text-dim">
-            {chat.builtin ? "Built-in answers" : "Your model"}
+            {chat.builtin
+              ? "Built-in answers"
+              : chat.hosted
+                ? "Dort's model"
+                : "Your model"}
           </span>
           {!empty && (
             <button
@@ -297,7 +308,16 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
                     with no model and nothing leaving this machine. For anything
                     that needs the code read, press{" "}
                     <strong className="text-fg">Connect AI</strong> and bring
-                    your own — Dort hosts none.
+                    your own.
+                  </p>
+                )}
+                {chat.hosted && (
+                  <p className="mt-2 text-[12.5px] text-dim leading-relaxed">
+                    Answered by this Dort&rsquo;s own Bedrock, so you can ask
+                    without a key — your question goes through the AWS account
+                    of whoever runs it. Reviewing something unpublished? Press{" "}
+                    <strong className="text-fg">Connect AI</strong> and bring
+                    your own key instead.
                   </p>
                 )}
               </div>
@@ -454,7 +474,9 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
               <p className="pt-2 text-[11.5px] text-dim leading-relaxed">
                 {chat.builtin
                   ? "Answers come from Dort's own built-in text, composed from the figures above — no model, no request, nothing leaves this machine. Connect AI to have your own model read the code."
-                  : "Your question goes straight from this browser to the model you chose. Dort hosts none of its own."}{" "}
+                  : chat.hosted
+                    ? "Answered by this deployment's own Bedrock: your question leaves this browser for the AWS account of whoever runs it, and lands in that account's logs if model invocation logging is on there. Connect AI to use a model that is yours alone."
+                    : "Your question goes straight from this browser to the model you chose, and to nowhere else."}{" "}
                 Defensive review only: Dort explains code and writes Foundry
                 tests for intended behaviour, and refuses to write exploits.
               </p>
