@@ -66,6 +66,13 @@ export const PROVIDERS: Record<
     model: "claude-sonnet-5",
     keyHint: "sk-ant-…",
   },
+  dort: {
+    label: "Dort's own model",
+    /** no base URL and no key: the request goes to this app's own route */
+    baseUrl: "",
+    model: "",
+    keyHint: "",
+  },
   bedrock: {
     label: "Amazon Bedrock",
     /** the AWS region, not a URL: bedrockBase builds the host from it */
@@ -143,6 +150,18 @@ export const NO_AI: AiConfig = {
   key: "",
 };
 
+/**
+ * This deployment's own model. Nothing to fill in, because nothing here is the user's: the key,
+ * the region and the model all live in the server's environment (app/api/bedrock). Offered only
+ * when that route says it has a key, so a Dort without one never advertises a model it lacks.
+ */
+export const DORT_AI: AiConfig = {
+  kind: "dort",
+  baseUrl: "",
+  model: "",
+  key: "",
+};
+
 /** Fresh config for a provider: its default endpoint and model, and no key (a key never follows you to another provider). */
 export const configFor = (kind: AiKind): AiConfig => ({
   kind,
@@ -152,10 +171,11 @@ export const configFor = (kind: AiKind): AiConfig => ({
 });
 
 /**
- * Enough filled in to call: your Claude needs nothing; else a model, plus an endpoint (local), a
- * key (API providers), or both (Bedrock, whose region picks the host).
+ * Enough filled in to call: this Dort's own model and your Claude need nothing; else a model,
+ * plus an endpoint (local), a key (API providers), or both (Bedrock, whose region picks the host).
  */
 export const aiReady = (c: AiConfig) =>
+  c.kind === "dort" ||
   c.kind === "claude" ||
   (c.kind !== "none" &&
     c.model.trim() !== "" &&
@@ -219,6 +239,18 @@ export function chatRequest(
 ): { url: string; init: RequestInit } {
   const messages: ChatMessage[] =
     typeof user === "string" ? [{ role: "user", content: user }] : user;
+  // this Dort's own model: its own route, which holds the key. The browser sends the
+  // conversation and nothing else — no key, no model, no region, because all three are the
+  // operator's and a body that could name them would let any page spend their money freely.
+  if (cfg.kind === "dort")
+    return {
+      url: "/api/bedrock",
+      init: {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ messages }),
+      },
+    };
   // your Claude: this app's own local route; the system prompt is fixed on the server
   if (cfg.kind === "claude")
     return {
