@@ -150,6 +150,53 @@ assert.equal(
   "still once, on the first user turn wherever it is",
 );
 
+// ── a turn may show one thing and send another ─────────────────────────────────────────────
+// Handing in a contract puts a readable sentence in the thread and a whole call tree on the
+// wire. Both halves are real, and the turn carrying its own context must not then be given the
+// run's as well — two subjects in one message is how an answer ends up about the wrong one.
+const handed: Turn[] = [
+  {
+    role: "user",
+    content: "Review the transaction 0x139c…827e on Portaldot V3.",
+    at: 1,
+    sent: "<context>\nChain: Portaldot V3\nCALL 0x5bdd…\n</context>\n\nReview this.",
+  },
+  { role: "assistant", content: "Five ecrecover calls…", at: 2 },
+  { role: "user", content: "what about the event?", at: 3 },
+];
+const h = toMessages(real, handed);
+assert.equal(h.length, handed.length);
+assert.equal(
+  h[0].content,
+  handed[0].sent,
+  "the model gets what was sent, verbatim",
+);
+assert.doesNotMatch(
+  h[0].content,
+  /Foundry run: /,
+  "and not the run digest on top of it: the turn brought its own context",
+);
+assert.doesNotMatch(
+  h[0].content,
+  /Review the transaction 0x139c/,
+  "the thread's sentence is for the reader, not the model",
+);
+assert.equal(h[2].content, "what about the event?");
+assert.equal(
+  toMessages(real, handed).filter((m) => m.content.includes("Foundry run: "))
+    .length,
+  0,
+  "no later turn picks the digest up either — the conversation's subject is settled",
+);
+// the same conversation with no run loaded must not gain the "you cannot see the project" note
+assert.equal(toMessages(none, handed)[0].content, handed[0].sent);
+// a turn without `sent` is untouched by any of this
+assert.equal(
+  toMessages(real, turns)[0].content,
+  msgs[0].content,
+  "the ordinary path is unchanged",
+);
+
 // ── the starters ───────────────────────────────────────────────────────────────────────────
 // A newcomer must never meet an empty box, and the questions have to suit the mode: asking "did
 // anything fail?" with no run loaded would send them at a wall.

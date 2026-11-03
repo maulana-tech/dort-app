@@ -15,7 +15,8 @@ export {
   type ScanInput,
   type ScanKind,
   scanPrompt,
-  shortAddr,
+  shortHex,
+  subjectLabel,
   traceSummary,
   whyNot,
 } from "./utils/scan";

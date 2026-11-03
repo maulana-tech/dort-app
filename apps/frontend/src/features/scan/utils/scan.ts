@@ -93,9 +93,12 @@ const hex = (v: string | undefined): number | null => {
 const selectorOf = (input: string | undefined): string =>
   input && input.length >= 10 ? input.slice(0, 10).toLowerCase() : "";
 
-/** A 42-character address is unreadable in a trace row; it is kept whole wherever it is data. */
-export const shortAddr = (a: string): string =>
-  /^0x[0-9a-fA-F]{40}$/.test(a) ? `${a.slice(0, 6)}…${a.slice(-4)}` : a;
+/**
+ * A 42-character address, or a 66-character hash, is unreadable in a trace row or a sentence. It
+ * is kept whole wherever it is data — only what a person reads is ever shortened.
+ */
+export const shortHex = (a: string): string =>
+  /^0x[0-9a-fA-F]{20,}$/.test(a) ? `${a.slice(0, 6)}…${a.slice(-4)}` : a;
 
 const bytesOf = (data: string | undefined, from: number) =>
   Math.max(0, Math.ceil(((data ?? "").length - from) / 2));
@@ -180,7 +183,7 @@ export function flattenTrace(
  * shown abbreviated.
  */
 export const displayFrames = (frames: Frame[]): Frame[] =>
-  frames.map((f) => ({ ...f, to: shortAddr(f.to) }));
+  frames.map((f) => ({ ...f, to: shortHex(f.to) }));
 
 /** Every address the transaction touched, first seen first — the legend under the trace. */
 export function addressesIn(
@@ -188,7 +191,7 @@ export function addressesIn(
 ): { short: string; full: string }[] {
   const seen = new Map<string, string>();
   for (const f of frames)
-    if (f.to && !seen.has(f.to)) seen.set(f.to, shortAddr(f.to));
+    if (f.to && !seen.has(f.to)) seen.set(f.to, shortHex(f.to));
   return [...seen].map(([full, short]) => ({ full, short }));
 }
 
@@ -377,3 +380,19 @@ export function joinSources(
 
 /** Bigger than any plausible contract; a paste this size is a mistake, not a project. */
 export const MAX_SOURCE = 512 * 1024;
+
+/**
+ * What the reader sees in the thread when they hand something in.
+ *
+ * The model gets `scanPrompt` — a call tree, a bytecode size, a whole contract. Showing that in a
+ * chat thread would bury the conversation; showing a sentence the model never received would
+ * misrepresent it. So the turn carries both (chat `Turn.sent`), and this is the half a person
+ * reads: short, specific, and naming the chain, because the same address on another chain is a
+ * different contract and that mistake is silent.
+ */
+export function subjectLabel(input: ScanInput, chain?: string): string {
+  const on = chain ? ` on ${chain}` : "";
+  if (input.kind === "source")
+    return `Review the Solidity I handed in${input.name ? `: ${input.name}` : ""}.`;
+  return `Review the ${input.kind === "tx" ? "transaction" : "contract"} ${shortHex(input.value)}${on}.`;
+}

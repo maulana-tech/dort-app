@@ -24,6 +24,18 @@ export type Turn = {
   role: "user" | "assistant";
   content: string;
   at: number;
+  /**
+   * What the model receives in place of `content`, when the two differ.
+   *
+   * A contract handed in for review reads as "Review the transaction 0x139c…827e on Portaldot V3"
+   * in the thread and arrives at the model as its whole call tree. Without this the thread would
+   * have to show either a sentence the model never saw or two thousand characters of trace, and
+   * both are lies of a kind: one about what was asked, the other about what a conversation is.
+   *
+   * A turn carrying `sent` is self-contained — it brings its own context block — so the run
+   * digest is never prefixed onto it, and never onto the turns after it either.
+   */
+  sent?: string;
 };
 
 /**
@@ -205,6 +217,12 @@ export function toMessages(
   const ctx = contextBlock(d);
   let first = true;
   return turns.map((t) => {
+    // a turn that brought its own context needs none of ours, and settles the conversation's
+    // grounding for good: a run digest arriving later would describe a different subject
+    if (t.role === "user" && t.sent) {
+      first = false;
+      return { role: "user" as const, content: t.sent };
+    }
     if (t.role !== "user" || !first)
       return { role: t.role, content: t.content };
     first = false;

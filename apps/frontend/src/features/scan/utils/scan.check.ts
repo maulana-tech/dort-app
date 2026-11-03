@@ -12,7 +12,7 @@ import {
   NOT_CHECKED,
   type ScanInput,
   scanPrompt,
-  shortAddr,
+  shortHex,
   traceSummary,
   whyNot,
 } from "./scan.ts";
@@ -281,14 +281,14 @@ assert.match(evPrompt, /and the events they emitted/);
 // 42 characters truncates the call itself out of a trace row; the model must still see all of
 // it, since the one time it was handed 0x0000…0001 it named the wrong precompile.
 const ADDR_LOWER = ADDR.toLowerCase();
-assert.equal(shortAddr(ADDR_LOWER), "0x162d…5aF8".toLowerCase());
+assert.equal(shortHex(ADDR_LOWER), "0x162d…5aF8".toLowerCase());
 assert.equal(
-  shortAddr("DortVault"),
+  shortHex("DortVault"),
   "DortVault",
   "a contract name is left alone",
 );
 assert.equal(
-  shortAddr("0x1"),
+  shortHex("0x1"),
   "0x1",
   "and so is anything that is not an address",
 );
@@ -301,7 +301,7 @@ const oneCall = flattenTrace({
 assert.equal(oneCall[0].to, ADDR_LOWER, "the row data keeps the whole address");
 assert.equal(
   displayFrames(oneCall)[0].to,
-  shortAddr(ADDR_LOWER),
+  shortHex(ADDR_LOWER),
   "only the drawing abbreviates",
 );
 assert.match(
@@ -321,7 +321,7 @@ assert.deepEqual(addressesIn(withLogs), [
   { full: "0xtoken", short: "0xtoken" },
 ]);
 assert.deepEqual(addressesIn(oneCall), [
-  { full: ADDR_LOWER, short: shortAddr(ADDR_LOWER) },
+  { full: ADDR_LOWER, short: shortHex(ADDR_LOWER) },
 ]);
 assert.deepEqual(addressesIn([]), []);
 assert.deepEqual(

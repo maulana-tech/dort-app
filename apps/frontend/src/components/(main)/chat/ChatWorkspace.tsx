@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type DragEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Chip, Dropdown, PH, PhIcon, Tabs } from "@/components/ui";
 import { useAiConfig } from "@/features/ai/hooks/useAiConfig";
 import { useHostedAi } from "@/features/ai/hooks/useHostedAi";
 import { DORT_AI } from "@/features/ai/utils/provider";
+import { PORTALDOT_ID, VAULT_CHAINS } from "@/features/bridge/chains";
 import {
   canSend,
   digestOf,
@@ -19,6 +20,22 @@ import {
   whenLabel,
 } from "@/features/chat";
 import { type RunFile, useRun, useShownSource } from "@/features/run";
+import {
+  addressesIn,
+  detect,
+  displayFrames,
+  EXAMPLES,
+  gatherFacts,
+  joinSources,
+  MAX_SOURCE,
+  NOT_CHECKED,
+  type ScanFacts,
+  type ScanInput,
+  scanPrompt,
+  subjectLabel,
+  traceSummary,
+  whyNot,
+} from "@/features/scan";
 import type { TraceSource } from "@/features/trace/types";
 import { DropZone } from "../onboarding/RunDialog";
 import { Sidebar } from "../shell/Sidebar";
@@ -35,10 +52,16 @@ const fromFile = (data: RunFile): TraceSource => ({ data, origin: "file" });
  * that with nothing: these panels make the answer's provenance part of the page instead of a
  * claim in a sentence.
  *
- * Two modes, one box: against the loaded Foundry run when there is one, generally when there is
- * not. Which is in force is stated in the header and again on the left, never left to be
- * inferred — an answer about "your project" when no project is loaded is the most convincing
- * kind of wrong.
+ * Three modes, one box: against the loaded Foundry run when there is one, against a contract the
+ * reader hands in, and generally when there is neither. Which is in force is stated in the header
+ * and again on the left, never left to be inferred — an answer about "your project" when no
+ * project is loaded is the most convincing kind of wrong.
+ *
+ * Handing something in is the same box, not a second page. A reader arrives with whichever of the
+ * three they have — a transaction hash, a contract address, or .sol files — and `detect` works
+ * out which; asking them to classify it first is asking them to know the answer already. The
+ * reading that comes back is a list of candidates with what was *not* checked beside it, never a
+ * verdict (features/scan): a tool believed when it says "no issues found" is worse than no tool.
  *
  * The model is the user's own, always (features/ai). There is no Dort-hosted fallback: an
  * auditor's unpublished source must never pass through our infrastructure, and a chat box is
@@ -64,7 +87,16 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
   const history = useChatHistory();
   const [draft, setDraft] = useState("");
   const [left, setLeft] = useState<"run" | "history">("run");
-  const [right, setRight] = useState<"context" | "trace">("context");
+  const [right, setRight] = useState<"context" | "facts" | "trace">("context");
+  // what the reader handed in, if anything: the subject of the conversation beside the run
+  const [chain, setChain] = useState<number>(PORTALDOT_ID);
+  const [subject, setSubject] = useState<ScanInput | null>(null);
+  const [facts, setFacts] = useState<ScanFacts | null>(null);
+  const [traceNote, setTraceNote] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
+  const [handErr, setHandErr] = useState<string | null>(null);
+  const [over, setOver] = useState(false);
+  const picker = useRef<HTMLInputElement>(null);
   const [testAt, setTestAt] = useState(0);
   const thread = useRef<HTMLDivElement>(null);
   const starters = useMemo(() => suggestionsFor(digest), [digest]);
@@ -73,7 +105,7 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
   const tests = shown.source?.data.tests ?? [];
   const test = tests[Math.min(testAt, Math.max(0, tests.length - 1))];
   const frames = test?.frames ?? [];
-  const maxGas = Math.max(1, ...frames.map((f) => f.gas ?? 0));
+  const _maxGas = Math.max(1, ...frames.map((f) => f.gas ?? 0));
 
   // keep the open thread saved as it grows; an unanswered question is not kept (worthSaving)
   // biome-ignore lint/correctness/useExhaustiveDependencies: the turns' content is the trigger
@@ -91,14 +123,104 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
       el.scrollTop = el.scrollHeight;
   }, [chat.turns]);
 
+  // the frames on the right: the subject's own call tree when one was handed in, the loaded
+  // run's otherwise. One panel, because a reader only ever has one of the two in mind.
+  const liveFrames = facts?.frames ?? [];
+  const shownFrames = subject ? liveFrames : frames;
+  const shownRows = useMemo(() => displayFrames(shownFrames), [shownFrames]);
+  const shownGas = Math.max(1, ...shownFrames.map((f) => f.gas ?? 0));
+  const touched = useMemo(() => addressesIn(liveFrames), [liveFrames]);
+  // what the box would make of what is in it, so the control can say so before it is pressed
+  const detected = useMemo(() => detect(draft), [draft]);
+  const chainName =
+    VAULT_CHAINS.find((c) => c.id === chain)?.name ?? `chain ${chain}`;
+
   const ask = (text: string) => {
     if (!chat.ready) return;
     chat.send(text);
     setDraft("");
   };
+
+  /**
+   * Something handed in: read the chain first, then ask.
+   *
+   * The facts land before a single token of the answer does, and they are read from the node, so
+   * a reader who distrusts the review still leaves with the call tree. The thread shows a
+   * sentence; the model receives the whole thing (Turn.sent).
+   */
+  async function handIn(input: ScanInput) {
+    if (!chat.ready || reading || chat.busy) return;
+    setReading(true);
+    setHandErr(null);
+    try {
+      const got = await gatherFacts(chain, input);
+      setSubject(input);
+      setFacts(got.facts);
+      setTraceNote(got.traceNote);
+      setRight(got.facts.frames?.length ? "trace" : "facts");
+      setDraft("");
+      chat.send(
+        subjectLabel(input, input.kind === "source" ? undefined : chainName),
+        scanPrompt(input, got.facts),
+      );
+    } catch (e) {
+      setHandErr(
+        `Couldn't read that from ${chainName}: ${(e as Error).message}. An address or hash from another network will not be found here — check the chain.`,
+      );
+    } finally {
+      setReading(false);
+    }
+  }
+
+  /** .sol files, chosen or dropped. A real contract imports, so the set goes in together. */
+  async function take(list: FileList | null) {
+    if (!list?.length) return;
+    setHandErr(null);
+    const files = [...list];
+    const total = files.reduce((n, f) => n + f.size, 0);
+    if (total > MAX_SOURCE) {
+      setHandErr(
+        `That is ${Math.round(total / 1024)} KB. Dort reads up to ${Math.round(MAX_SOURCE / 1024)} KB of source — pick the contracts that matter rather than the whole repository.`,
+      );
+      return;
+    }
+    const joined = joinSources(
+      await Promise.all(
+        files.map(async (f) => ({ name: f.name, text: await f.text() })),
+      ),
+    );
+    if (!joined) {
+      setHandErr("Those files were empty.");
+      return;
+    }
+    const input = detect(joined.text, joined.name);
+    if (!input) {
+      setHandErr(
+        "No Solidity in those files — Dort looks for a contract, library or interface declaration.",
+      );
+      return;
+    }
+    void handIn(input);
+  }
+
+  const drop = (e: DragEvent) => {
+    e.preventDefault();
+    setOver(false);
+    // a dort-data.json dropped here is a run, not a contract; the left panel owns that
+    void take(e.dataTransfer?.files ?? null);
+  };
+
+  const dropSubject = () => {
+    setSubject(null);
+    setFacts(null);
+    setTraceNote(null);
+    setHandErr(null);
+    setRight("context");
+  };
   const startFresh = () => {
     history.fresh();
     chat.reset();
+    dropSubject();
   };
   const empty = chat.turns.length === 0;
 
@@ -174,6 +296,46 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
                   </button>
                 </div>
               )}
+
+              {/* hand something in: the chain an address or hash is looked up on, and what the
+                  three doors take. Source needs no chain — it is read in this tab. */}
+              <section className="mb-3 rounded-inner border border-border bg-inner-grad p-3">
+                <p className="mb-2 flex items-center gap-2 text-[13px] text-fg">
+                  <PhIcon d={PH.search} className="size-[15px] text-muted" />
+                  Review a contract
+                </p>
+                <Dropdown
+                  ariaLabel="Chain"
+                  label="Chain"
+                  value={String(chain)}
+                  onChange={(v) => setChain(Number(v))}
+                  options={VAULT_CHAINS.map((c) => ({
+                    value: String(c.id),
+                    label: c.name,
+                    hint: String(c.id),
+                  }))}
+                />
+                <ul className="mt-2.5 flex flex-col gap-2">
+                  {EXAMPLES.map((e) => (
+                    <li key={e.kind}>
+                      <span className="block text-[12.5px] text-body">
+                        {e.label}
+                      </span>
+                      <span className="block text-[11.5px] text-dim leading-normal">
+                        {e.hint}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  disabled={!chat.ready || reading || chat.busy}
+                  onClick={() => picker.current?.click()}
+                  className="mt-2.5 w-full rounded-tile bg-raised px-3 py-2 text-[12.5px] text-muted transition-colors hover:bg-hover hover:text-fg disabled:pointer-events-none disabled:opacity-40"
+                >
+                  Choose .sol files
+                </button>
+              </section>
 
               <p className="mt-1 mb-1.5 text-[12px] text-muted">Start with</p>
               <div className="grid gap-1.5">
@@ -354,19 +516,77 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
                     )}
                 </div>
               ))}
+              {/* the blind spots ride with the answer. A reading that stays quiet about what it
+                  could not look at is read as a clean bill of health, and that is the one
+                  outcome here that does harm. */}
+              {subject && !chat.busy && chat.turns.length > 1 && (
+                <section className="max-w-[92%] justify-self-start rounded-card border border-border px-3.5 py-3">
+                  <p className="mb-2 flex items-center gap-2 text-[13px] text-fg">
+                    <span className="size-1.5 rounded-full bg-yellow" />
+                    Not checked here
+                  </p>
+                  <ul className="flex flex-col gap-1">
+                    {NOT_CHECKED[subject.kind].map((l) => (
+                      <li
+                        key={l}
+                        className="flex gap-2 text-[12.5px] text-dim leading-normal"
+                      >
+                        <span className="mt-[7px] size-1 flex-none rounded-full bg-border" />
+                        <span>{l}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
             </div>
           )}
         </div>
 
-        <footer className="flex-none border-border border-t p-3">
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: a drop target, not a control */}
+        <footer
+          onDragOver={(e) => {
+            e.preventDefault();
+            setOver(true);
+          }}
+          onDragLeave={() => setOver(false)}
+          onDrop={drop}
+          className={`flex-none border-t p-3 transition-colors ${
+            over ? "border-primary bg-primary/[.06]" : "border-border"
+          }`}
+        >
+          {/* what is being reviewed, when something is — a chip, so it is never a guess which
+              contract an answer is about */}
+          {subject && (
+            <div className="mb-2 flex items-center gap-2">
+              <Chip dot tone="info">
+                {subject.kind === "tx"
+                  ? "Transaction"
+                  : subject.kind === "address"
+                    ? "Contract"
+                    : "Solidity"}
+              </Chip>
+              <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-body">
+                {subject.kind === "source"
+                  ? (subject.name ?? "pasted source")
+                  : subject.value}
+              </span>
+              <button
+                type="button"
+                onClick={dropSubject}
+                className="flex-none rounded-tile px-2 py-1 text-[12px] text-dim transition-colors hover:text-fg"
+              >
+                Clear
+              </button>
+            </div>
+          )}
           <div className="flex items-end gap-2">
             <textarea
               value={draft}
               rows={2}
-              disabled={!chat.ready}
+              disabled={!chat.ready || reading}
               placeholder={
                 chat.ready
-                  ? "Ask in your own words…"
+                  ? "Ask in your own words — or paste a contract address, a transaction hash, or Solidity"
                   : "Connect your AI to start"
               }
               onChange={(e) => setDraft(e.target.value)}
@@ -374,22 +594,74 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
                 // Enter sends, Shift+Enter breaks the line: a chat box, not a form field
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  if (canSend(draft, chat.busy)) ask(draft);
+                  if (detected) void handIn(detected);
+                  else if (canSend(draft, chat.busy)) ask(draft);
                 }
               }}
               className="min-w-0 flex-1 resize-none rounded-card bg-field px-3.5 py-2.5 text-[13px] text-fg outline-none placeholder:text-dim focus-visible:ring-2 focus-visible:ring-white/25 disabled:opacity-50"
             />
+            <input
+              ref={picker}
+              type="file"
+              multiple
+              accept=".sol,.txt,text/plain"
+              className="hidden"
+              onChange={(e) => void take(e.target.files)}
+            />
+            <button
+              type="button"
+              aria-label="Hand in .sol files"
+              title="Hand in .sol files"
+              disabled={!chat.ready || reading || chat.busy}
+              onClick={() => picker.current?.click()}
+              className="grid h-[52px] w-11 flex-none place-items-center rounded-chip bg-raised text-muted outline-none transition-colors hover:bg-hover hover:text-fg focus-visible:ring-2 focus-visible:ring-white/25 disabled:pointer-events-none disabled:opacity-40"
+            >
+              <PhIcon d={PH.code} className="size-[17px]" />
+            </button>
             <button
               type="button"
               disabled={
-                !chat.ready || (!chat.busy && !canSend(draft, chat.busy))
+                !chat.ready ||
+                reading ||
+                (!chat.busy && !detected && !canSend(draft, chat.busy))
               }
-              onClick={() => (chat.busy ? chat.stop() : ask(draft))}
+              onClick={() => {
+                if (chat.busy) chat.stop();
+                else if (detected) void handIn(detected);
+                else ask(draft);
+              }}
               className="h-[52px] flex-none rounded-chip bg-primary px-6 text-[14px] text-primary-fg outline-none transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-white/25 disabled:pointer-events-none disabled:bg-raised disabled:text-dim"
             >
-              {sendLabel(chat.busy)}
+              {reading
+                ? "Reading…"
+                : detected && !chat.busy
+                  ? "Read it"
+                  : sendLabel(chat.busy)}
             </button>
           </div>
+          {/* the box says what it made of what is in it, before anything is sent anywhere */}
+          {detected && !reading && (
+            <p className="mt-2 px-1 text-[12px] text-dim">
+              Read as a{" "}
+              <span className="text-body">
+                {detected.kind === "tx"
+                  ? "transaction hash"
+                  : detected.kind === "address"
+                    ? "contract address"
+                    : "Solidity source"}
+              </span>
+              {detected.kind !== "source" && ` on ${chainName}`}. Press Read it
+              and Dort asks the chain first.
+            </p>
+          )}
+          {!detected && draft.trim().startsWith("0x") && (
+            <p className="mt-2 px-1 text-[12px] text-dim">{whyNot(draft)}</p>
+          )}
+          {handErr && (
+            <p className="mt-2 px-1 text-[12px] text-red leading-normal">
+              {handErr}
+            </p>
+          )}
           {chat.error && (
             <p className="mt-2 text-[12px] text-red">{chat.error}</p>
           )}
@@ -410,9 +682,16 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
               onChange={setRight}
               options={[
                 { value: "context", label: "Context" },
+                // only when something was handed in: an empty Facts tab on every visit would be
+                // a door to a room that is usually empty
+                ...(subject
+                  ? [{ value: "facts" as const, label: "Facts" }]
+                  : []),
                 {
-                  value: "trace",
-                  label: frames.length ? `Trace (${tests.length})` : "Trace",
+                  value: "trace" as const,
+                  label: shownFrames.length
+                    ? `Trace (${shownFrames.length})`
+                    : "Trace",
                 },
               ]}
             />
@@ -492,57 +771,117 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
                 tests for intended behaviour, and refuses to write exploits.
               </p>
             </div>
+          ) : right === "facts" ? (
+            /* read from the node, before any model was asked: this half would stand with no
+               model at all, so a reader who distrusts the review still leaves with something */
+            <div className="min-h-0 flex-1 overflow-auto px-3 pb-3">
+              {traceNote && (
+                <p className="mb-2 rounded-inner bg-raised px-3 py-2 text-[12px] text-body leading-normal">
+                  {traceNote}
+                </p>
+              )}
+              <dl className="flex flex-col gap-2">
+                {factRows(subject, facts).map(([k, v]) => (
+                  <div
+                    key={k}
+                    className="rounded-inner border border-border bg-inner-grad px-3 py-2"
+                  >
+                    <dt className="text-[11.5px] text-dim">{k}</dt>
+                    <dd className="break-all font-mono text-[12px] text-fg">
+                      {v}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
           ) : (
-            /* the calls as the run recorded them: what the summary is a summary OF, so a claim in
-               an answer can be checked against the trace it came from without leaving the page */
+            /* the calls: the handed-in transaction's own tree when there is one, the loaded
+               run's otherwise — so a claim in an answer can be checked against the trace it came
+               from without leaving the page */
             <div className="flex min-h-0 flex-1 flex-col">
-              {tests.length === 0 ? (
+              {!subject && tests.length === 0 ? (
                 <p className="px-3 pb-3 text-[12.5px] text-dim leading-normal">
-                  No run loaded, so there are no calls to show.
+                  No run loaded and nothing handed in, so there are no calls to
+                  show. Paste a transaction hash below and Dort traces it on the
+                  chain.
                 </p>
               ) : (
                 <>
-                  <div className="flex-none px-3 pb-2">
-                    <Dropdown
-                      ariaLabel="Test"
-                      label="Test"
-                      mono
-                      value={String(testAt)}
-                      onChange={(v) => setTestAt(Number(v))}
-                      options={tests.map((t, i) => ({
-                        value: String(i),
-                        label: t.name,
-                        hint: t.status === "Success" ? undefined : t.status,
-                      }))}
-                    />
-                  </div>
+                  {!subject && (
+                    <div className="flex-none px-3 pb-2">
+                      <Dropdown
+                        ariaLabel="Test"
+                        label="Test"
+                        mono
+                        value={String(testAt)}
+                        onChange={(v) => setTestAt(Number(v))}
+                        options={tests.map((t, i) => ({
+                          value: String(i),
+                          label: t.name,
+                          hint: t.status === "Success" ? undefined : t.status,
+                        }))}
+                      />
+                    </div>
+                  )}
                   {/* the rows are built for a full-width panel; let them keep their real width
                       and scroll sideways rather than crushing the call out of the line */}
                   <div className="min-h-0 flex-1 overflow-auto px-2 pb-3">
                     <div className="min-w-[620px]">
-                      {frames.length === 0 ? (
-                        <p className="px-1 text-[12.5px] text-dim">
-                          This test has no recorded frames — only unit tests are
-                          traced step by step.
+                      {shownFrames.length === 0 ? (
+                        <p className="px-1 text-[12.5px] text-dim leading-normal">
+                          {subject
+                            ? (traceNote ??
+                              "Nothing to trace: a contract address has no call tree of its own, only a transaction does.")
+                            : "This test has no recorded frames — only unit tests are traced step by step."}
                         </p>
                       ) : (
-                        frames.map((f, i) => (
-                          <TraceRow
-                            key={`${i}-${f.fn}`}
-                            index={i}
-                            frame={f}
-                            maxGas={maxGas}
-                            selected={false}
-                            inRange={false}
-                            onSelect={() => {}}
-                            fold={
-                              (frames[i + 1]?.d ?? -1) > f.d ? "open" : null
-                            }
-                            onFold={() => {}}
-                            ask={null}
-                            onAsk={() => {}}
-                          />
-                        ))
+                        <>
+                          {subject && (
+                            <p className="px-1 pb-2 text-[11.5px] text-dim">
+                              {traceSummary(shownFrames)}
+                            </p>
+                          )}
+                          {shownRows.map((f, i) => (
+                            <TraceRow
+                              key={`${i}-${f.fn}`}
+                              index={i}
+                              frame={f}
+                              maxGas={shownGas}
+                              selected={false}
+                              inRange={false}
+                              onSelect={() => {}}
+                              fold={
+                                (shownRows[i + 1]?.d ?? -1) > f.d
+                                  ? "open"
+                                  : null
+                              }
+                              onFold={() => {}}
+                              ask={null}
+                              onAsk={() => {}}
+                            />
+                          ))}
+                          {/* the rows abbreviate addresses to stay readable; nothing may be
+                              only ever seen cut short */}
+                          {touched.length > 0 && (
+                            <section className="mt-3 rounded-inner border border-border bg-inner-grad p-3">
+                              <p className="mb-2 text-[12.5px] text-fg">
+                                Addresses in this trace
+                              </p>
+                              <ul className="flex flex-col gap-1.5">
+                                {touched.map((a) => (
+                                  <li key={a.full} className="min-w-0">
+                                    <span className="block font-mono text-[11.5px] text-dim">
+                                      {a.short}
+                                    </span>
+                                    <span className="block break-all font-mono text-[11.5px] text-body">
+                                      {a.full}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </section>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -554,4 +893,45 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
       </div>
     </div>
   );
+}
+
+/** The gathered facts as rows, in the order a reader would ask for them. */
+function factRows(
+  subject: ScanInput | null,
+  f: ScanFacts | null,
+): [string, string][] {
+  if (!subject || !f) return [];
+  const rows: [string, string][] = [["Chain", f.chain]];
+  if (subject.kind === "address") {
+    rows.push(["Address", subject.value]);
+    rows.push([
+      "Deployed code",
+      f.bytecodeBytes ? `${f.bytecodeBytes} bytes` : "nothing at this address",
+    ]);
+    rows.push([
+      "ERC-20 metadata",
+      f.token ? `${f.token.symbol}, ${f.token.decimals} decimals` : "no answer",
+    ]);
+  }
+  if (subject.kind === "tx") {
+    rows.push(["Transaction", subject.value]);
+    rows.push(["Status", f.status ?? "unknown"]);
+    if (f.block !== undefined) rows.push(["Block", String(f.block)]);
+    if (f.from) rows.push(["From", f.from]);
+    if (f.to) rows.push(["To", f.to]);
+    if (f.value && f.value !== "0") rows.push(["Value", `${f.value} wei`]);
+    rows.push([
+      "Calls traced",
+      f.frames?.length ? String(f.frames.length) : "none",
+    ]);
+  }
+  if (subject.kind === "source") {
+    rows.push(["Source", subject.name ?? "pasted"]);
+    rows.push([
+      "Size",
+      `${subject.value.split("\n").length} lines, ${Math.round(subject.value.length / 1024)} KB`,
+    ]);
+    rows.push(["Read from", "your browser — the chain was not asked"]);
+  }
+  return rows;
 }

@@ -28,7 +28,11 @@ export type ChatState = {
   builtin: boolean;
   /** a model answered, but it was this deployment's, not the reader's */
   hosted: boolean;
-  send: (text: string) => void;
+  /**
+   * `text` is what the thread shows. `sent`, when given, is what the model receives instead —
+   * a contract handed in reads as a sentence and travels as its call tree.
+   */
+  send: (text: string, sent?: string) => void;
   stop: () => void;
   reset: () => void;
   /** put a saved conversation back on screen (features/chat history) */
@@ -63,12 +67,17 @@ export function useChat(cfg: AiConfig, digest: RunDigest): ChatState {
   );
 
   const send = useCallback(
-    (text: string) => {
+    (text: string, sent?: string) => {
       const q = text.trim();
       if (!q || busy) return;
       setError(null);
 
-      const asked: Turn = { role: "user", content: q, at: Date.now() };
+      const asked: Turn = {
+        role: "user",
+        content: q,
+        at: Date.now(),
+        ...(sent ? { sent } : {}),
+      };
       const next = [...turns, asked];
       // the assistant's turn exists before the first token so the thread does not jump
       setTurns([
