@@ -1,11 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { type DragEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type DragEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Chip, Dropdown, PH, PhIcon, Tabs } from "@/components/ui";
 import { useAiConfig } from "@/features/ai/hooks/useAiConfig";
 import { useHostedAi } from "@/features/ai/hooks/useHostedAi";
 import { DORT_AI } from "@/features/ai/utils/provider";
+import type { ToolCall } from "@/features/ai/utils/tools";
 import { PORTALDOT_ID, VAULT_CHAINS } from "@/features/bridge/chains";
 import {
   canSend,
@@ -29,6 +37,7 @@ import {
   joinSources,
   MAX_SOURCE,
   NOT_CHECKED,
+  runTool,
   type ScanFacts,
   type ScanInput,
   scanPrompt,
@@ -83,13 +92,17 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
   const stored = useAiConfig();
   const hostedAi = useHostedAi().ready;
   const cfg = stored.kind === "none" && hostedAi ? DORT_AI : stored;
-  const chat = useChat(cfg, digest);
   const history = useChatHistory();
   const [draft, setDraft] = useState("");
   const [left, setLeft] = useState<"run" | "history">("run");
   const [right, setRight] = useState<"context" | "facts" | "trace">("context");
   // what the reader handed in, if anything: the subject of the conversation beside the run
   const [chain, setChain] = useState<number>(PORTALDOT_ID);
+  // the model may ask the chain for a transaction or an address it was not given. The chain is
+  // the one picked on the left, never one the model names: a tool that took an endpoint would be
+  // a model-controlled request from the reader's own browser.
+  const run = useCallback((call: ToolCall) => runTool(call, chain), [chain]);
+  const chat = useChat(cfg, digest, run);
   const [subject, setSubject] = useState<ScanInput | null>(null);
   const [facts, setFacts] = useState<ScanFacts | null>(null);
   const [traceNote, setTraceNote] = useState<string | null>(null);
@@ -524,14 +537,35 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
                       : "max-w-[92%] justify-self-start rounded-card bg-raised px-3.5 py-2.5 text-[13px] text-body leading-relaxed"
                   }
                 >
+                  {/* what it went and fetched before answering: a reading that looked something
+                      up is a different claim from one that did not */}
+                  {t.tools?.length ? (
+                    <ul className="mb-2 flex flex-col gap-1 border-border border-b pb-2">
+                      {t.tools.map((x) => (
+                        <li
+                          key={`${x.name}-${x.arg}`}
+                          className="flex items-center gap-1.5 font-mono text-[11.5px] text-dim"
+                        >
+                          <PhIcon d={PH.search} className="size-[13px]" />
+                          {x.name}
+                          <span className="truncate text-muted">{x.arg}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                   {/* nothing said yet: three dots rather than an empty bubble or a spinner —
                       the reader is waiting for a reply, not for the app */}
                   {t.role === "assistant" && !t.content && chat.busy ? (
-                    <span className="ai-dots text-muted" aria-label="Thinking">
+                    // <output>, not a span with role=status: it is the element the role
+                    // describes, and a screen reader announces it without being told twice
+                    <output
+                      className="ai-dots text-muted"
+                      aria-label="Thinking"
+                    >
                       <i />
                       <i />
                       <i />
-                    </span>
+                    </output>
                   ) : (
                     <span className="whitespace-pre-wrap break-words">
                       {t.content}

@@ -56,20 +56,33 @@ export const upstreamHeaders = (
       };
 
 /** The system prompt is a field of its own on one API and the first message on the other. */
+/**
+ * `tools` are the server's own definitions, never the caller's: the browser asks for them by
+ * saying it can run them, and the schemas come from features/ai/utils/tools. A page allowed to
+ * post its own would be describing any tool it liked to a model the operator pays for.
+ *
+ * `stream: false` is for the tool rounds, which are short and have to be read whole before the
+ * next one can be built. Only the final answer streams.
+ */
 export const upstreamBody = (
   model: string,
   messages: unknown[],
   system: string,
   maxTokens: number,
-) =>
-  isAnthropicModel(model)
-    ? { model, max_tokens: maxTokens, stream: true, system, messages }
+  opts: { stream?: boolean; tools?: readonly unknown[] } = {},
+) => {
+  const stream = opts.stream !== false;
+  const tools = opts.tools?.length ? { tools: opts.tools } : {};
+  return isAnthropicModel(model)
+    ? { model, max_tokens: maxTokens, stream, system, messages, ...tools }
     : {
         model,
         max_tokens: maxTokens,
-        stream: true,
+        stream,
         // without this the OpenAI-shaped stream never reports what the reply cost; probed
         // against the live host, which accepts the field and sends usage in the last frame
-        stream_options: { include_usage: true },
+        ...(stream ? { stream_options: { include_usage: true } } : {}),
         messages: [{ role: "system", content: system }, ...messages],
+        ...tools,
       };
+};

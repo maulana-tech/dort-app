@@ -1,5 +1,6 @@
 export { type Gathered, gatherFacts } from "./facts";
 export { type ScanPhase, type ScanState, useScan } from "./hooks/useScan";
+export { runTool } from "./run-tool";
 export { knownEvents, knownSelectors } from "./selectors";
 export {
   addressesIn,

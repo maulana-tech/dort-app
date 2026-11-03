@@ -174,6 +174,23 @@ export function txUrl(id: BridgeChainId, hash: string): string | null {
   return `${base}/tx/${hash}`;
 }
 
+/** The same for an address, where the chain has a browsable explorer at all. */
+export function addressUrl(id: BridgeChainId, address: string): string | null {
+  const base = CHAINS[id]?.blockExplorers?.default.url;
+  if (!base || id === PORTALDOT_ID) return null;
+  return `${base}/address/${address}`;
+}
+
+/**
+ * The chain's own RPC endpoint, for the reader who wants to ask it the same question Dort asked.
+ *
+ * Portaldot has no public explorer — its node console serves one page for every path, which is
+ * not something to send anyone to — so on that chain this is the only honest way to say "check
+ * it yourself", and it is a better one than a link that opens an empty search box.
+ */
+export const rpcUrl = (id: BridgeChainId): string | null =>
+  CHAINS[id]?.rpcUrls.default.http[0] ?? null;
+
 /**
  * Where script/bridge-local-demo.sh puts its two anvil chains. Picking the local demo has to move
  * the RPC too, not just the addresses, or the page would read the real testnets at addresses that

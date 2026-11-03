@@ -42,7 +42,39 @@ assert.deepEqual(detect(SRC, "V.sol"), {
   kind: "source",
   value: SRC,
   name: "V.sol",
+  lang: "solidity",
 });
+
+// ── four languages, not one ────────────────────────────────────────────────────────────────
+// Only Solidity was recognised, so a Move module came back as "that does not look like
+// Solidity" — true, and useless. The extension is what the author said, so it wins; the markers
+// are the fallback for pasted text with no filename.
+assert.equal(detect("module a::b { public entry fun go() {} }")?.lang, "move");
+assert.equal(detect("#[program]\npub mod x { }")?.lang, "rust");
+assert.equal(
+  detect("contract A {}", "A.move")?.lang,
+  "move",
+  "the extension wins",
+);
+assert.equal(detect("fn main() {}", "lib.rs")?.lang, "rust");
+assert.match(
+  scanPrompt(must(detect("module a::b { public entry fun go() {} }")), {
+    chain: "x",
+  }),
+  /Move source/,
+);
+assert.match(
+  scanPrompt(must(detect("#[program]\npub mod x { }")), { chain: "x" }),
+  /ownership and lifetimes/,
+  "each language is given its own hazards; the wrong ones are worse than none",
+);
+assert.doesNotMatch(
+  scanPrompt(must(detect("module a::b { public entry fun go() {} }")), {
+    chain: "x",
+  }),
+  /reentrancy/,
+  "a Move review must not be sent off looking for reentrancy",
+);
 assert.equal(detect("library L {}")?.kind, "source");
 assert.equal(detect("interface I { function f() external; }")?.kind, "source");
 // source keeps its own whitespace — line numbers in a review have to match the file
@@ -88,7 +120,8 @@ assert.equal(
 );
 assert.match(whyNot(""), /Paste an address/);
 assert.match(whyNot("0xdeadbeef"), /8 hex characters.*40.*64/s);
-assert.match(whyNot("hello"), /does not look like Solidity/);
+// the refusal names every language it does read, not only the one it does not
+assert.match(whyNot("hello"), /Solidity, Move, Rust and Vyper/);
 
 // ── the call tree the node gives us ────────────────────────────────────────────────────────
 // Geth's callTracer nests; the app's rows are flat with a depth. The transform is the whole

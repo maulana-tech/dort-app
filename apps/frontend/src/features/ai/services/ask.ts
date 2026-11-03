@@ -6,6 +6,7 @@ import {
   textOf,
   type Usage,
 } from "../utils/provider";
+import { MAX_ROUNDS, type ToolCall } from "../utils/tools";
 
 /** Readable error from a failed call; never echoes the request (it carries the key). */
 async function failure(res: Response): Promise<Error> {
@@ -89,4 +90,84 @@ export async function testConnection(cfg: AiConfig): Promise<string> {
   }
   if (!res.ok) throw await failure(res);
   return textOf(await res.text()).trim();
+}
+
+/**
+ * One question, with the model allowed to ask the chain for things first.
+ *
+ * Dort still reads the evidence before the first question — that is what makes an answer
+ * checkable — and this is for the turns after it, where the subject is not known until the
+ * reader names it. "And what about the token it called?" has no trace attached to it.
+ *
+ * The rounds are not streamed: a tool call has to be read whole before it can be run, and half
+ * of one is not one. Only the final answer streams, which is the only part anybody watches.
+ *
+ * Bounded by MAX_ROUNDS, and by stopping the moment the model stops asking. A loop that could
+ * not end would spend the operator's money on the operator's behalf, in a page they are not
+ * looking at.
+ *
+ * Hosted only, for now. The schemas live on the server (features/ai/utils/tools), and a BYOK
+ * provider would need them posted from the browser, which is the one arrangement this design
+ * exists to avoid.
+ */
+export async function* askWithTools(
+  cfg: AiConfig,
+  messages: ChatMessage[],
+  signal?: AbortSignal,
+  meta?: StreamMeta,
+  onTool?: (name: string, arg: string) => void,
+  runTool?: (call: ToolCall) => Promise<string>,
+): AsyncGenerator<string> {
+  if (cfg.kind !== "dort" || !runTool) {
+    yield* askStream(cfg, messages, signal, meta);
+    return;
+  }
+
+  const sent: unknown[] = [...messages];
+  for (let round = 0; round < MAX_ROUNDS; round++) {
+    const res = await fetch("/api/bedrock", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        messages: sent,
+        tools: true,
+        stream: false,
+        ...(cfg.model ? { model: cfg.model } : {}),
+      }),
+      signal,
+    });
+    if (!res.ok) break;
+    const json = (await res.json()) as {
+      error?: string;
+      choices?: {
+        message?: {
+          content?: string | null;
+          tool_calls?: {
+            id?: string;
+            function?: { name?: string; arguments?: string };
+          }[];
+        };
+      }[];
+    };
+    if (json.error) throw new Error(json.error);
+    const msg = json.choices?.[0]?.message;
+    const calls = msg?.tool_calls ?? [];
+    if (!calls.length) {
+      // nothing to fetch: let the streaming pass produce the answer the reader reads
+      break;
+    }
+    sent.push(msg);
+    for (const c of calls) {
+      const call: ToolCall = {
+        id: c.id ?? "",
+        name: c.function?.name ?? "",
+        args: c.function?.arguments ?? "{}",
+      };
+      onTool?.(call.name, call.args);
+      const content = await runTool(call);
+      sent.push({ role: "tool", tool_call_id: call.id, content });
+    }
+  }
+
+  yield* askStream(cfg, sent as ChatMessage[], signal, meta);
 }

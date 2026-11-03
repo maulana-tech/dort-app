@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { askStream } from "@/features/ai/services/ask";
+import { askWithTools } from "@/features/ai/services/ask";
 import type { AiConfig } from "@/features/ai/types";
 import { aiReady } from "@/features/ai/utils/provider";
+import type { ToolCall } from "@/features/ai/utils/tools";
 import { builtinAnswer } from "../utils/builtin";
 import { type RunDigest, type Turn, toMessages } from "../utils/chat";
 
@@ -39,7 +40,12 @@ export type ChatState = {
   load: (turns: Turn[]) => void;
 };
 
-export function useChat(cfg: AiConfig, digest: RunDigest): ChatState {
+export function useChat(
+  cfg: AiConfig,
+  digest: RunDigest,
+  /** runs a tool the model asked for; without it the model is never offered any */
+  runTool?: (call: ToolCall) => Promise<string>,
+): ChatState {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -120,7 +126,7 @@ export function useChat(cfg: AiConfig, digest: RunDigest): ChatState {
               return copy;
             });
 
-          for await (const piece of askStream(
+          for await (const piece of askWithTools(
             cfg,
             toMessages(digest, next),
             ctrl.signal,
@@ -132,6 +138,12 @@ export function useChat(cfg: AiConfig, digest: RunDigest): ChatState {
                 })),
               onUsage: (u) => onLast((last) => ({ ...last, usage: u })),
             },
+            (name, arg) =>
+              onLast((last) => ({
+                ...last,
+                tools: [...(last.tools ?? []), { name, arg }],
+              })),
+            runTool,
           )) {
             setTurns((prev) => {
               const copy = [...prev];
@@ -161,7 +173,7 @@ export function useChat(cfg: AiConfig, digest: RunDigest): ChatState {
         }
       })();
     },
-    [busy, turns, cfg, digest],
+    [busy, turns, cfg, digest, runTool],
   );
 
   return {

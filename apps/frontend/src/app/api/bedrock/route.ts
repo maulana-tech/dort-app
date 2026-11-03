@@ -13,6 +13,7 @@ import {
   upstreamUrl,
 } from "@/features/ai/utils/hosted";
 import { SYSTEM_PROMPT } from "@/features/ai/utils/provider";
+import { TOOLS } from "@/features/ai/utils/tools";
 
 /*
  * This deployment's own Amazon Bedrock, so a visitor with no key can still ask something.
@@ -81,10 +82,20 @@ export async function POST(req: Request): Promise<Response> {
 
   let messages: unknown;
   let wanted: unknown;
+  let useTools = false;
+  let streaming = true;
   try {
-    const parsed = JSON.parse(body) as { messages?: unknown; model?: unknown };
+    const parsed = JSON.parse(body) as {
+      messages?: unknown;
+      model?: unknown;
+      tools?: unknown;
+      stream?: unknown;
+    };
     messages = parsed.messages;
     wanted = parsed.model;
+    // a boolean, not schemas: the caller says it can run tools and the server says which
+    useTools = parsed.tools === true;
+    streaming = parsed.stream !== false;
   } catch {
     return fail("That request was not readable.", 400);
   }
@@ -104,7 +115,10 @@ export async function POST(req: Request): Promise<Response> {
       method: "POST",
       headers: upstreamHeaders(e.key as string, model),
       body: JSON.stringify(
-        upstreamBody(model, messages, SYSTEM_PROMPT, MAX_TOKENS),
+        upstreamBody(model, messages, SYSTEM_PROMPT, MAX_TOKENS, {
+          stream: streaming,
+          ...(useTools ? { tools: TOOLS } : {}),
+        }),
       ),
       signal: AbortSignal.timeout(120_000),
     });
@@ -112,16 +126,19 @@ export async function POST(req: Request): Promise<Response> {
     return fail("Could not reach Bedrock from this server.", 502);
   }
 
+  // a tool round is answered whole rather than as events: the caller has to read the whole
+  // reply before it can run anything, and half a tool call is not a tool call
+  const type = streaming ? "text/event-stream" : "application/json";
+
   if (!upstream.ok || !upstream.body) {
     // the upstream text can carry account detail, so the caller gets the status and nothing else
+    const note = `${model} answered ${upstream.status}. Pick another model, or open AI settings to use your own.`;
     return new Response(
-      sse({
-        error: `${model} answered ${upstream.status}. Pick another model, or open AI settings to use your own.`,
-      }),
+      streaming ? sse({ error: note }) : JSON.stringify({ error: note }),
       {
         status: 200,
         headers: {
-          "content-type": "text/event-stream",
+          "content-type": type,
           "x-dort-calls-left": String(rate.left),
         },
       },
@@ -131,7 +148,7 @@ export async function POST(req: Request): Promise<Response> {
   return new Response(upstream.body, {
     status: 200,
     headers: {
-      "content-type": "text/event-stream",
+      "content-type": type,
       "cache-control": "no-store",
       "x-dort-calls-left": String(rate.left),
     },

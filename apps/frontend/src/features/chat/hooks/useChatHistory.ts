@@ -79,25 +79,28 @@ export function useChatHistory(): ChatHistory {
     }
   }, []);
 
-  const save = useCallback((turns: Turn[], mode: string) => {
-    if (!worthSaving(turns)) return;
-    const row: Conversation = {
-      id: id.current,
-      title: titleOf(turns),
-      mode,
-      at: Date.now(),
-      turns,
-    };
-    setCurrent(row.id);
-    mark(row.id);
-    setList((prev) => {
-      const next = upsert(prev, row);
-      try {
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
-      } catch {}
-      return next;
-    });
-  }, []);
+  const save = useCallback(
+    (turns: Turn[], mode: string) => {
+      if (!worthSaving(turns)) return;
+      const row: Conversation = {
+        id: id.current,
+        title: titleOf(turns),
+        mode,
+        at: Date.now(),
+        turns,
+      };
+      setCurrent(row.id);
+      mark(row.id);
+      setList((prev) => {
+        const next = upsert(prev, row);
+        try {
+          localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+    },
+    [mark],
+  );
 
   const fresh = useCallback(() => {
     id.current = newId();

@@ -48,6 +48,12 @@ export type Turn = {
   thinking?: string;
   /** what the reply cost, when the provider reports it */
   usage?: { sent: number; back: number };
+  /**
+   * What the model asked the chain for before answering, in the order it asked. Shown in the
+   * thread rather than kept in a log: a reading that went and fetched something is a different
+   * claim from one that did not, and the reader is the one who has to weigh it.
+   */
+  tools?: { name: string; arg: string }[];
 };
 
 /**

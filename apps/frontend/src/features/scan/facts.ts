@@ -1,7 +1,14 @@
 "use client";
 
 import { erc20Abi } from "viem";
-import { CHAINS, chainName } from "@/features/bridge/chains";
+import {
+  addressUrl,
+  type BridgeChainId,
+  CHAINS,
+  chainName,
+  rpcUrl,
+  txUrl,
+} from "@/features/bridge/chains";
 import { publicClient } from "@/features/bridge/useWallet";
 import { knownEvents, knownSelectors } from "./selectors";
 import {
@@ -58,6 +65,22 @@ export async function gatherFacts(
 ): Promise<Gathered> {
   const facts: ScanFacts = { chain: chainName(chainId) };
   if (input.kind === "source") return { facts, traceNote: null };
+
+  // where to see it, or failing that what to run. Portaldot has no browsable explorer, so on
+  // that chain the honest "check it yourself" is the call Dort itself made, not a dead link.
+  const id = chainId as BridgeChainId;
+  facts.explorer =
+    input.kind === "tx" ? txUrl(id, input.value) : addressUrl(id, input.value);
+  // `endpoint`, not `rpc`: this module already has an rpc() of its own, and shadowing it here
+  // would have made every JSON-RPC call below a call to a string
+  const endpoint = rpcUrl(id);
+  facts.probe = facts.explorer
+    ? null
+    : endpoint
+      ? input.kind === "tx"
+        ? `cast tx ${input.value} --rpc-url ${endpoint}`
+        : `cast code ${input.value} --rpc-url ${endpoint}`
+      : null;
 
   const client = publicClient(chainId);
 

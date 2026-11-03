@@ -19,12 +19,62 @@ import type { Frame, FrameKind } from "../../trace/types";
 
 export type ScanKind = "address" | "tx" | "source";
 
+/**
+ * Which language a handed-in file is in.
+ *
+ * Only Solidity was recognised, so a Move module or a Solana program came back as "that does not
+ * look like Solidity" — true, and useless. The reading itself is language-agnostic: what changes
+ * is the fence the source goes in and the hazards worth naming, and naming the wrong ones is how
+ * a review of a Move module ends up talking about reentrancy.
+ */
+export type SourceLang = "solidity" | "move" | "rust" | "vyper";
+
+/** Extension first — it is what the author said — then the markers only that language has. */
+const BY_EXT: Record<string, SourceLang> = {
+  sol: "solidity",
+  move: "move",
+  rs: "rust",
+  vy: "vyper",
+};
+
+const MARKS: [SourceLang, RegExp][] = [
+  [
+    "solidity",
+    /\b(pragma\s+solidity|contract\s+\w+|library\s+\w+|interface\s+\w+)\b/,
+  ],
+  [
+    "move",
+    /\b(module\s+[\w:]+\s*\{|public\s+entry\s+fun|use\s+std::|acquires)\b/,
+  ],
+  ["rust", /(#\[program\]|declare_id!|#\[derive\(|\bpub\s+fn\b|\bimpl\s+\w+)/],
+  ["vyper", /(@external|@internal|@payable)\s*\n\s*def\s+\w+/],
+];
+
+export function langOf(text: string, name?: string): SourceLang | null {
+  const ext = name?.toLowerCase().split(".").pop() ?? "";
+  if (BY_EXT[ext]) return BY_EXT[ext];
+  for (const [lang, re] of MARKS) if (re.test(text)) return lang;
+  return null;
+}
+
+/** What each language's reviewer is told to keep in mind. Wrong hazards are worse than none. */
+const HAZARDS: Record<SourceLang, string> = {
+  solidity:
+    "reentrancy and call ordering, integer and rounding direction, access control, external call return values, and upgrade or proxy storage layout",
+  move: "resource ownership and the abilities (copy, drop, store, key), signer checks on entry functions, aborts and their codes, and what can be taken from a struct held under an address",
+  rust: "ownership and lifetimes across instruction boundaries, account validation and signer checks, arithmetic overflow in release builds, and anything trusting a passed-in account without constraining it",
+  vyper:
+    "the absence of reentrancy locks where they are needed, integer bounds, @external surface, and the differences from Solidity that make a habit from one unsafe in the other",
+};
+
 export type ScanInput = {
   kind: ScanKind;
   /** the address or hash, lower-cased; or the source text as given */
   value: string;
   /** set when the source came from a file the user chose */
   name?: string;
+  /** which language the source is in; absent for an address or a transaction */
+  lang?: SourceLang;
   /**
    * What the reader actually typed around the hash, when they typed anything. "what does 0x…
    * do?" is a question about a transaction, not a bare subject, and throwing the words away
@@ -48,10 +98,10 @@ export function detect(text: string, name?: string): ScanInput | null {
   if (ADDRESS.test(t)) return { kind: "address", value: t.toLowerCase() };
   if (TX.test(t)) return { kind: "tx", value: t.toLowerCase() };
 
-  // Solidity before any embedded hash: source is full of address literals, and a contract
-  // pasted in would otherwise be read as whichever address it happens to mention first
-  if (/\b(contract|library|interface|pragma\s+solidity)\b/.test(t))
-    return { kind: "source", value: text, name };
+  // source before any embedded hash: a contract is full of address literals, and one pasted in
+  // would otherwise be read as whichever address it happens to mention first
+  const lang = langOf(t, name);
+  if (lang) return { kind: "source", value: text, name, lang };
 
   // a hash sitting inside a sentence. The box invites plain language, so "/scan 0x139c…" and
   // "what does 0x162d… do?" have to work; requiring the whole box to be one bare token made
@@ -75,13 +125,21 @@ export function detect(text: string, name?: string): ScanInput | null {
   return null;
 }
 
+/** How each language is written out for a reader and for the model. */
+const LANG_NAME: Record<SourceLang, string> = {
+  solidity: "Solidity",
+  move: "Move",
+  rust: "Rust",
+  vyper: "Vyper",
+};
+
 /** Why nothing happened, in the user's words rather than a validation code. */
 export function whyNot(text: string): string {
   const t = text.trim();
   if (!t) return "Paste an address, a transaction hash, or Solidity source.";
   if (/^0x[0-9a-fA-F]*$/.test(t))
     return `That is ${t.length - 2} hex characters. An address has 40, a transaction hash has 64.`;
-  return "That does not look like Solidity. A contract, library or interface declaration is what Dort reads.";
+  return "That is not source Dort recognises. It reads Solidity, Move, Rust and Vyper — by the file's extension, or by a declaration it can see in the text.";
 }
 
 /* ── the call tree ─────────────────────────────────────────────────────────────────────────── */
@@ -260,6 +318,10 @@ export type ScanFacts = {
   status?: "success" | "reverted";
   block?: number;
   frames?: Frame[];
+  /** a page a reader can open to see this for themselves, where the chain has one */
+  explorer?: string | null;
+  /** and the request that would ask the chain the same question, where it has not */
+  probe?: string | null;
 };
 
 /**
@@ -317,11 +379,14 @@ const frameLines = (frames: Frame[], max = 120) => {
 export function scanPrompt(input: ScanInput, facts: ScanFacts): string {
   const head = [`<context>`, `Chain: ${facts.chain}`];
   if (input.kind === "source") {
+    const lang = input.lang ?? "solidity";
     head.push(
-      `Solidity source${input.name ? ` from ${input.name}` : ""}, as given:`,
-      "```solidity",
+      `${LANG_NAME[lang]} source${input.name ? ` from ${input.name}` : ""}, as given:`,
+      `\`\`\`${lang}`,
       input.value.slice(0, 60_000),
       "```",
+      "",
+      `Worth keeping in mind for this language: ${HAZARDS[lang]}.`,
     );
   }
   if (input.kind === "address") {
@@ -333,6 +398,7 @@ export function scanPrompt(input: ScanInput, facts: ScanFacts): string {
       facts.token
         ? `It answers the ERC-20 metadata calls: symbol ${facts.token.symbol}, ${facts.token.decimals} decimals.`
         : "It does not answer the ERC-20 metadata calls.",
+      ...(facts.explorer ? [`A reader can open it at ${facts.explorer}.`] : []),
     );
   }
   if (input.kind === "tx") {
@@ -346,6 +412,9 @@ export function scanPrompt(input: ScanInput, facts: ScanFacts): string {
       "",
       // measured, not theorised: a reviewer handed this trace reported Portaldot's weight-based
       // figures as "implausibly high gas" and ranked it as a finding. The units are the chain's.
+      ...(facts.explorer
+        ? ["", `A reader can open this transaction at ${facts.explorer}.`]
+        : []),
       "Gas is in this chain's own units, which are not Ethereum's and are not comparable to mainnet costs. Treat a figure as evidence only against another figure in this same trace.",
     );
   }
