@@ -16,13 +16,23 @@
 export type HostedEnv = {
   key?: string;
   region?: string;
+  /** the model to answer with, and the first entry of the list below */
   model?: string;
+  /** a comma-separated allow-list the reader may choose from; the default is just `model` */
+  models?: string;
 };
 
 /** Where an unset region lands. Changing this moves every default answer to another region. */
 export const HOSTED_REGION = "us-east-1";
-/** Bedrock names its Anthropic models with this prefix; an Anthropic id alone is not one. */
-export const HOSTED_MODEL = "anthropic.claude-sonnet-5";
+/**
+ * What answers by default. Haiku rather than Sonnet because the operator pays for every call:
+ * it is the cheapest current-generation Claude by a wide margin — $0.10/$0.50 per million tokens
+ * against Sonnet 5.5's $2.00/$10.00 — and still reads code well enough to explain a run. An
+ * operator who wants something stronger says so with BEDROCK_MODEL.
+ *
+ * Bedrock names its Anthropic models with this prefix; a plain Anthropic id is not one.
+ */
+export const HOSTED_MODEL = "anthropic.claude-haiku-5-5";
 
 /** AWS region names, which is all `region` may ever be: the host is built from it, never taken. */
 const REGION = /^[a-z]{2}(-[a-z]+)+-\d$/;
@@ -37,9 +47,32 @@ export const hostedRegion = (env: HostedEnv): string => {
   return REGION.test(r) ? r : HOSTED_REGION;
 };
 
-/** The model to call. A blank setting falls back; anything else is passed through as given. */
+/** The model to call when the reader has not picked one. */
 export const hostedModel = (env: HostedEnv): string =>
   (env.model ?? "").trim() || HOSTED_MODEL;
+
+/**
+ * Every model this deployment will pay for, the default first.
+ *
+ * The reader may pick from this list and nothing else. That is the whole point: a request that
+ * could name any model would let one page run the operator's budget up on the most expensive
+ * thing Bedrock offers, so the choice is an index into the operator's own list rather than a
+ * string they wrote.
+ */
+export function hostedModels(env: HostedEnv): string[] {
+  const first = hostedModel(env);
+  const rest = (env.models ?? "")
+    .split(",")
+    .map((m) => m.trim())
+    .filter((m) => m && m !== first);
+  return [first, ...new Set(rest)];
+}
+
+/** The model a request asked for, or the default when it asked for one that is not on offer. */
+export const pickModel = (env: HostedEnv, wanted: unknown): string => {
+  const list = hostedModels(env);
+  return typeof wanted === "string" && list.includes(wanted) ? wanted : list[0];
+};
 
 /**
  * Why this request must not be served, or null to serve it.
