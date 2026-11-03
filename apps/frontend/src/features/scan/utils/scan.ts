@@ -271,7 +271,14 @@ export function flattenTrace(
  * shown abbreviated.
  */
 export const displayFrames = (frames: Frame[]): Frame[] =>
-  frames.map((f) => ({ ...f, to: shortHex(f.to) }));
+  frames.map((f) => ({
+    ...f,
+    to: shortHex(f.to),
+    // the return box is flex-none and the call beside it truncates, so one long word — an
+    // ecrecover result is a whole 32 bytes of it — squeezed the call off the row entirely.
+    // Five staticcalls came out as five return values with nothing to say whose they were.
+    ret: f.ret.length > 24 ? `${f.ret.slice(0, 10)}…${f.ret.slice(-6)}` : f.ret,
+  }));
 
 /** Every address the transaction touched, first seen first — the legend under the trace. */
 export function addressesIn(

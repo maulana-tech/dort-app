@@ -378,7 +378,26 @@ assert.match(
 assert.deepEqual(
   displayFrames(oneCall).map((f) => [f.kind, f.fn, f.gas]),
   oneCall.map((f) => [f.kind, f.fn, f.gas]),
-  "nothing but the address changes",
+  "the call itself is untouched",
+);
+
+// a long return value is shortened too, for the row and only for the row. The return box does
+// not shrink and the call beside it does, so one 32-byte word pushed the call off the line —
+// five ecrecover results with nothing left to say which calls they belonged to.
+const long = flattenTrace({
+  type: "STATICCALL",
+  to: "0x0000000000000000000000000000000000000001",
+  input: "0x6702cf3a",
+  output: `0x${"00".repeat(12)}${"ab".repeat(20)}`,
+});
+assert.ok(long[0].ret.length > 24, "the frame keeps what the chain returned");
+const shown = displayFrames(long)[0].ret;
+assert.ok(shown.length <= 20, `the row gets a short form, was ${shown.length}`);
+assert.ok(shown.startsWith("0x00000000") && shown.endsWith("abab"));
+assert.equal(
+  displayFrames(flattenTrace({ to: "0x1", output: "0x01" }))[0].ret,
+  "0x01",
+  "a short one is left exactly as it came",
 );
 
 // the legend, so no address is only ever seen cut short

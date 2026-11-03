@@ -24,3 +24,9 @@ export {
   whenLabel,
   worthSaving,
 } from "./utils/history";
+export {
+  type Block,
+  type Inline,
+  inlineOf,
+  parseMarkdown,
+} from "./utils/markdown";

@@ -47,8 +47,10 @@ import {
 } from "@/features/scan";
 import type { TraceSource } from "@/features/trace/types";
 import { DropZone } from "../onboarding/RunDialog";
+import { CopyPill } from "../shell/CopyPill";
 import { Sidebar } from "../shell/Sidebar";
 import { TraceRow } from "../trace/TraceRow";
+import { Markdown } from "./Markdown";
 
 const fromFile = (data: RunFile): TraceSource => ({ data, origin: "file" });
 
@@ -95,7 +97,10 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
   const history = useChatHistory();
   const [draft, setDraft] = useState("");
   const [left, setLeft] = useState<"run" | "history">("run");
-  const [right, setRight] = useState<"context" | "facts" | "trace">("context");
+  // two panels, not three. The facts are what the answer was made from, which is exactly what
+  // Context is for; a tab of their own that only ever appeared after a hand-in was a door most
+  // readers never saw open.
+  const [right, setRight] = useState<"context" | "trace">("context");
   // what the reader handed in, if anything: the subject of the conversation beside the run
   const [chain, setChain] = useState<number>(PORTALDOT_ID);
   // the model may ask the chain for a transaction or an address it was not given. The chain is
@@ -154,6 +159,7 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
   const shownFrames = subject ? liveFrames : frames;
   const shownRows = useMemo(() => displayFrames(shownFrames), [shownFrames]);
   const shownGas = Math.max(1, ...shownFrames.map((f) => f.gas ?? 0));
+  const shownCalls = shownFrames.filter((f) => f.kind !== "EVENT").length;
   const touched = useMemo(() => addressesIn(liveFrames), [liveFrames]);
   // what the box would make of what is in it, so the control can say so before it is pressed
   const detected = useMemo(() => detect(draft), [draft]);
@@ -182,7 +188,9 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
       setSubject(input);
       setFacts(got.facts);
       setTraceNote(got.traceNote);
-      setRight(got.facts.frames?.length ? "trace" : "facts");
+      // a call tree is worth opening on; a contract with no tree has its facts in Context,
+      // which is where the panel already is
+      setRight(got.facts.frames?.length ? "trace" : "context");
       setDraft("");
       chat.send(
         subjectLabel(input, input.kind === "source" ? undefined : chainName),
@@ -566,6 +574,11 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
                       <i />
                       <i />
                     </output>
+                  ) : t.role === "assistant" ? (
+                    // the answer is a document — headings, the list of things to check, the
+                    // snippet meant to be copied — and it was arriving as one pre-wrapped wall
+                    // with asterisks in it. The reading is the product; it has to be readable.
+                    <Markdown text={t.content} />
                   ) : (
                     <span className="whitespace-pre-wrap break-words">
                       {t.content}
@@ -745,16 +758,11 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
               onChange={setRight}
               options={[
                 { value: "context", label: "Context" },
-                // only when something was handed in: an empty Facts tab on every visit would be
-                // a door to a room that is usually empty
-                ...(subject
-                  ? [{ value: "facts" as const, label: "Facts" }]
-                  : []),
                 {
                   value: "trace" as const,
-                  label: shownFrames.length
-                    ? `Trace (${shownFrames.length})`
-                    : "Trace",
+                  // calls, matching the summary above the rows. Counting the frames said 7
+                  // where the summary said 6, because an event is a row and not a call.
+                  label: shownCalls ? `Trace (${shownCalls})` : "Trace",
                 },
               ]}
             />
@@ -814,6 +822,56 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
                       not, and an empty box here would read as a failure rather
                       than a difference between models.
                     </p>
+                  )}
+                </section>
+              )}
+
+              {/* read from the node before any model was asked. It stands without the model,
+                  so a reader who distrusts the review still leaves with something — which is
+                  why it is here, with everything else the answer was made from, rather than
+                  behind a tab of its own that only ever opened after a hand-in. */}
+              {subject && (
+                <section className="mb-3">
+                  <p className="mb-1.5 flex items-center gap-2 text-[13px] text-fg">
+                    <PhIcon d={PH.search} className="size-[15px] text-muted" />
+                    What the chain says
+                  </p>
+                  {traceNote && (
+                    <p className="mb-2 rounded-inner bg-raised px-3 py-2 text-[12px] text-body leading-normal">
+                      {traceNote}
+                    </p>
+                  )}
+                  <dl className="flex flex-col gap-1.5">
+                    {factRows(subject, facts).map(([k, v]) => (
+                      <div
+                        key={k}
+                        className="rounded-inner border border-border bg-inner-grad px-3 py-2"
+                      >
+                        <dt className="text-[11.5px] text-dim">{k}</dt>
+                        <dd className="break-all font-mono text-[12px] text-fg">
+                          {v}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                  {facts?.explorer && (
+                    <a
+                      href={facts.explorer}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-flex items-center gap-1.5 rounded-tile bg-raised px-3 py-1.5 text-[12.5px] text-muted transition-colors hover:bg-hover hover:text-fg"
+                    >
+                      Open on the explorer
+                      <PhIcon d={PH.caretRight} className="size-3" />
+                    </a>
+                  )}
+                  {facts?.probe && (
+                    <>
+                      <p className="mt-2.5 mb-1 text-[12px] text-muted">
+                        This chain has no explorer — ask it yourself
+                      </p>
+                      <CopyPill text={facts.probe} />
+                    </>
                   )}
                 </section>
               )}
@@ -879,29 +937,6 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
                   </div>
                 </section>
               )}
-            </div>
-          ) : right === "facts" ? (
-            /* read from the node, before any model was asked: this half would stand with no
-               model at all, so a reader who distrusts the review still leaves with something */
-            <div className="min-h-0 flex-1 overflow-auto px-3 pb-3">
-              {traceNote && (
-                <p className="mb-2 rounded-inner bg-raised px-3 py-2 text-[12px] text-body leading-normal">
-                  {traceNote}
-                </p>
-              )}
-              <dl className="flex flex-col gap-2">
-                {factRows(subject, facts).map(([k, v]) => (
-                  <div
-                    key={k}
-                    className="rounded-inner border border-border bg-inner-grad px-3 py-2"
-                  >
-                    <dt className="text-[11.5px] text-dim">{k}</dt>
-                    <dd className="break-all font-mono text-[12px] text-fg">
-                      {v}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
             </div>
           ) : (
             /* the calls: the handed-in transaction's own tree when there is one, the loaded
