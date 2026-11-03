@@ -1,6 +1,6 @@
 /**
  * The local bridge (foundry/dort-bridge.mjs): the hosted Dort's way to run forge on the
- * auditor's machine. The bridge prints https://dort-app.vercel.app/trace#bridge=<port>.<token>; the
+ * auditor's machine. The bridge prints <the origin you gave it>/chat#bridge=<port>.<token>; the
  * #fragment never reaches a server, the tab keeps it (sessionStorage) and strips it from the
  * address bar, and every request carries the token. Pure parts here; RunProvider connects.
  */
