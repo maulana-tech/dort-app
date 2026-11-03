@@ -205,7 +205,7 @@ export function ScatterGrow({
             </span>
           ))}
           <div data-lp="core" className="lp-hub-core">
-            <LogoText height={20} />
+            <LogoText height={28} />
           </div>
           <ul aria-label="Tools Dort works with" className="lp-hub-marks">
             {marks.map((m) => (

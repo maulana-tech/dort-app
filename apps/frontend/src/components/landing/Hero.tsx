@@ -44,7 +44,7 @@ export function Nav({ active = "product" }: { active?: "product" | "docs" }) {
   return (
     <nav className="lh-up relative z-20 mx-auto flex h-[76px] max-w-[1240px] items-center justify-between px-4 md:px-6">
       <Link href="/" className="flex items-center" aria-label="Dort">
-        <LogoText height={26} />
+        <LogoText height={38} />
       </Link>
       {/* the landing's sections; the docs keep a quiet bar (onorca.dev/docs) without them */}
       <ul

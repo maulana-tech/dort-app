@@ -25,7 +25,7 @@ export function MainShell({ children }: { children: ReactNode }) {
                 title="Dort home"
                 className="mr-2 ml-1 hidden flex-none rounded-tile outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-white/25 sm:block"
               >
-                <LogoText height={24} />
+                <LogoText height={34} />
               </Link>
               <RouteTabs />
               <div className="ml-auto flex flex-none items-center gap-2">

@@ -288,7 +288,7 @@ export function Footer() {
       <div className="mx-auto grid max-w-[1240px] gap-10 px-4 py-14 md:grid-cols-[2fr_1fr_1fr_1fr] md:px-6">
         <div>
           <span className="flex items-center gap-2.5">
-            <LogoText height={28} />
+            <LogoText height={40} />
           </span>
           <p className="mt-4 max-w-[300px] text-[13px] text-on-canvas-dim leading-relaxed">
             Visual tooling for smart contract audits. Defensive by design.
