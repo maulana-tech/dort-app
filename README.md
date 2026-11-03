@@ -206,14 +206,31 @@ Foundry is where the data comes from. Dort adds nothing to your project except s
 
 ## AI Integration
 
-Dort hosts no AI and calls no model by default. The user picks one in **Connect AI**.
+Dort has no model of its own. A deployment may offer one it pays for; every other option is a
+model you bring. The user picks in **Connect AI**.
 
 | Option | What answers | What leaves your machine |
 |---|---|---|
-| **None** (default) | Dort's built-in text | Nothing. No network call is made |
+| **Dort's model** (default where offered) | This deployment's Amazon Bedrock, paid for by whoever runs it | Your question, and any code with it, to **that operator's AWS account** — and into its logs if model invocation logging is on there |
+| **None** | Dort's built-in text, composed from the run's own figures | Nothing. No network call is made |
 | **Your Claude** | Your own Claude Code, signed in with your own Claude plan | The prompt goes through the app's local route to the `claude` program on your laptop |
 | **Local model** | Ollama, LM Studio or any OpenAI-compatible server you run | The prompt goes to the endpoint you typed, normally `localhost` |
 | **Own API key** | Anthropic, Amazon Bedrock, OpenAI or OpenRouter | The prompt and your key go from your browser straight to that provider |
+
+**Dort's model** exists so a first-time visitor can ask something without opening an AWS console,
+and it is the default only while nothing else is chosen. It appears only when the server has
+`BEDROCK_API_KEY` set — a Dort without it never advertises a model it does not have. The key stays
+in the server's environment and never reaches the browser; the route answers this app's own origin
+only, caps the conversation it will forward, and holds the model, region and token budget on the
+server so no page can name them. Reviewing a contract that has not been published? Bring your own
+key: every other provider here is yours alone.
+
+```bash
+# to offer it from your own deployment
+BEDROCK_API_KEY=…            # required; without it the option is not shown
+BEDROCK_REGION=us-east-1     # optional
+BEDROCK_MODEL=anthropic.claude-sonnet-5   # optional
+```
 
 Only the selected piece is sent: its name, its own source lines (at most 120), the pieces connected to it, open findings on it, a built-in checklist and the question. A fixed system prompt keeps the model defensive: explain behaviour, list what an auditor should check, write a Foundry test that pins **intended** behaviour, and refuse to write exploits. Details in [docs/ai-provider.md](docs/ai-provider.md).
 
