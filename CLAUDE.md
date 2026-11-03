@@ -12,7 +12,7 @@ Two halves joined by one file, `dort-data.json`:
 |---|---|
 | `foundry/` | The exporter (plain Node `.mjs`, zero deps) **and** the DortVault sample Foundry project it is developed against |
 | `apps/frontend/` | The Next.js 16 app (pnpm workspace root for the app; this is where all `pnpm`/`node` commands run) |
-| `workbench.html`, `foundry/dort.html` | Standalone single-file prototypes, not part of the build |
+| `foundry/dort.html` | A standalone single-file prototype, not part of the build |
 
 There is no root `package.json`. `apps/frontend` and `foundry` are built, tested and linted separately (as in `.github/workflows/ci.yml`).
 
