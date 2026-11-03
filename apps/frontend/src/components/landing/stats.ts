@@ -316,14 +316,14 @@ export async function scenarioDemo(): Promise<LabDemo | null> {
 
 export type ChatDemo = {
   digest: RunDigest;
-  question: string;
   /**
-   * What Dort itself can say about the run without a model: the counts, the contracts the calls
-   * went through, and either the failures or the fact that there were none. The landing shows an
-   * answer in the assistant's place, so it had better be one that is true of this run — the real
-   * page sends exactly these facts to the model the reader brings, and nothing here is invented.
+   * The conversation, as exchanges. Every answer is what Dort itself can say about the run with
+   * no model at all — counts, the contracts the calls went through, the suites, the command that
+   * produced it. The landing shows these in the assistant's place, so each had better be true of
+   * this run: the real page sends exactly these facts to the model the reader brings, and a
+   * sentence invented here would be the very thing this product argues against.
    */
-  answer: string[];
+  turns: { q: string; a: string[] }[];
 };
 
 /** The hero's conversation, composed from the sample run rather than written as copy. */
@@ -349,9 +349,34 @@ export async function chatDemo(): Promise<ChatDemo> {
       ? `The first failure is ${digest.failures[0].name}: ${digest.failures[0].reason}`
       : "Nothing reverted, so there is no failure to explain — the useful question is what the passing tests actually prove, and what they leave untested.",
   ];
-  return {
-    digest,
-    question: "What does this project do, in plain language?",
-    answer,
-  };
+  // a second and third exchange, each still only what the run itself says. "Which contracts?"
+  // and "where did it come from?" are the two questions a reader actually asks next, and both
+  // are answerable from the digest without inventing a word.
+  const files = digest.files.slice(0, 2);
+  const turns = [
+    { q: "What does this project do, in plain language?", a: answer },
+    {
+      q: "Which contracts do the calls go through?",
+      a: [
+        `${digest.contracts.length} of them, across ${digest.files.length} ${
+          digest.files.length === 1 ? "file" : "files"
+        }${files.length ? ` — ${files.join(", ")} among them` : ""}.`,
+        `The tests are in ${digest.suites.length} ${
+          digest.suites.length === 1 ? "suite" : "suites"
+        }: ${digest.suites.slice(0, 3).join(", ")}${
+          digest.suites.length > 3 ? ", and more" : ""
+        }.`,
+      ],
+    },
+    {
+      q: "Where did this run come from?",
+      a: [
+        `${digest.command || "forge test"}, on Foundry ${digest.forgeVersion || "— version not recorded"}.`,
+        digest.chain
+          ? `Forked from ${digest.chain}, so these are real balances and real code, not mocks.`
+          : "Run on a local EVM, so every figure above is the contracts' own arithmetic rather than a fixture.",
+      ],
+    },
+  ];
+  return { digest, turns };
 }
