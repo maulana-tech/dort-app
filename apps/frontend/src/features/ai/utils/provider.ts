@@ -239,16 +239,19 @@ export function chatRequest(
 ): { url: string; init: RequestInit } {
   const messages: ChatMessage[] =
     typeof user === "string" ? [{ role: "user", content: user }] : user;
-  // this Dort's own model: its own route, which holds the key. The browser sends the
-  // conversation and nothing else — no key, no model, no region, because all three are the
-  // operator's and a body that could name them would let any page spend their money freely.
+  // this Dort's own model: its own route, which holds the key. No key and no region cross the
+  // wire — both are the operator's. A model may be named, but the route honours it only if the
+  // operator put it on offer, so this cannot spend their money on something they did not choose.
   if (cfg.kind === "dort")
     return {
       url: "/api/bedrock",
       init: {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ messages }),
+        body: JSON.stringify({
+          messages,
+          ...(cfg.model.trim() ? { model: cfg.model.trim() } : {}),
+        }),
       },
     };
   // your Claude: this app's own local route; the system prompt is fixed on the server
