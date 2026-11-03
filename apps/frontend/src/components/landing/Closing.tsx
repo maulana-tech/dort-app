@@ -279,7 +279,6 @@ export function Footer() {
         ["GitHub", GITHUB],
         ["Docs", DOCS],
         ["Issues", `${GITHUB}/issues`],
-        ["X", "https://x.com/dort_app"],
         ["FAQ", "/#faq"],
       ],
     },
