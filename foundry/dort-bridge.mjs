@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// Dort bridge: lets the hosted Dort (https://dort-app.vercel.app) run this Foundry project's tests
+// Dort bridge: lets a Dort you point it at run this Foundry project's tests
 // on this machine. Start it in the project root, next to dort-export.mjs, and open the link it
 // prints; Trace's Start test, Test all and Reload trace then work from the browser.
 //
-//   node dort-bridge.mjs [--port 7457] [--app https://my-dort.example]
+//   node dort-bridge.mjs --app <origin> [--port 7457]
 //
 // What a web page can do through it, and nothing else:
 //   GET  /health     the project's folder name, whether dort-export.mjs / dort-data.json exist
@@ -25,8 +25,13 @@ import { basename, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { CHAINS } from './dort-chains.mjs';
 
-/** where the hosted Dort lives; --app adds another origin (a self-hosted copy) */
-export const APPS = ['https://dort-app.vercel.app', 'https://dort-app.vercel.app'];
+/**
+ * Origins allowed to use this bridge. Empty on purpose: there is no hosted Dort to trust by
+ * default, so every run has to name the copy it is for with --app <origin>. This list is a
+ * security boundary — the bridge runs node dort-export.mjs on request — and a default entry here
+ * would be a standing permission for a site nobody in this project controls.
+ */
+export const APPS = [];
 export const PORT = 7457;
 const TIMEOUT_MS = 15 * 60_000;
 const MAX_LINE = 400;
@@ -77,8 +82,8 @@ export function refuse({ host, origin, auth, port, token, apps }) {
   return null;
 }
 
-/** The link to print: the app's Trace with the port and the token in its #fragment. */
-export const linkOf = (app, port, token) => `${app}/trace#bridge=${port}.${token}`;
+/** The link to print: the app's Chat with the port and the token in its #fragment. */
+export const linkOf = (app, port, token) => `${app}/chat#bridge=${port}.${token}`;
 
 // ---------- the server ----------
 
@@ -233,10 +238,17 @@ function main() {
       origin = new URL(extra).origin;
     } catch {}
     if (!origin || origin === 'null') {
-      console.error(`dort-bridge: --app must be a URL, like https://my-dort.example (got ${extra})`);
+      console.error(`dort-bridge: --app must be a URL, like http://localhost:3000 (got ${extra})`);
       process.exit(1);
     }
     apps.unshift(origin);
+  }
+  if (!apps.length) {
+    console.error('dort-bridge: say which Dort this is for, with --app <origin>.');
+    console.error('  node dort-bridge.mjs --app http://localhost:3000');
+    console.error('There is no default: this bridge runs forge on your machine, so it trusts');
+    console.error('only the origin you name.');
+    process.exit(1);
   }
   if (!existsSync(join(cwd, 'dort-export.mjs'))) {
     console.error('dort-bridge: no dort-export.mjs here. Start the bridge in your Foundry project root, where you downloaded the exporter.');
