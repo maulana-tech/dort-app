@@ -58,18 +58,16 @@ export function Nav({ active = "product" }: { active?: "product" | "docs" }) {
         </Link>
         {/* the landing's sections; the docs keep a quiet bar (onorca.dev/docs) without them */}
         <ul
-          className={`absolute left-1/2 -translate-x-1/2 items-center gap-0.5 rounded-full border border-white/[.08] bg-gradient-to-b from-white/[.07] to-white/[.02] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,.08),0_10px_30px_rgba(3,28,78,.45)] ${docs ? "hidden" : "hidden md:flex"}`}
+          className={`lh-nav-menu absolute left-1/2 -translate-x-1/2 items-center gap-0.5 rounded-full p-1 ${docs ? "hidden" : "hidden md:flex"}`}
         >
           {items.map((i) => (
             <li key={i.label}>
               <a
                 href={i.href}
                 aria-current={i.on ? "page" : undefined}
-                className={`lh-nav-link flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] ${
-                  i.on
-                    ? "bg-white/[.1] shadow-[inset_0_1px_0_rgba(255,255,255,.1)]"
-                    : ""
-                }`}
+                // the lit item is filled in CSS (.lh-nav-link[aria-current]), with the same
+                // primary fill every other active tab in this app uses
+                className="lh-nav-link flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px]"
               >
                 {i.mark && <GitHubMark className="size-3.5" />}
                 {i.label}
@@ -96,7 +94,7 @@ export function Nav({ active = "product" }: { active?: "product" | "docs" }) {
           )}
           {/* the app header's Connect AI capsule (header.css .hdr-pill.lit): the Dort starburst
             where it has its sparkle, a caret pointing on */}
-          <Link href="/chat" className="group hdr-pill lit on-blue">
+          <Link href="/chat" className="lh-nav-cta group hdr-pill">
             <svg
               aria-hidden="true"
               viewBox="-40 -40 80 80"
@@ -109,7 +107,7 @@ export function Nav({ active = "product" }: { active?: "product" | "docs" }) {
               <path d="M8-8L21-21M-8 8L-21 21M-8-8L-21-21M8 8L21 21" />
             </svg>
             Launch app
-            <PhIcon d={PH.caretRight} className="size-3 text-on-canvas-dim" />
+            <PhIcon d={PH.caretRight} className="size-3 opacity-70" />
           </Link>
         </div>
         <div

@@ -117,21 +117,63 @@
   --nav-fg: var(--on-canvas);
   --nav-muted: var(--on-canvas-dim);
   --nav-rule: rgb(255 255 255 / 0.08);
+  --nav-cta: var(--surface);
+  --nav-cta-fg: var(--primary);
+  --nav-cta-line: rgb(3 28 78 / 0.12);
 }
 
 html[data-nav-light] .lh-nav {
   --nav-fg: var(--fg);
   --nav-muted: var(--muted);
   --nav-rule: rgb(3 28 78 / 0.12);
+  --nav-cta: var(--primary);
+  --nav-cta-fg: var(--primary-fg);
+  --nav-cta-line: rgb(255 255 255 / 0.18);
+}
+
+/* The menu is its own surface — opaque, not glass. A translucent pill borrows whatever is
+   behind it, which on this page is sometimes blue and sometimes a white card, and a control
+   that changes colour as the page scrolls past does not read as a control. Being opaque also
+   settles its contents: the links are always on this surface, so they take the page's ordinary
+   text tokens rather than the nav's swapping pair. */
+.lh-nav-menu {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 6px 18px -8px rgb(3 28 78 / 0.35);
 }
 
 .lh-nav-link {
-  color: var(--nav-muted);
-  transition: color 0.25s;
+  color: var(--muted);
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
-.lh-nav-link:hover,
+.lh-nav-link:hover {
+  color: var(--fg);
+}
+/* the one lit item, filled the way every other active tab in this app is filled */
 .lh-nav-link[aria-current] {
-  color: var(--nav-fg);
+  background: var(--primary);
+  color: var(--primary-fg);
+}
+
+/* The call to action, opaque too, and the one thing still tied to what is underneath: on the
+   blue page the single primary action is white (DESIGN.md), and on a light panel a white button
+   would be no button at all, so the pair swaps. */
+.lh-nav-cta {
+  background: var(--nav-cta);
+  color: var(--nav-cta-fg);
+  box-shadow:
+    inset 0 0 0 1px var(--nav-cta-line),
+    0 8px 20px -10px rgb(3 28 78 / 0.5);
+}
+.lh-nav-cta:hover {
+  background: var(--nav-cta);
+  color: var(--nav-cta-fg);
+  filter: brightness(0.97);
+}
+.lh-nav-cta svg {
+  color: inherit;
 }
 
 /* the hairline and the two '+' marks follow the same pair, so the bar's furniture does not
