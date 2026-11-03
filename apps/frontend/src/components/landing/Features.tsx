@@ -1,12 +1,11 @@
 import { HowItWorks } from "./HowItWorks";
-import { labDemo, testRows, traceFrames } from "./stats";
+import { chatDemo, testRows, traceFrames } from "./stats";
 
-/** 'How Dort works' (HowItWorks.tsx): read from the sample run here (the atlas its last step
- *  draws from is fetched by the client, atlas.ts). */
+/** 'How Dort works' (HowItWorks.tsx): read from the sample run here. */
 export async function Features() {
-  const [trace, lab, tests] = await Promise.all([
+  const [trace, chat, tests] = await Promise.all([
     traceFrames(),
-    labDemo(),
+    chatDemo(),
     testRows(),
   ]);
   return (
@@ -14,7 +13,7 @@ export async function Features() {
       tests={tests}
       test={trace.test}
       frames={trace.frames}
-      lab={lab}
+      chat={chat}
     />
   );
 }
