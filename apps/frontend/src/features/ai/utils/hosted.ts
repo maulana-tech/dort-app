@@ -12,6 +12,13 @@
  * browser, which is the one thing that must stay true however this is configured.
  */
 
+export {
+  isAnthropicModel,
+  upstreamBody,
+  upstreamHeaders,
+  upstreamUrl,
+} from "./bedrock-api.ts";
+
 /** Everything the route needs from the environment, read in one place so the check can drive it. */
 export type HostedEnv = {
   key?: string;
@@ -46,63 +53,6 @@ export const hostedRegion = (env: HostedEnv): string => {
   const r = (env.region ?? "").trim();
   return REGION.test(r) ? r : HOSTED_REGION;
 };
-
-/**
- * Bedrock serves two different APIs on one host, and which one a model speaks is decided by its
- * id. Anthropic's models answer the Messages API at /anthropic/v1; everything else — MiniMax,
- * GLM, Qwen, Kimi, DeepSeek — answers an OpenAI-compatible API at /openai/v1. Both paths were
- * probed against the live host: each returns its own shape of 401 for a bad key, so both exist
- * and the difference is real rather than assumed.
- *
- * The browser needs no part of this. `textOf` in provider.ts already reads both stream shapes
- * (`delta.text` and `choices[0].delta.content`), so the route can hand either one straight back.
- */
-export const isAnthropicModel = (model: string) =>
-  model.startsWith("anthropic.");
-
-const host = (region: string) => `https://bedrock-mantle.${region}.api.aws`;
-
-export const upstreamUrl = (region: string, model: string) =>
-  `${host(region)}${
-    isAnthropicModel(model)
-      ? "/anthropic/v1/messages"
-      : "/openai/v1/chat/completions"
-  }`;
-
-/**
- * The key rides in a different header per API, and the host refuses a request carrying both:
- * "request must not include both 'authorization' and 'x-api-key' headers".
- */
-export const upstreamHeaders = (
-  key: string,
-  model: string,
-): Record<string, string> =>
-  isAnthropicModel(model)
-    ? {
-        "content-type": "application/json",
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
-      }
-    : {
-        "content-type": "application/json",
-        authorization: `Bearer ${key}`,
-      };
-
-/** The system prompt is a field of its own on one API and the first message on the other. */
-export const upstreamBody = (
-  model: string,
-  messages: unknown[],
-  system: string,
-  maxTokens: number,
-) =>
-  isAnthropicModel(model)
-    ? { model, max_tokens: maxTokens, stream: true, system, messages }
-    : {
-        model,
-        max_tokens: maxTokens,
-        stream: true,
-        messages: [{ role: "system", content: system }, ...messages],
-      };
 
 /** The model to call when the reader has not picked one. */
 export const hostedModel = (env: HostedEnv): string =>
@@ -165,7 +115,7 @@ export function refuseHosted(h: {
 }): string | null {
   if (h.method !== "POST") return "Use POST.";
   if (!h.ready)
-    return "This Dort has no model of its own configured. Open Connect AI and bring your own.";
+    return "This Dort has no model of its own configured. Open AI settings and bring your own.";
   // a browser sends one or the other; a bare curl sends neither and is refused
   if (h.fetchSite) {
     if (h.fetchSite !== "same-origin")
