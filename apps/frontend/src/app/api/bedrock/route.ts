@@ -26,7 +26,7 @@ import { SYSTEM_PROMPT } from "@/features/ai/utils/provider";
  *
  * The key is read here and nowhere else. It is never serialised into a response, never put in a
  * NEXT_PUBLIC_ variable, and never reaches the browser — hosted.check.ts holds the client-bundled
- * files to that. Without the key the route does not pretend: it says so and points at Connect AI.
+ * files to that. Without the key the route does not pretend: it says so and points at the AI settings page.
  */
 
 const env = () => ({
@@ -75,7 +75,7 @@ export async function POST(req: Request): Promise<Response> {
   seen.set(who(req), rate.bucket);
   if (rate.over)
     return fail(
-      "This Dort's own model is busy with other people for now. Connect AI in the header to use your own — it has no limit but your provider's.",
+      "This Dort's own model is busy with other people for now. Open AI settings to use your own — it has no limit but your provider's.",
       429,
     );
 
@@ -116,7 +116,7 @@ export async function POST(req: Request): Promise<Response> {
     // the upstream text can carry account detail, so the caller gets the status and nothing else
     return new Response(
       sse({
-        error: `${model} answered ${upstream.status}. Pick another model, or Connect AI in the header to use your own.`,
+        error: `${model} answered ${upstream.status}. Pick another model, or open AI settings to use your own.`,
       }),
       {
         status: 200,
