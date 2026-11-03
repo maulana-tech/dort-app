@@ -107,7 +107,7 @@ export function ProductTabs({ chat }: { chat: ChatDemo }) {
         role="tablist"
         aria-label="Dort views"
         data-lp="tabs"
-        className="relative z-10 mb-6 flex max-w-full gap-0.5 overflow-x-auto rounded-full border border-white/[.08] bg-[#ffffff]/90 p-1"
+        className="relative z-10 mb-6 flex max-w-full gap-0.5 overflow-x-auto rounded-full border border-black/[.06] bg-[#ffffff]/90 p-1 shadow-soft"
       >
         {VIEWS.map((s, i) => (
           <button
@@ -121,8 +121,13 @@ export function ProductTabs({ chat }: { chat: ChatDemo }) {
             onMouseLeave={() => setPaused(false)}
             onFocus={() => setPaused(true)}
             onBlur={() => setPaused(false)}
-            className={`relative overflow-hidden whitespace-nowrap rounded-full px-4 py-1.5 text-[13px] transition-colors ${
-              i === at ? "bg-white/[.09] text-fg" : "text-body hover:text-fg"
+            // the active pill was bg-white/[.09] on a row that is itself white — a holdover
+            // from the dark theme, and invisible since. It is the one filled thing in the row
+            // now, which is what DESIGN.md reserves the primary colour for.
+            className={`relative overflow-hidden whitespace-nowrap rounded-full px-4 py-1.5 font-medium text-[13px] transition-colors ${
+              i === at
+                ? "bg-primary text-primary-fg shadow-soft"
+                : "text-muted hover:bg-black/[.04] hover:text-fg"
             }`}
           >
             {s.label}
@@ -130,7 +135,9 @@ export function ProductTabs({ chat }: { chat: ChatDemo }) {
               <span
                 key={`${at}-${hold}`}
                 aria-hidden="true"
-                className="lp-progress absolute inset-x-3 bottom-0.5 h-px bg-white/50"
+                // on the filled pill the bar has to be the pill's own foreground; white on
+                // white was invisible, which made the dwell look like nothing was happening
+                className="lp-progress absolute inset-x-3 bottom-[3px] h-[2px] rounded-full bg-primary-fg/70"
                 style={
                   {
                     "--t": `${DWELL}ms`,

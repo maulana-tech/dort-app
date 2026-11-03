@@ -34,6 +34,51 @@ import type { ChatDemo } from "./stats";
 
 const none = () => {};
 
+/**
+ * What the view is, beside the view.
+ *
+ * The close-up is cropped from a 1440-wide world and the cards are 560 of it, so two thirds of
+ * the frame was empty blue. A person who has never used Dort cannot tell what a deposit card
+ * proves by looking at it; the column says, in the smallest number of true sentences.
+ *
+ * Every claim here is one the repository can be held to — the vault's address, the router's fee,
+ * what is not deployed — because a landing page is the easiest place in a project to start
+ * lying, and the only one where nobody runs the tests.
+ */
+function ViewCopy({
+  title,
+  lede,
+  facts,
+}: {
+  title: string;
+  lede: string;
+  facts: string[];
+}) {
+  return (
+    <div className="w-[440px] flex-none pt-6">
+      <h3 className="font-medium text-[30px] text-fg leading-[1.1] tracking-[-0.02em]">
+        {title}
+      </h3>
+      <p className="mt-3 text-[15px] text-body leading-relaxed">{lede}</p>
+      <ul className="mt-6 grid gap-3">
+        {facts.map((f) => (
+          <li key={f} className="flex gap-2.5">
+            <span className="mt-[9px] size-1.5 flex-none rounded-full bg-primary" />
+            <span className="text-[13.5px] text-dim leading-relaxed">{f}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** card on the left, what it means on the right — the shape every view shares */
+const Split = ({ children }: { children: ReactNode }) => (
+  <div className="dot-grid-soft absolute inset-0 flex items-start gap-14 p-10">
+    {children}
+  </div>
+);
+
 /** A card as the on-chain pages frame it: the panel, its label, the chain pill, the one action. */
 function ActionShell({
   label,
@@ -102,14 +147,24 @@ export function Views({
 
   const content: Record<ViewId, ReactNode> = {
     chat: (
-      <div className="dot-grid-soft absolute inset-0 p-10">
-        <div className="w-[820px]">
+      <Split>
+        <div className="w-[620px] flex-none">
           <ChatThread demo={chat} compact />
         </div>
-      </div>
+        <ViewCopy
+          title="Ask in plain language"
+          lede="One box, whatever you arrive with: a question, a transaction hash, a contract address, or your own .sol files."
+          facts={[
+            "Grounded in the Foundry run you have loaded — its tests, its failures, and the contracts the calls went through.",
+            "Hand in a transaction and Dort reads the chain first: the real call tree from the node, not a guess from a function name.",
+            "What comes back is candidates to check and what it could not look at. Never a verdict, never a score.",
+            "Your own model by default. Nothing you hand in is uploaded anywhere but to it.",
+          ]}
+        />
+      </Split>
     ),
     vault: (
-      <div className="dot-grid-soft absolute inset-0 p-10">
+      <Split>
         <ActionShell label="Vault" chain="Base Sepolia" family="base">
           <SourceRow
             icon={<TokenIcon symbol="USDC" size={36} />}
@@ -137,10 +192,19 @@ export function Views({
             arithmetic — shown before you sign, not after.
           </Note>
         </ActionShell>
-      </div>
+        <ViewCopy
+          title="Deposit, and see the shares first"
+          lede="DortSafeVault on Base Sepolia. The figure you are about to receive is computed by the contract itself and shown before the wallet is asked to sign."
+          facts={[
+            "Deployed at 0x162Dcf95…24f85aF8, and the page reads it over RPC rather than trusting a number typed into the app.",
+            "Rounding always goes toward the vault, and a virtual offset closes the first-depositor attack.",
+            "Checks-effects-interactions and a reentrancy guard — written the way the flawed twin it teaches on is not.",
+          ]}
+        />
+      </Split>
     ),
     swap: (
-      <div className="dot-grid-soft absolute inset-0 p-10">
+      <Split>
         <ActionShell label="Swap" chain="Portaldot V3" family="portaldot">
           <SourceRow
             icon={<TokenIcon symbol="POT" size={36} />}
@@ -168,10 +232,19 @@ export function Views({
             the price impact matters more than the rate.
           </Note>
         </ActionShell>
-      </div>
+        <ViewCopy
+          title="Trade on Portaldot's own DEX"
+          lede="PortalSwapRouter is Portaldot V3's Uniswap V2 fork at 30 basis points. Its addresses, its fee and its pools were all read off the live chain."
+          facts={[
+            "Ten pools over five tokens, so every pair has one, and a path is always a single hop.",
+            "The quote is computed from the pool's own reserves and pinned, in a check, against what the router really answered.",
+            "These pools are small: the page shows price impact, because on a testnet that matters more than the rate.",
+          ]}
+        />
+      </Split>
     ),
     bridge: (
-      <div className="dot-grid-soft absolute inset-0 p-10">
+      <Split>
         <ActionShell label="Bridge" chain="Base Sepolia" family="base">
           <SourceRow
             icon={<TokenIcon symbol="USDC" size={36} />}
@@ -207,7 +280,16 @@ export function Views({
             while those match.
           </Note>
         </ActionShell>
-      </div>
+        <ViewCopy
+          title="Lock at home, mint on Portaldot"
+          lede="An escrow on the home chain and a minter on Portaldot, with both sides' totals on the page at once. A bridge is only honest while those two numbers match."
+          facts={[
+            "The message id is recomputed in the browser, byte-identical to the one PortalBridgeEscrow computes, so the page can follow a transfer to the other chain.",
+            "Nothing is deployed on the public testnets yet, and the page says so rather than showing a dead button.",
+            "script/bridge-local-demo.sh runs the whole thing — both chains, both contracts, a real transfer — on two local anvils.",
+          ]}
+        />
+      </Split>
     ),
   };
 
