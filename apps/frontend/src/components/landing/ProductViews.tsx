@@ -166,6 +166,17 @@ export function Views({
     vault: (
       <Split>
         <ActionShell label="Vault" chain="Base Sepolia" family="base">
+          {/* the page has both sides and this card showed one, which is how a reader concludes
+              there is no way out of the vault */}
+          <PillTabs
+            label="Side"
+            value="deposit"
+            onChange={none}
+            options={[
+              { value: "deposit", label: "Deposit" },
+              { value: "withdraw", label: "Withdraw" },
+            ]}
+          />
           <SourceRow
             icon={<TokenIcon symbol="USDC" size={36} />}
             title="In your wallet"
@@ -198,6 +209,7 @@ export function Views({
           facts={[
             "Deployed at 0x162Dcf95…24f85aF8, and the page reads it over RPC rather than trusting a number typed into the app.",
             "Rounding always goes toward the vault, and a virtual offset closes the first-depositor attack.",
+            "Withdraw is the same card the other way round: burn an exact number of shares, or ask for an exact amount of the asset, and see which before signing.",
             "Checks-effects-interactions and a reentrancy guard — written the way the flawed twin it teaches on is not.",
           ]}
         />
