@@ -57,7 +57,7 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
   // can ask something without opening an AWS console first. Choosing any provider in Connect AI
   // replaces it, and the page says which of the two is answering either way.
   const stored = useAiConfig();
-  const hostedAi = useHostedAi();
+  const hostedAi = useHostedAi().ready;
   const cfg = stored.kind === "none" && hostedAi ? DORT_AI : stored;
   const chat = useChat(cfg, digest);
   const history = useChatHistory();
