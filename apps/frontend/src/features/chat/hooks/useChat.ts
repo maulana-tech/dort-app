@@ -26,6 +26,8 @@ export type ChatState = {
   ready: boolean;
   /** the answers are Dort's own text, not a model's — the page has to say so */
   builtin: boolean;
+  /** a model answered, but it was this deployment's, not the reader's */
+  hosted: boolean;
   send: (text: string) => void;
   stop: () => void;
   reset: () => void;
@@ -140,6 +142,7 @@ export function useChat(cfg: AiConfig, digest: RunDigest): ChatState {
     error,
     ready: aiReady(cfg) || cfg.kind === "none",
     builtin: cfg.kind === "none",
+    hosted: cfg.kind === "dort",
     send,
     stop,
     reset,
