@@ -5,6 +5,7 @@ export { ExploitWorkspace } from "./exploits/ExploitWorkspace";
 export { ExploreGallery } from "./explore/ExploreGallery";
 export { ProtocolWorkspace } from "./explore/ProtocolWorkspace";
 export { CallGraph } from "./graph/CallGraph";
+export { SettingsWorkspace } from "./settings/SettingsWorkspace";
 export { MainShell } from "./shell/MainShell";
 export {
   ActionSkeleton,
