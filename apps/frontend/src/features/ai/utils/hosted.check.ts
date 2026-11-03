@@ -9,12 +9,17 @@ import {
   hostedModels,
   hostedReady,
   hostedRegion,
+  isAnthropicModel,
   MAX_BODY,
   MAX_TOKENS,
   overRate,
   pickModel,
   RATE,
   refuseHosted,
+  SUGGESTED_MODELS,
+  upstreamBody,
+  upstreamHeaders,
+  upstreamUrl,
 } from "./hosted.ts";
 
 // ── the offer only exists when the operator made it ────────────────────────────────────────
@@ -62,8 +67,13 @@ assert.match(
 // most expensive thing Bedrock sells. The choice is an index into their list, not a free string.
 assert.deepEqual(
   hostedModels({}),
-  [HOSTED_MODEL],
-  "with nothing configured there is one model and it is the default",
+  [HOSTED_MODEL, ...SUGGESTED_MODELS],
+  "with nothing configured the default leads and the suggestions follow",
+);
+assert.equal(
+  hostedModels({})[0],
+  HOSTED_MODEL,
+  "whatever else is offered, the cheap one is what answers unasked",
 );
 assert.deepEqual(
   hostedModels({
@@ -100,6 +110,78 @@ for (const wanted of [
     "cheap",
     `not on the list falls back: ${JSON.stringify(wanted)}`,
   );
+
+// ── one host, two APIs, chosen by the model's own id ───────────────────────────────────────
+// Probed against the live host: /anthropic/v1/messages answers in Anthropic's error shape and
+// /openai/v1/chat/completions in OpenAI's, so the split is real. Sending a model down the wrong
+// one would fail in a way no error message would explain.
+assert.equal(isAnthropicModel("anthropic.claude-haiku-5-5"), true);
+for (const m of SUGGESTED_MODELS)
+  assert.equal(isAnthropicModel(m), false, `${m} is not an Anthropic model`);
+
+assert.match(
+  upstreamUrl("us-east-1", "anthropic.claude-haiku-5-5"),
+  /^https:\/\/bedrock-mantle\.us-east-1\.api\.aws\/anthropic\/v1\/messages$/,
+);
+assert.match(
+  upstreamUrl("ap-southeast-1", "minimax.minimax-m2.5"),
+  /^https:\/\/bedrock-mantle\.ap-southeast-1\.api\.aws\/openai\/v1\/chat\/completions$/,
+);
+
+// the host refuses a request carrying both auth headers, so exactly one must be present
+for (const m of ["anthropic.claude-haiku-5-5", "zai.glm-4.7-flash"]) {
+  const h = upstreamHeaders("KEY", m);
+  const auth = ["x-api-key", "authorization"].filter((k) => k in h);
+  assert.equal(
+    auth.length,
+    1,
+    `${m} carries exactly one auth header, got ${auth.join("+")}`,
+  );
+  assert.ok(
+    Object.values(h).some((v) => v.includes("KEY")),
+    "and it carries the key",
+  );
+}
+assert.ok("x-api-key" in upstreamHeaders("K", "anthropic.claude-haiku-5-5"));
+assert.ok("authorization" in upstreamHeaders("K", "minimax.minimax-m2.5"));
+
+// the system prompt is a field on one API and the first message on the other
+const turns = [{ role: "user", content: "hi" }];
+const a = upstreamBody(
+  "anthropic.claude-haiku-5-5",
+  turns,
+  "RULES",
+  99,
+) as Record<string, unknown>;
+assert.equal(a.system, "RULES");
+assert.deepEqual(a.messages, turns, "and the turns are untouched");
+const o = upstreamBody("zai.glm-4.7-flash", turns, "RULES", 99) as Record<
+  string,
+  unknown
+>;
+const msgs = o.messages as { role: string; content: string }[];
+assert.equal(msgs[0].role, "system");
+assert.equal(msgs[0].content, "RULES");
+assert.deepEqual(msgs.slice(1), turns);
+for (const b of [a, o]) {
+  assert.equal(b.max_tokens, 99, "both are capped");
+  assert.equal(b.stream, true, "and both stream");
+}
+
+// the suggested list spans vendors: one company's models is the thing this avoids
+assert.ok(
+  new Set(SUGGESTED_MODELS.map((m) => m.split(".")[0])).size >= 4,
+  "at least four vendors are suggested",
+);
+assert.deepEqual(
+  hostedModels({ models: "only.this" }),
+  [HOSTED_MODEL, "only.this"],
+  "an operator's own list replaces the suggestions entirely",
+);
+assert.ok(
+  hostedModels({}).length > 1,
+  "and with nothing set there is still more than one to pick from",
+);
 
 // ── who may spend the operator's money ─────────────────────────────────────────────────────
 const ok = {
