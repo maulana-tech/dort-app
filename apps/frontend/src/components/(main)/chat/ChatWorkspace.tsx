@@ -879,16 +879,6 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
                   </div>
                 </section>
               )}
-
-              <p className="pt-2 text-[11.5px] text-dim leading-relaxed">
-                {chat.builtin
-                  ? "Answers come from Dort's own built-in text, composed from the figures above — no model, no request, nothing leaves this machine. Open AI settings to have your own model read the code."
-                  : chat.hosted
-                    ? "Answered by this deployment's own Bedrock: your question leaves this browser for the AWS account of whoever runs it, and lands in that account's logs if model invocation logging is on there. Open AI settings to use a model that is yours alone."
-                    : "Your question goes straight from this browser to the model you chose, and to nowhere else."}{" "}
-                Defensive review only: Dort explains code and writes Foundry
-                tests for intended behaviour, and refuses to write exploits.
-              </p>
             </div>
           ) : right === "facts" ? (
             /* read from the node, before any model was asked: this half would stand with no
@@ -1007,6 +997,40 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
                 </>
               )}
             </div>
+          )}
+
+          {/* Where the question goes, at the foot of the panel rather than at the end of a
+              scroll: it is the one thing on this page a reader may need before they type, and
+              burying it under a run's contents is a strange place for it. Folded, because it
+              does not change between questions and an open paragraph would push the panel's
+              actual contents up the screen every time. */}
+          {right === "context" && (
+            <details className="group flex-none border-border border-t">
+              <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-[12px] text-muted transition-colors hover:text-fg">
+                <span
+                  aria-hidden="true"
+                  className="size-1.5 rounded-full bg-primary"
+                />
+                {chat.builtin
+                  ? "Nothing leaves this machine"
+                  : chat.hosted
+                    ? "Where your question goes"
+                    : "Your model, and nowhere else"}
+                <PhIcon
+                  d={PH.caretDown}
+                  className="ml-auto size-3 transition-transform group-open:rotate-180"
+                />
+              </summary>
+              <p className="px-3 pb-3 text-[11.5px] text-dim leading-relaxed">
+                {chat.builtin
+                  ? "Answers come from Dort's own built-in text, composed from the figures above — no model, no request, nothing leaves this machine. Open AI settings to have your own model read the code."
+                  : chat.hosted
+                    ? "Answered by this deployment's own Bedrock: your question leaves this browser for the AWS account of whoever runs it, and lands in that account's logs if model invocation logging is on there. Open AI settings to use a model that is yours alone."
+                    : "Your question goes straight from this browser to the model you chose, and to nowhere else."}{" "}
+                Defensive review only: Dort explains code and writes Foundry
+                tests for intended behaviour, and refuses to write exploits.
+              </p>
+            </details>
           )}
         </section>
       </div>
