@@ -29,16 +29,17 @@ Dort is a visual workbench for **smart contract auditors and bug bounty hunters*
 
 ## Documentation
 
-The docs live at **[dort-app.vercel.app/docs](https://dort-app.vercel.app/docs)**, with short recordings of the app on the pages that show it:
+There is no public deploy: the docs are served by the app itself. Run it (`pnpm dev` in
+`apps/frontend`) and open `/docs`, where the pages that show the app carry short recordings of it.
 
 | Section | Pages |
 |---|---|
-| Start here | [What is Dort?](https://dort-app.vercel.app/docs) · [Quick start](https://dort-app.vercel.app/docs/quick-start) · [Your first audit session](https://dort-app.vercel.app/docs/first-session) |
-| Using Dort | [Trace](https://dort-app.vercel.app/docs/trace) · [Atlas](https://dort-app.vercel.app/docs/atlas) · [Scenarios](https://dort-app.vercel.app/docs/scenarios) · [Findings & triage](https://dort-app.vercel.app/docs/findings) · [Explore](https://dort-app.vercel.app/docs/explore) · [Exploits](https://dort-app.vercel.app/docs/exploits) |
-| On-chain | [Connecting a wallet](https://dort-app.vercel.app/docs/wallet) · [Vault](https://dort-app.vercel.app/docs/vault) · [Cross-chain bridge](https://dort-app.vercel.app/docs/bridge) · [Swap](https://dort-app.vercel.app/docs/swap) |
-| Running tests | [The exporter](https://dort-app.vercel.app/docs/exporter) · [Testnet forks](https://dort-app.vercel.app/docs/forks) · [Run tests from the browser](https://dort-app.vercel.app/docs/run-from-browser) |
-| AI | [Ask AI providers](https://dort-app.vercel.app/docs/ai) · [MCP server](https://dort-app.vercel.app/docs/mcp) |
-| More | [Run Dort locally](https://dort-app.vercel.app/docs/local) · [Privacy & security](https://dort-app.vercel.app/docs/privacy) · [Known limits](https://dort-app.vercel.app/docs/limits) |
+| Start here | `/docs` · `/docs/quick-start` · `/docs/first-session` |
+| Using Dort | `/docs/chat` · `/docs/explore` · `/docs/exploits` |
+| On-chain | `/docs/wallet` · `/docs/vault` · `/docs/bridge` · `/docs/swap` |
+| Running tests | `/docs/exporter` · `/docs/forks` · `/docs/run-from-browser` |
+| AI | `/docs/ai` · `/docs/mcp` |
+| More | `/docs/local` · `/docs/privacy` · `/docs/limits` |
 
 The pages are written as data in [`features/docs/pages.ts`](apps/frontend/src/features/docs/pages.ts).
 
@@ -229,7 +230,7 @@ Only the selected piece is sent: its name, its own source lines (at most 120), t
 | `list_findings(severity?, tool?)` | read | Slither, Aderyn and Dort's own findings |
 | `propose_scenario(scenario)` | append | Checks a scenario against the Lab's cards and saves it to `dort-scenarios.json` |
 
-A proposal shows up in **Atlas → Scenarios** (and Trace's Scenario view) under *Proposed by your AI client*: in a local Dort, or on [dort-app.vercel.app](https://dort-app.vercel.app) while `node dort-bridge.mjs` runs in the project (switch back to the tab to pick up a new one). Pick it, check it, press **Run**, then export the `.t.sol`.
+A proposal is written to `dort-scenarios.json` in the project, next to `dort-data.json`. This build has no scenario editor to review it in — that lives on the `full` branch — so treat the file as the record: read it, run the test it describes, and keep it only once you agree with it.
 
 ```bash
 claude mcp add dort -- node /abs/path/dort-mcp.mjs --data=/abs/path/dort-data.json
@@ -503,18 +504,25 @@ Only one run at a time is allowed, with a 15 minute limit. The local routes (`/a
 - [Foundry](https://getfoundry.sh) (`forge` on PATH)
 - Optional: Slither and Aderyn for findings, Claude Code or a local model for Ask AI
 
-### Use the hosted app (no clone)
+### Run it, then point it at your project
 
-Open **[dort-app.vercel.app/trace](https://dort-app.vercel.app/trace)** and follow its Start page. In your Foundry project:
+There is no public deploy. Start the app yourself, then in your Foundry project:
 
 ```bash
+cd apps/frontend && pnpm install && pnpm dev    # http://localhost:3000
+
 cd path/to/your-project
-curl -fsSLO -w "saved %{filename_effective}\n" "https://dort-app.vercel.app/exporter/dort-{export,lib,atlas,findings,coverage,chains,bridge}.mjs"
-node dort-export.mjs        # writes dort-data.json: drop it on the page
-node dort-bridge.mjs        # optional: prints a link that opens your project live
+curl -fsSLO -w "saved %{filename_effective}\n" "http://localhost:3000/exporter/dort-{export,lib,atlas,findings,coverage,chains,bridge}.mjs"
+node dort-export.mjs                            # writes dort-data.json: drop it on /chat
+node dort-bridge.mjs --app http://localhost:3000  # optional: run forge from the page
 ```
 
-With the bridge running, the hosted app shows **Start test**, **Test all** and **Reload trace**, and they run `forge` on your computer; your code is never uploaded. The first time, Chrome, Brave or Edge ask to let the site reach your computer or local network: allow it. Safari does not allow it, so use another browser for the bridge. Without the bridge, everything else works from a dropped `dort-data.json`.
+The bridge has no default origin: it runs `node dort-export.mjs` on your machine when asked, so it
+trusts only the origin you name with `--app`. With it running, **Start test**, **Test all** and
+**Reload run** run `forge` on your computer; your code is never uploaded. The first time, Chrome,
+Brave or Edge ask to let the page reach your computer or local network — allow it. Safari does not,
+so use another browser for the bridge. Without it, everything else works from a dropped
+`dort-data.json`.
 
 ### App Setup (run Dort locally)
 
@@ -741,7 +749,7 @@ Portaldot Hacker House 2026.
 | **Contract address** | `DortSafeVault` on Base Sepolia: [`0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8`](https://sepolia.basescan.org/address/0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8) — over Circle's USDC, block 53482026 |
 | **Transaction hash** | [`0x2aafcfaa81d24ed15d4c5412da0458f952c2288351467a161184d27d69904e8d`](https://sepolia.basescan.org/tx/0x2aafcfaa81d24ed15d4c5412da0458f952c2288351467a161184d27d69904e8d) |
 | **On Portaldot V3** | _pending testnet tPOT: distribution is handed out by an admin, not a faucet. [`script/DeployVault.s.sol`](foundry/script/DeployVault.s.sol) and [`script/DeployPortaldot.s.sol`](foundry/script/DeployPortaldot.s.sol) are both simulated clean against the live chain (3.0M and 5.2M gas, ~0.0000004 POT in total) and `VAULTS` already names pUSDT as the asset — only the gas is missing._ |
-| **Website** | [dort-app.vercel.app](https://dort-app.vercel.app) |
+| **Website** | _none: Dort runs on your own machine, which is what lets it read your project and run `forge` for you_ |
 | **Source** | [github.com/maulana-tech/dort-app](https://github.com/maulana-tech/dort-app) |
 
 ### What Portaldot gives this project, and what it gives back
