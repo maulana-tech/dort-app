@@ -89,9 +89,13 @@ export function McpServers() {
         // the route refuses on a hosted deploy, and that is the answer, not a failure
         <p className="flex max-w-[68ch] items-start gap-2 text-[12.5px] text-muted leading-normal">
           <span className="mt-1.5 size-1.5 flex-none rounded-full bg-dim" />
-          {data.error} Dort starts these as child processes, so it only does it
-          on your own machine — run it locally (
-          <code className="font-mono">pnpm dev</code>) to use them.
+          {/* one span, so the sentence is one flex item. A bare <code> beside the text becomes
+              a column of its own and ends up in the corner, which is what it did. */}
+          <span>
+            {data.error} Dort starts these as child processes, so it only does
+            it on your own machine — run it locally (
+            <code className="font-mono">pnpm dev</code>) to use them.
+          </span>
         </p>
       ) : (
         <>
@@ -114,10 +118,12 @@ export function McpServers() {
           {data?.missing && (
             <p className="flex max-w-[68ch] items-start gap-2 text-[12.5px] text-muted leading-normal">
               <span className="mt-1.5 size-1.5 flex-none rounded-full bg-dim" />
-              No config there yet. Copy{" "}
-              <code className="font-mono text-body">.mcp.json.example</code> to{" "}
-              <code className="font-mono text-body">.mcp.json</code> in the repo
-              root and fill in the paths.
+              <span>
+                No config there yet. Copy{" "}
+                <code className="font-mono text-body">.mcp.json.example</code>{" "}
+                to <code className="font-mono text-body">.mcp.json</code> in the
+                repo root and fill in the paths.
+              </span>
             </p>
           )}
 

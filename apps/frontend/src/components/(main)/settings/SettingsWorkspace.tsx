@@ -32,9 +32,8 @@ export function SettingsWorkspace() {
             </Chip>
           }
         >
-          <div className="px-1 pb-1">
-            <AiSettings asPage />
-          </div>
+          {/* AiSettings brings its own p-4, so the two panels end up with the same inset */}
+          <AiSettings asPage />
         </Panel>
         <Panel label="Connect your own agent" aside={<Chip>Skill · MCP</Chip>}>
           <AgentConnect />

@@ -77,7 +77,7 @@ claude mcp add dort -- node "$PWD/dort-mcp.mjs" --data="$PWD/dort-data.json"`,
   };
 
   return (
-    <div className="flex flex-col gap-5 px-1 pb-1">
+    <div className="flex flex-col gap-5 px-4 pb-4">
       <section className="flex flex-col gap-2.5">
         <h3 className="font-medium text-[13px] text-fg">Skill</h3>
         <p className="max-w-[68ch] text-[12.5px] text-muted leading-normal">
