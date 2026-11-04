@@ -64,8 +64,9 @@ node dort-bridge.mjs --app http://localhost:3000  # optional: run forge from the
 ```
 
 The bridge has no default origin: it runs `node dort-export.mjs` on your machine when asked, so it
-trusts only the origin you name with `--app`. With it running, the run buttons on `full` run
-`forge` on your computer; your code is never uploaded. The first time, Chrome,
+trusts only the origin you name with `--app`. With it running, **Reload run** in Chat's sidebar
+re-exports from your project through it, and on `full` the Start test buttons do too; your code is
+never uploaded. The first time, Chrome,
 Brave or Edge ask to let the page reach your computer or local network — allow it. Safari does not,
 so use another browser for the bridge. Without it, everything else works from a dropped
 `dort-data.json`.
@@ -114,7 +115,7 @@ aderyn . -o reports/aderyn.json                # optional: picked up automatical
 ### Load it
 
 - **Drop it in:** click *Sample data → Use my project* and drop `dort-data.json`. It is read in that browser tab only.
-- **Keep it live:** start the app pointing at the file, so every export is picked up on the next request. (On `full`, **Reload trace** (⌘R) and **Start test** do this from the page.)
+- **Keep it live:** start the app pointing at the file, then press **Reload run** (⌘R) in Chat's sidebar after each export — or link the bridge and let that button run the export for you. (**Start test**, which picks the tests and the fork from the page, is on `full`.)
 
   ```bash
   DORT_DATA_PATH=/abs/path/to/your-project/dort-data.json pnpm dev
@@ -127,6 +128,7 @@ aderyn . -o reports/aderyn.json                # optional: picked up automatical
 pnpm dev            # Next.js dev server
 pnpm build          # production build
 pnpm lint           # biome check
+pnpm check          # every sibling *.check.ts (31 of them)
 pnpm format         # biome format --write
 
 # foundry
@@ -208,9 +210,10 @@ Dort needs a chain whose deployed contracts can be read and executed call by cal
 provides exactly that through an Ethereum JSON-RPC over a WASM runtime, so a Portaldot auditor gets
 the same decoded traces an Ethereum auditor has — against contracts that really live on Portaldot
 (`PortaldotTest` reads Wrapped POT and Portal USDT at every run). In return, the ecosystem gets a
-defensive tool: a reviewer can fork Portaldot, replay a protocol's own Foundry tests against live
-state, and see every call next to the line of Solidity that ran, with Slither and Aderyn findings
-pinned to the same function.
+defensive tool: a reviewer can paste a Portaldot transaction and read what it actually did, or
+fork the chain and replay a protocol's own Foundry tests against live state, seeing every call
+next to the line of Solidity that ran. The first of those works on Portaldot and on none of the
+other chains here, because none of them will answer `debug_traceTransaction`.
 
 ---
 
