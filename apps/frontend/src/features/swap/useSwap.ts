@@ -51,7 +51,20 @@ export type SwapState = {
 
 const ZERO = "0x0000000000000000000000000000000000000000";
 
-export function useSwap(wallet: Wallet, from: Token, to: Token): SwapState {
+/**
+ * `local` points every read at the anvil in LOCAL_RPC instead of the public RPC, the way
+ * useVault already does. It is not a convenience: Portaldot's faucet is the only way onto the
+ * live chain, and when it is down an unfunded reader sees a balance of 0, a disabled button and
+ * a receipt wait that never returns — the page is dead for a reason that has nothing to do with
+ * this code. Against a fork of the chain (script/portaldot-fork-demo.sh) the pools, the router
+ * and its arithmetic are the real ones; only the funds are local.
+ */
+export function useSwap(
+  wallet: Wallet,
+  from: Token,
+  to: Token,
+  local = false,
+): SwapState {
   const [pair, setPair] = useState<Address | null>(null);
   const [reserveIn, setReserveIn] = useState<bigint | null>(null);
   const [reserveOut, setReserveOut] = useState<bigint | null>(null);
@@ -80,7 +93,7 @@ export function useSwap(wallet: Wallet, from: Token, to: Token): SwapState {
     }
     void (async () => {
       try {
-        const c = publicClient(SWAP_CHAIN);
+        const c = publicClient(SWAP_CHAIN, local);
         const p = (await c.readContract({
           address: FACTORY,
           abi: FACTORY_ABI,
@@ -151,7 +164,7 @@ export function useSwap(wallet: Wallet, from: Token, to: Token): SwapState {
         if (!stale()) setError(reason(e));
       }
     })();
-  }, [inAddr, outAddr, sameToken, account, from.native, to.native]);
+  }, [inAddr, outAddr, sameToken, account, from.native, to.native, local]);
 
   useEffect(() => {
     refresh();
@@ -175,14 +188,14 @@ export function useSwap(wallet: Wallet, from: Token, to: Token): SwapState {
         }),
       });
       setTxHash(hash);
-      await publicClient(SWAP_CHAIN).waitForTransactionReceipt({ hash });
+      await publicClient(SWAP_CHAIN, local).waitForTransactionReceipt({ hash });
       setStep("idle");
       refresh();
     } catch (e) {
       setError(reason(e));
       setStep("error");
     }
-  }, [inAddr, from.native, wallet, refresh]);
+  }, [inAddr, from.native, wallet, refresh, local]);
 
   const swap = useCallback(
     async (amount: bigint, expected: bigint, slippageBps: number) => {
@@ -191,7 +204,7 @@ export function useSwap(wallet: Wallet, from: Token, to: Token): SwapState {
       setError(null);
       setStep("submit");
       try {
-        const c = publicClient(SWAP_CHAIN);
+        const c = publicClient(SWAP_CHAIN, local);
         // the chain prices it too: if the pool moved since the last read, use ITS number, so the
         // floor below is never computed from a quote that is already stale
         const amounts = (await c.readContract({
@@ -239,7 +252,7 @@ export function useSwap(wallet: Wallet, from: Token, to: Token): SwapState {
         setStep("error");
       }
     },
-    [from, to, account, wallet, refresh],
+    [from, to, account, wallet, refresh, local],
   );
 
   return {

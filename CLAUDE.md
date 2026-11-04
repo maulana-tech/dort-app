@@ -46,6 +46,7 @@ node dort-mcp.mjs --data=/abs/dort-data.json    # MCP server over stdio
 node dort-bridge.mjs                             # lets the hosted app run forge locally
 bash script/bridge-local-demo.sh                 # the whole bridge on two local anvils
 bash script/vault-local-demo.sh                  # DortSafeVault on one local anvil, for /vault
+bash script/portaldot-fork-demo.sh [0xaddr]      # fork Portaldot V3: the real DEX, local funds
 ```
 
 CI runs `pnpm check` (and the exporter's `node --test *.test.mjs`), so a broken check fails the build. Still run it yourself after touching anything in `features/*/utils/` — it is a second or two.
@@ -84,6 +85,15 @@ Export pipeline (`dort-export.mjs` orchestrates, each other script owns one sect
   `EXISTENTIAL_DEPOSIT` in `features/swap/swap.ts` carries the finding with its own check. An
   EVM address maps to a native `5…` address by padding the 20 bytes with `0xEE` twelve times
   (SS58 format 42), and tokens sent there land on that same `0x` account.
+- **Portaldot can be forked, so `swap` is runnable without a faucet.** Its eth-rpc serves
+  ordinary EVM bytecode (PortalSwapRouter's code begins `6080604052`, not a PolkaVM blob), so
+  `anvil --fork-url` executes the real router, factory and pools, and the fork keeps chain id
+  420420777. `script/portaldot-fork-demo.sh` starts one on the port `LOCAL_RPC[PORTALDOT_ID]`
+  already names, and `useSwap(…, local)` points the page's reads at it — the same arrangement
+  `useVault` has. That matters because the chain has no official faucet: without it an unfunded
+  reader sees a balance of 0, a disabled button and a receipt wait that never returns. It is not
+  a substitute for a public deploy and the script says so; `swap.check.ts` holds the script's
+  port against the table.
 - `foundry/src/DortSafeVault.sol` is the vault written correctly — CEI, a reentrancy guard, rounding always toward the vault, a virtual offset against the first-depositor attack. `src/DortVault.sol` is its deliberately flawed twin, which the trace view teaches on. Don't "fix" DortVault.
 - Docs pages are data, not MDX: `src/features/docs/pages.ts`.
 

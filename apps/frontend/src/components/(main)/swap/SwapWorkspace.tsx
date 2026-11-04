@@ -56,10 +56,14 @@ export function SwapWorkspace() {
   const [toId, setToId] = useState("pUSDT");
   const [input, setInput] = useState("");
   const [slippage, setSlippage] = useState<number>(DEFAULT_SLIPPAGE);
+  /* Reads against a local fork of Portaldot rather than the public RPC. Off by default — the
+     live chain is the honest thing to show — but the only route in is a faucet, so when that is
+     down this page would otherwise read 0 and disable itself for a reason that is not ours. */
+  const [useLocal, setUseLocal] = useState(false);
 
   const from = tokenById(fromId);
   const to = tokenById(toId);
-  const s = useSwap(wallet, from, to);
+  const s = useSwap(wallet, from, to, useLocal);
 
   const amount = useMemo(
     () => parseAmount(input, from.decimals),
@@ -380,7 +384,33 @@ export function SwapWorkspace() {
                   {`chain ${SWAP_CHAIN}`}
                 </Chip>
                 <Chip>{shortAddress(ROUTER)}</Chip>
+                {useLocal && (
+                  <Chip dot tone="warn">
+                    reading a local fork
+                  </Chip>
+                )}
               </div>
+              <p className="mt-3 text-ui-xs text-dim">
+                {useLocal
+                  ? "Reserves, the router and its arithmetic are the real ones, copied from the chain when the fork started; only the funds are local."
+                  : "No POT? Fork the chain instead of waiting for a faucet — the pools and the router are the live ones."}{" "}
+                <button
+                  type="button"
+                  onClick={() => setUseLocal(!useLocal)}
+                  className="text-ui-xs text-dim underline-offset-2 hover:text-fg hover:underline"
+                >
+                  {useLocal ? "Use the live chain" : "Use a local fork"}
+                </button>
+              </p>
+              {useLocal && (
+                <p className="mt-2 text-ui-xs text-dim">
+                  Start it with{" "}
+                  <code className="font-mono">
+                    script/portaldot-fork-demo.sh
+                  </code>
+                  , then point your wallet at the same node.
+                </p>
+              )}
             </div>
           </Panel>
         </div>

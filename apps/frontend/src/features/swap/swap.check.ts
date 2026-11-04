@@ -275,4 +275,41 @@ assert.doesNotMatch(
   "it is the chain's deposit, not our gas reserve and not something Dort took",
 );
 
+// ── the fork demo and the page's local RPC must name the same node ─────────────────────────
+// The "Use a local fork" switch reads LOCAL_RPC[PORTALDOT_ID]; the script starts anvil on a
+// port of its own. Nothing connects the two but agreement, and when they drift the switch
+// points at a node nobody started — which looks exactly like the faucet problem it exists to
+// get around. So hold the port in the table against the port in the script.
+const forkSh = readFileSync(
+  new URL(
+    "../../../../../foundry/script/portaldot-fork-demo.sh",
+    import.meta.url,
+  ),
+  "utf8",
+);
+const rpcMatch = /\[PORTALDOT_ID\]: "http:\/\/127\.0\.0\.1:(\d+)"/.exec(
+  chainsTs,
+);
+assert.ok(rpcMatch, "chains.ts must map PORTALDOT_ID to a local RPC");
+const portMatch = /anvil --port (\d+) --fork-url/.exec(forkSh);
+assert.ok(
+  portMatch,
+  "portaldot-fork-demo.sh must start anvil with --port and --fork-url",
+);
+assert.equal(
+  portMatch[1],
+  rpcMatch[1],
+  "the fork script's port is the one LOCAL_RPC sends the page to",
+);
+// a fork of the chain, not a bare anvil pretending: the pools have to be the real ones
+assert.match(
+  forkSh,
+  /test-evm-rpc-v3\.portaldot\.dev/,
+  "the demo must fork Portaldot itself, or the router and pools would not exist on it",
+);
+assert.ok(
+  forkSh.includes(String(SWAP_CHAIN)),
+  "the script must verify it really is on chain " + SWAP_CHAIN,
+);
+
 console.log("swap ok");

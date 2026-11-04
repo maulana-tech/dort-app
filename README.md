@@ -200,7 +200,7 @@ Portaldot Hacker House 2026.
 | **Other chains** | Ethereum, Arbitrum, Base, Robinhood Chain, Hyperliquid, Tempo (testnet forks) |
 | **Contract address** | `DortSafeVault` on Base Sepolia: [`0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8`](https://sepolia.basescan.org/address/0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8) — over Circle's USDC, block 53482026 |
 | **Transaction hash** | [`0x2aafcfaa81d24ed15d4c5412da0458f952c2288351467a161184d27d69904e8d`](https://sepolia.basescan.org/tx/0x2aafcfaa81d24ed15d4c5412da0458f952c2288351467a161184d27d69904e8d) |
-| **On Portaldot V3** | _pending testnet tPOT: distribution is handed out by an admin, not a faucet. [`script/DeployVault.s.sol`](foundry/script/DeployVault.s.sol) and [`script/DeployPortaldot.s.sol`](foundry/script/DeployPortaldot.s.sol) are both simulated clean against the live chain (3.0M and 5.2M gas, ~0.0000004 POT in total) and `VAULTS` already names pUSDT as the asset — only the gas is missing._ |
+| **On Portaldot V3** | _pending testnet tPOT: distribution is handed out by an admin, not a faucet. [`script/DeployVault.s.sol`](foundry/script/DeployVault.s.sol) and [`script/DeployPortaldot.s.sol`](foundry/script/DeployPortaldot.s.sol) are both simulated clean against the live chain (3.0M and 5.2M gas, ~0.0000004 POT in total), and `DeployPortaldot.s.sol` runs to completion against a **fork** of it — chain id `420420777`, vault deployed, first shares minted ([`script/portaldot-fork-demo.sh`](foundry/script/portaldot-fork-demo.sh)). `VAULTS` already names pUSDT as the asset. Only the gas for a public broadcast is missing. `/swap` needs no deploy at all and trades on the real router over that same fork._ |
 | **Website** | [dort-app.vercel.app](https://dort-app.vercel.app) — Chat, Explore and the wallet pages. Running `forge` against your own project still needs Dort on your machine, which is what lets it read your source |
 | **Source** | [github.com/maulana-tech/dort-app](https://github.com/maulana-tech/dort-app) |
 
@@ -449,6 +449,21 @@ assumed from the V2 interface:
 changing the fee or the rounding stops matching the chain and fails the build. The page prices a
 trade locally while you type, then asks the router again before signing and takes `amountOutMin`
 from that second number.
+
+**No tPOT? Fork the chain.** Portaldot has no official faucet — distribution is an admin's
+decision — which would normally leave this page reading a balance of 0 and disabling itself. But
+the chain's eth-rpc serves ordinary EVM bytecode (the router's code begins `6080604052`, not a
+PolkaVM blob), so `anvil` can fork it and execute the real contracts:
+
+```bash
+bash script/portaldot-fork-demo.sh 0xyour-address
+```
+
+That starts a fork on the port the app already looks for, swaps 1 POT for pUSDT through the
+genuine router, and funds your address with 100 POT. Press **Use a local fork** on `/swap` and
+point your wallet at `127.0.0.1:8546`, chain id `420420777`. The router, the factory, the pools
+and their reserves are the live ones, copied the moment the fork started — only the funds are
+local, and nothing is broadcast to the public chain.
 
 ---
 
