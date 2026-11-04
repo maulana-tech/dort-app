@@ -78,6 +78,14 @@ export const VAULTS: Record<number, VaultDeployment[]> = {
   84532: [
     {
       // deployed 2026-11-02, block 53482026, tx 0x2aafcfaa…04e8d
+      //
+      // Funded for real on 2026-11-04: 20 USDC in at block 54377074,
+      // tx 0xa89a75c364ac9a2d201bbfac93951295acfca4aac974c3267318b9b307ec5a44
+      // (the approve before it, block 54376967, tx 0x113aa3ba…d5e5c). It minted
+      // 20,000,000,000 shares — the 10**3 virtual offset against the first-depositor
+      // attack is why that is not 20,000,000 — and previewRedeem on all of them returns
+      // exactly 20,000,000 back, so the first deposit into an empty vault lost nothing to
+      // rounding. Gas for both: 0.00000107 ETH.
       vault: "0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8",
       asset: BASE_SEPOLIA_USDC,
       symbol: "USDC",

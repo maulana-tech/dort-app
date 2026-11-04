@@ -198,7 +198,7 @@ Portaldot Hacker House 2026.
 | **Track** | Node Operations & Tooling — network security analysis tooling for the Portaldot ecosystem |
 | **Chain** | Portaldot V3 Testnet, chain id `420420777`, EVM RPC `https://test-evm-rpc-v3.portaldot.dev` |
 | **Other chains** | Ethereum, Arbitrum, Base, Robinhood Chain, Hyperliquid, Tempo (testnet forks) |
-| **Contract address** | `DortSafeVault` on Base Sepolia: [`0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8`](https://sepolia.basescan.org/address/0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8) — over Circle's USDC, block 53482026 |
+| **Contract address** | `DortSafeVault` on Base Sepolia: [`0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8`](https://sepolia.basescan.org/address/0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8) — over Circle's USDC, block 53482026, holding 20 USDC |
 | **Transaction hash** | [`0x2aafcfaa81d24ed15d4c5412da0458f952c2288351467a161184d27d69904e8d`](https://sepolia.basescan.org/tx/0x2aafcfaa81d24ed15d4c5412da0458f952c2288351467a161184d27d69904e8d) |
 | **On Portaldot V3** | _pending testnet tPOT: distribution is handed out by an admin, not a faucet. [`script/DeployVault.s.sol`](foundry/script/DeployVault.s.sol) and [`script/DeployPortaldot.s.sol`](foundry/script/DeployPortaldot.s.sol) are both simulated clean against the live chain (3.0M and 5.2M gas, ~0.0000004 POT in total), and `DeployPortaldot.s.sol` runs to completion against a **fork** of it — chain id `420420777`, vault deployed, first shares minted ([`script/portaldot-fork-demo.sh`](foundry/script/portaldot-fork-demo.sh)). `VAULTS` already names pUSDT as the asset. Only the gas for a public broadcast is missing. `/swap` needs no deploy at all and trades on the real router over that same fork._ |
 | **Website** | [dort-app.vercel.app](https://dort-app.vercel.app) — Chat, Explore and the wallet pages. Running `forge` against your own project still needs Dort on your machine, which is what lets it read your source |
@@ -405,6 +405,14 @@ two places, and the page opens on whichever of them really has one.
 |---|---|---|
 | Base Sepolia (`84532`) | USDC `0x036CbD53…cF7e` (Circle's) | [`0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8`](https://sepolia.basescan.org/address/0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8) |
 | Portaldot V3 (`420420777`) | pUSDT `0xe0114Adc…Dbc2` (the token `/swap` trades) | pending tPOT |
+
+The Base Sepolia vault holds real money, not a zero: **20 USDC went in on 2026-11-04**, block
+54377074, tx
+[`0xa89a75c3…c5a44`](https://sepolia.basescan.org/tx/0xa89a75c364ac9a2d201bbfac93951295acfca4aac974c3267318b9b307ec5a44).
+It minted 20,000,000,000 shares — the 10³ virtual offset against the first-depositor attack is
+why that is not 20,000,000 — and `previewRedeem` on all of them returns exactly 20,000,000, so
+the first deposit into an empty vault lost nothing to rounding. The whole thing, approve
+included, cost 0.00000107 ETH in gas.
 
 Portaldot is the better home and stays first in the picker: one chain and one faucet would cover
 the whole loop — POT from the faucet, swapped for pUSDT on PortalSwapRouter, deposited into the
