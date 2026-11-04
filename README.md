@@ -571,6 +571,28 @@ of friction. Your own key has no limit at all, because it is your bill.
 
 Only the selected piece is sent: its name, its own source lines (at most 120), the pieces connected to it, open findings on it, a built-in checklist and the question. A fixed system prompt keeps the model defensive: explain behaviour, list what an auditor should check, write a Foundry test that pins **intended** behaviour, and refuse to write exploits. Details in [`/docs/ai`](https://dort-app.vercel.app/docs/ai).
 
+### Agent skill
+
+Dort's own view of a run, as instructions another agent can load. One file, no dependencies:
+
+```sh
+npx dort-skill            # into .claude/skills/dort/SKILL.md
+npx dort-skill --global   # or for every project
+```
+
+Or without npm, from any running Dort — the same file, served:
+
+```sh
+mkdir -p .claude/skills/dort
+curl -fsSL "https://dort-app.vercel.app/skill/dort/SKILL.md" -o .claude/skills/dort/SKILL.md
+```
+
+It teaches an agent where a run is, how to walk a decoded trace, what each `atlas` field means,
+which `jq` projection answers which question, and the one rule: explain the code, never write the
+exploit. Source and installer are in [`packages/dort-skill`](packages/dort-skill);
+`features/run/utils/skill.check.ts` holds every name in it against the half of the repo that
+produces that name, which is how three wrong field names were caught before anybody ran it.
+
 ### MCP server
 
 [`dort-mcp.mjs`](foundry/dort-mcp.mjs) lets your own AI client (Claude Code, Claude Desktop, Cursor) read a run. Plain Node, stdio, no network. Details in [`/docs/mcp`](https://dort-app.vercel.app/docs/mcp).
