@@ -175,6 +175,29 @@ export const deadline = (now: number, minutes = 20): bigint =>
  */
 export const GAS_RESERVE = 10n ** 16n; // 0.01 POT
 
+/**
+ * What Portaldot keeps back from every account, and never lets anyone spend.
+ *
+ * The chain's existential deposit is 0.1 tPOT, and `eth_getBalance` already subtracts it: an
+ * account holding exactly the deposit reads as zero over the Ethereum RPC, and one holding ten
+ * reads 9.9. So the figure this page shows is the spendable one, which is the right figure to
+ * show — what was missing is the sentence explaining why it sits a tenth below what a wallet
+ * reports, which otherwise reads as a bug in Dort.
+ *
+ * Measured, not assumed. Of 25 EVM-mapped accounts read straight out of the chain's
+ * System.Account storage, 19 matched (free − deposit) × 10⁴ to the Planck; the other six were
+ * accounts in motion and differed only below a single Planck. The chain itself reports 14
+ * decimals natively while the Ethereum RPC presents 18, which is where the 10⁴ comes from.
+ *
+ * This is separate from GAS_RESERVE above: that one is ours, held back so a trade does not eat
+ * the gas it needs. This one is the chain's, and is gone before we ever see the balance.
+ */
+export const EXISTENTIAL_DEPOSIT = 10n ** 17n; // 0.1 POT, in the 18-decimal units the RPC uses
+
+/** The line shown beside a native balance, or null when the token is an ordinary ERC-20. */
+export const depositNote = (native: boolean): string | null =>
+  native ? "0.1 POT is the chain's account deposit and cannot be spent" : null;
+
 export function maxSpendable(balance: bigint, native: boolean): bigint {
   if (balance <= 0n) return 0n;
   if (!native) return balance;

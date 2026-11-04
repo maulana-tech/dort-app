@@ -21,6 +21,7 @@ import {
   amountOut,
   asErc20,
   DEFAULT_SLIPPAGE,
+  depositNote,
   FEE_BPS,
   IMPACT_WARN_BPS,
   isWrap,
@@ -80,6 +81,9 @@ export function SwapWorkspace() {
     s.allowance < amount;
   const tooMuch =
     amount !== null && s.balanceIn !== null && amount > s.balanceIn;
+  // why a native balance reads a tenth below what the wallet says: the chain keeps that much
+  // in every account and eth_getBalance has already taken it off
+  const deposit = depositNote(!!from.native);
 
   const act = swapAction({
     connected: Boolean(wallet.account),
@@ -155,9 +159,12 @@ export function SwapWorkspace() {
                   : `1 ${from.symbol} ≈ ${formatAmount(rate, to.decimals)} ${to.symbol}`
               }
               available={
-                s.balanceIn === null
-                  ? undefined
-                  : `Available ${formatAmount(s.balanceIn, from.decimals)}`
+                s.balanceIn === null ? undefined : (
+                  <>
+                    {`Available ${formatAmount(s.balanceIn, from.decimals)}`}
+                    {deposit && <span className="text-dim"> · {deposit}</span>}
+                  </>
+                )
               }
               onMax={
                 s.balanceIn && maxSpendable(s.balanceIn, !!from.native) > 0n

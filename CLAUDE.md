@@ -76,6 +76,14 @@ Export pipeline (`dort-export.mjs` orchestrates, each other script owns one sect
 - Features: `trace`, `atlas` (includes the Lab/scenario editor and Paths), `run` (Start test + bridge), `ai`, `explore`, `exploits`, `docs`, plus the three on-chain ones, `bridge`, `vault` and `swap`.
 - `bridge`, `vault` and `swap` are the only features that talk to a wallet. `bridge` owns the wallet layer — `wallet.ts` (pure: EIP-6963 discovery rules, ordering, the remembered choice) and `useWallet.ts` (the listening, connect/disconnect, `switchTo`, `send`, `codeAt`) — plus the chain list and the ERC-20 ABI slice; `vault` and `swap` import them rather than keeping a second copy. Wallets are found by EIP-6963, never by reading `window.ethereum` directly (that slot holds one provider and every extension overwrites it); the single slot is kept only as a last-resort entry, listed last. Their cards are assembled from the shared pieces in `src/components/(main)/action/` (`ActionCard.tsx`, `TokenSelect.tsx`, `WalletButton.tsx`).
 - `swap` drives **PortalSwapRouter**, Portaldot V3's own DEX (a Uniswap V2 fork, 30 bps). Its addresses, fee, function names (`WPOT()` not `WETH()`; no fee-on-transfer variant) and its 10 pools over 5 tokens were all read off the live chain, and `swap.check.ts` pins the local quote maths against `getAmountsOut` answers recorded from it — change the fee or the rounding and the check stops matching the chain. Every pair has a pool, so a path is always one hop.
+- **Portaldot keeps 0.1 tPOT in every account and `eth_getBalance` subtracts it.** The chain's
+  existential deposit: a wallet showing 10 reads 9.9 here, and one holding exactly the deposit
+  reads 0. The chain reports 14 decimals natively while its Ethereum RPC presents 18, so the two
+  sides differ by 10⁴ as well — `nativeCurrency.decimals: 18` is correct and must not be
+  "fixed" to 14. Both were measured against live `System.Account` storage, and
+  `EXISTENTIAL_DEPOSIT` in `features/swap/swap.ts` carries the finding with its own check. An
+  EVM address maps to a native `5…` address by padding the 20 bytes with `0xEE` twelve times
+  (SS58 format 42), and tokens sent there land on that same `0x` account.
 - `foundry/src/DortSafeVault.sol` is the vault written correctly — CEI, a reentrancy guard, rounding always toward the vault, a virtual offset against the first-depositor attack. `src/DortVault.sol` is its deliberately flawed twin, which the trace view teaches on. Don't "fix" DortVault.
 - Docs pages are data, not MDX: `src/features/docs/pages.ts`.
 

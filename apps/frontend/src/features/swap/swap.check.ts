@@ -7,6 +7,8 @@ import {
   asErc20,
   DEFAULT_SLIPPAGE,
   deadline,
+  depositNote,
+  EXISTENTIAL_DEPOSIT,
   FEE_BPS,
   GAS_RESERVE,
   IMPACT_BLOCK_BPS,
@@ -246,6 +248,31 @@ assert.equal(
 assert.equal(
   swapAction({ ...base, connected: false, impactBps: 9000 }).disabled,
   false,
+);
+
+// ── the chain's own reserve, which is not ours and is gone before we see a balance ────────
+// Portaldot keeps 0.1 tPOT in every account and eth_getBalance subtracts it, so a wallet
+// showing 10 reads 9.9 here. Read off the live chain: of 25 EVM-mapped accounts, 19 matched
+// (free - deposit) x 10^4 exactly and the rest differed only below one Planck.
+assert.equal(
+  EXISTENTIAL_DEPOSIT,
+  10n ** 17n,
+  "0.1 POT, in the 18-decimal units the Ethereum RPC reports",
+);
+assert.ok(
+  EXISTENTIAL_DEPOSIT > GAS_RESERVE,
+  "the chain holds back more than we do, which is why the gap is worth a sentence",
+);
+assert.equal(
+  depositNote(false),
+  null,
+  "an ERC-20 has no account deposit; saying so beside one would be noise",
+);
+assert.match(depositNote(true) ?? "", /0\.1 POT/);
+assert.doesNotMatch(
+  depositNote(true) ?? "",
+  /fee|gas|Dort/i,
+  "it is the chain's deposit, not our gas reserve and not something Dort took",
 );
 
 console.log("swap ok");
