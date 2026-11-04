@@ -1,18 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  Button,
-  Dropdown,
-  Input,
-  PH,
-  PhIcon,
-  SegmentedControl,
-} from "@/components/ui";
+import { Button, Dropdown, Input, PH, PhIcon } from "@/components/ui";
 import {
   type AiConfig,
   type AiKind,
   aiReady,
+  askStream,
+  bedrockBase,
   CLAUDE_HERE,
   claudeModels,
   configFor,
@@ -20,7 +15,6 @@ import {
   NO_AI,
   PROVIDERS,
   saveAiConfig,
-  testConnection,
   useAiConfig,
   useHostedAi,
 } from "@/features/ai";
@@ -51,7 +45,63 @@ const KIND_NOTE: Partial<Record<AiKind, string>> = {
     "Your own AWS account, and any model it can invoke — not only Anthropic's. minimax.minimax-m2.5, zai.glm-4.7-flash, qwen.qwen3-coder-next, moonshotai.kimi-k2.5 and deepseek.deepseek-v3.2 all work; the id decides which of Bedrock's two APIs answers. Your question goes straight from your browser to Bedrock in the region above, and Dort never holds an AWS key. Bedrock does not store prompts or train on them by default — but model invocation logging, if you have it on, writes them in full to your CloudWatch or S3, and a cross-region inference profile can carry them out of this region. The key is stored in this browser's localStorage, so give it an IAM role that can do nothing but invoke the models you need, and prefer a short-term key.",
 };
 
-type Test = { state: "idle" | "busy" | "ok" | "bad"; text?: string };
+/** One line in the connection log: a clock, a dot and what happened. */
+type Line = {
+  id: number;
+  at: string;
+  tone: "ok" | "bad" | "dim";
+  text: string;
+};
+type Phase = "idle" | "busy" | "ok" | "bad";
+
+/**
+ * The connection test asks a real question instead of "reply with ok".
+ *
+ * A key that works and a model that cannot read Solidity are different problems, and the second
+ * is the one that wastes an afternoon — it passes the old test and then answers uselessly all
+ * day. This function writes its balance *after* the external call, so an answer that names
+ * reentrancy, or just the order of those two lines, has proved the whole path at once: the
+ * endpoint, the key, the model id, and the kind of reading Dort is going to ask it for.
+ */
+const TEST_PROMPT = `A connection test from Dort, a smart-contract review tool. In one sentence, under 25 words: what is wrong with this function?
+
+function withdraw(uint256 a) external {
+  (bool ok,) = msg.sender.call{value: a}("");
+  require(ok);
+  balance[msg.sender] -= a;
+}`;
+
+/** Enough for a sentence. The ceiling matters most on Dort's own model, where it is not your bill. */
+const TEST_TOKENS = 120;
+
+/**
+ * The host the browser will actually open a connection to.
+ *
+ * Shown because it is the only answer to "where does my code go" that cannot be spun. The three
+ * that are not a plain URL are the three worth being explicit about: "none" reaches nothing,
+ * "dort" goes through the operator's server before it reaches a model, and "claude" never leaves
+ * the loopback interface. For Bedrock the host is rebuilt from the region by the same hardened
+ * function the request uses, so what is printed here is what will be dialled.
+ */
+function destination(c: AiConfig): string {
+  if (c.kind === "none") return "nothing — answered on this machine";
+  if (c.kind === "dort") return "this Dort's server → Amazon Bedrock";
+  if (c.kind === "claude") return "127.0.0.1 → your own Claude Code";
+  const raw =
+    c.kind === "bedrock"
+      ? bedrockBase(c.baseUrl)
+      : c.baseUrl || PROVIDERS[c.kind].baseUrl;
+  try {
+    return new URL(raw).host;
+  } catch {
+    return raw || "—";
+  }
+}
+
+const OPEN = "dort-ai-settings";
+/** Opens the AI provider dialog from anywhere (the trace's Ask AI panel). */
+export const openAiSettings = () => dispatchEvent(new Event(OPEN));
+
 /** signing Claude Code in or out: confirm = asked to sign out, waiting = finishing on claude.ai */
 type Auth = {
   step: "idle" | "confirm" | "busy" | "waiting";
@@ -68,21 +118,30 @@ type ClaudeStatus = {
   error?: string;
 } | null;
 
-const OPEN = "dort-ai-settings";
-/** Opens the AI provider dialog from anywhere (the trace's Ask AI panel). */
-export const openAiSettings = () => dispatchEvent(new Event(OPEN));
-
-/** "AI provider" settings: none (canned answers), a local model, or the user's own API key. */
+/**
+ * "AI provider": a console, not a form.
+ *
+ * It used to be a segmented control over a four-row form, which fitted the header capsule it was
+ * born in and told you nothing until you pressed Save and asked a real question somewhere else.
+ * The two columns here are the two questions actually being answered — *which* AI, and *what it
+ * means* — and the right-hand side proves its own answer: the test streams a real reply out of
+ * the real provider, logs the round trip, and says which host the browser opened. A provider you
+ * have watched read a reentrancy bug is connected in a way that "Connected ✓" never established.
+ */
 export function AiSettings({ asPage = false }: { asPage?: boolean } = {}) {
   const { ready: hostedAi, models: hostedModels } = useHostedAi();
   const saved = useAiConfig();
   const dialog = useRef<HTMLDialogElement>(null);
   const [draft, setDraft] = useState<AiConfig>(NO_AI);
-  const [test, setTest] = useState<Test>({ state: "idle" });
+  const [lines, setLines] = useState<Line[]>([]);
+  const [reply, setReply] = useState("");
+  const [phase, setPhase] = useState<Phase>("idle");
   const [claude, setClaude] = useState<ClaudeStatus>(null);
   const [tick, setTick] = useState(0);
   const [auth, setAuth] = useState<Auth>({ step: "idle" });
+  const run = useRef<AbortController | null>(null);
   const mode = modeOf(draft.kind);
+
   // ask the local bridge whether Claude Code is here and signed in, each time "Your Claude" is
   // shown and after signing in or out
   useEffect(() => {
@@ -113,6 +172,10 @@ export function AiSettings({ asPage = false }: { asPage?: boolean } = {}) {
     const id = setInterval(() => setTick((t) => t + 1), 2000);
     return () => clearInterval(id);
   }, [auth.step, claude?.loggedIn]);
+  // a test still streaming when the dialog closes or the page leaves is a request nobody will
+  // read, billed to somebody
+  useEffect(() => () => run.current?.abort(), []);
+
   /** Claude Code's own sign-in / sign-out, run on this laptop by app/api/claude/auth */
   const authOp = async (op: "login" | "logout") => {
     setAuth({ step: "busy" });
@@ -124,7 +187,7 @@ export function AiSettings({ asPage = false }: { asPage?: boolean } = {}) {
       });
       const j = (await r.json()) as { error?: string; url?: string | null };
       if (!r.ok) return setAuth({ step: "idle", error: j.error });
-      setTest({ state: "idle" });
+      clear();
       setAuth(
         op === "login" ? { step: "waiting", url: j.url } : { step: "idle" },
       );
@@ -133,18 +196,32 @@ export function AiSettings({ asPage = false }: { asPage?: boolean } = {}) {
       setAuth({ step: "idle", error: (e as Error).message });
     }
   };
+
+  /** Anything that changes what would be dialled invalidates what the last test proved. */
+  const clear = () => {
+    run.current?.abort();
+    run.current = null;
+    setLines([]);
+    setReply("");
+    setPhase("idle");
+  };
   const edit = (patch: Partial<AiConfig>) => {
     setDraft({ ...draft, ...patch });
-    setTest({ state: "idle" });
+    clear();
   };
   const pick = (kind: AiKind) => {
     setDraft(kind === saved.kind ? saved : configFor(kind));
-    setTest({ state: "idle" });
+    clear();
   };
+  /** "Own API key" returns to the provider you had, not always to the first one in the list. */
+  const pickMode = (m: Mode) =>
+    pick(
+      m === "key" ? (KEYED.includes(saved.kind) ? saved.kind : "anthropic") : m,
+    );
 
   const open = () => {
     setDraft(saved);
-    setTest({ state: "idle" });
+    clear();
     dialog.current?.showModal();
   };
   const save = () => {
@@ -155,24 +232,90 @@ export function AiSettings({ asPage = false }: { asPage?: boolean } = {}) {
     edit({ key: "" });
     saveAiConfig(saved.kind === "local" ? { ...saved, key: "" } : NO_AI);
   };
-  const run = async () => {
-    setTest({ state: "busy" });
+
+  const say = (tone: Line["tone"], text: string) =>
+    setLines((ls) => [
+      ...ls,
+      {
+        id: ls.length,
+        at: new Date().toLocaleTimeString([], { hour12: false }),
+        tone,
+        text,
+      },
+    ]);
+
+  /** The test: a real question, streamed, timed, and logged as it happens. */
+  const test = async () => {
+    const ctrl = new AbortController();
+    run.current?.abort();
+    run.current = ctrl;
+    setLines([]);
+    setReply("");
+    setPhase("busy");
+    const started = performance.now();
+    const ms = () => Math.round(performance.now() - started);
+    say("dim", `opening ${destination(draft)}`);
+    let first = true;
+    let chars = 0;
     try {
-      const reply = await testConnection(draft);
-      setTest({
-        state: "ok",
-        text: `Connected · ${modelLabel(draft) || PROVIDERS[draft.kind].label} replied “${reply.slice(0, 40) || "(empty)"}”`,
-      });
+      for await (const piece of askStream(draft, TEST_PROMPT, ctrl.signal, {
+        maxTokens: TEST_TOKENS,
+      })) {
+        if (ctrl.signal.aborted) return;
+        if (first) {
+          first = false;
+          say("ok", `answering after ${ms()}ms`);
+        }
+        chars += piece.length;
+        setReply((r) => r + piece);
+      }
+      if (ctrl.signal.aborted) return;
+      say(
+        chars > 0 ? "ok" : "bad",
+        chars > 0
+          ? `done · ${chars} characters in ${ms()}ms · ${modelLabel(draft) || PROVIDERS[draft.kind].label}`
+          : "the provider answered, but with nothing in it",
+      );
+      setPhase(chars > 0 ? "ok" : "bad");
     } catch (e) {
-      setTest({ state: "bad", text: (e as Error).message });
+      if (ctrl.signal.aborted) return;
+      say("bad", (e as Error).message);
+      setPhase("bad");
     }
   };
+
   useEffect(() => {
     addEventListener(OPEN, open);
     return () => removeEventListener(OPEN, open);
   });
+
   const ready = aiReady(draft);
   const connected = saved.kind !== "none";
+  const choices: { mode: Mode; label: string; sub: string }[] = [
+    { mode: "none", label: "None", sub: "built-in text" },
+    // only offered where the deployment actually has a key (app/api/bedrock)
+    ...(hostedAi
+      ? [
+          {
+            mode: "dort" as const,
+            label: "Dort's model",
+            sub: "operator's AWS",
+          },
+        ]
+      : []),
+    // only a local Dort can run your Claude Code (CLAUDE_HERE)
+    ...(CLAUDE_HERE
+      ? [
+          {
+            mode: "claude" as const,
+            label: "Your Claude",
+            sub: "your plan, this laptop",
+          },
+        ]
+      : []),
+    { mode: "local", label: "Local model", sub: "your own endpoint" },
+    { mode: "key", label: "Own API key", sub: "straight to the provider" },
+  ];
 
   // one body, two frames: the dialog in the header family, and the settings page. Writing it
   // twice would be two places for a provider to be added to, and one of them would be missed.
@@ -194,38 +337,60 @@ export function AiSettings({ asPage = false }: { asPage?: boolean } = {}) {
           </span>
         </header>
       )}
-      <SegmentedControl<Mode>
-        value={mode}
-        onChange={(m) => pick(m === "key" ? "anthropic" : m)}
-        options={[
-          { value: "none", label: "None" },
-          // only offered where the deployment actually has a key (app/api/bedrock)
-          ...(hostedAi
-            ? [
-                {
-                  value: "dort" as const,
-                  label: "Dort's model",
-                  title:
-                    "This deployment's own Bedrock — no key needed, but it runs through its AWS account",
-                },
-              ]
-            : []),
-          // only a local Dort can run your Claude Code (CLAUDE_HERE)
-          ...(CLAUDE_HERE
-            ? [
-                {
-                  value: "claude" as const,
-                  label: "Your Claude",
-                  title: "Your own Claude Code and Claude plan, on this laptop",
-                },
-              ]
-            : []),
-          { value: "local", label: "Local model" },
-          { value: "key", label: "Own API key" },
-        ]}
-      />
-      {mode !== "none" && (
-        <div className="flex flex-col gap-2.5 rounded-inner border border-border bg-inner-grad p-3">
+
+      <div className="grid gap-3 sm:grid-cols-[172px_minmax(0,1fr)]">
+        {/* which AI. The dot is the saved one, so the list says what is in use even while you
+            look at something else; white is the one you are looking at (DESIGN.md: white =
+            active). */}
+        {/* real radios, not buttons with role="radio": the arrow keys then move between
+            providers the way a keyboard user expects, which a list of buttons does not do. */}
+        <fieldset className="m-0 flex min-w-0 flex-col gap-1 border-0 p-0">
+          <legend className="sr-only">Where answers come from</legend>
+          {choices.map((c) => {
+            const here = mode === c.mode;
+            const inUse = modeOf(saved.kind) === c.mode && connected;
+            return (
+              <label
+                key={c.mode}
+                className={`flex cursor-pointer items-center gap-2 rounded-tile border px-2.5 py-2 text-left transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-white/25 ${
+                  here
+                    ? "border-border bg-inset text-fg"
+                    : "border-transparent text-muted hover:bg-inset/60 hover:text-body"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="dort-ai-mode"
+                  value={c.mode}
+                  checked={here}
+                  onChange={() => pickMode(c.mode)}
+                  className="sr-only"
+                />
+                <span
+                  className={`size-1.5 flex-none rounded-full ${inUse ? "bg-green" : here ? "bg-fg" : "bg-dim"}`}
+                />
+                <span className="min-w-0">
+                  <span className="block truncate text-[13px]">{c.label}</span>
+                  <span className="block truncate text-[11.5px] text-dim">
+                    {c.sub}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+        </fieldset>
+
+        {/* what it means: the fields it needs, the test, and where the request goes */}
+        <div className="flex min-w-0 flex-col gap-2.5 rounded-inner border border-border bg-inner-grad p-3">
+          <div className="flex items-center gap-2">
+            <span className="truncate text-[13px] text-fg">
+              {mode === "none" ? "No model" : PROVIDERS[draft.kind].label}
+            </span>
+            {live(saved, draft) && (
+              <span className="ml-auto text-[11.5px] text-dim">in use</span>
+            )}
+          </div>
+
           {mode === "key" && (
             <Row label="Provider">
               <Dropdown
@@ -263,46 +428,48 @@ export function AiSettings({ asPage = false }: { asPage?: boolean } = {}) {
               onSignOut={() => authOp("logout")}
             />
           )}
-          <Row label="Model">
-            {mode === "dort" ? (
-              // a list, never a free field: the route honours only what the operator offers,
-              // so typing a model here would just be silently ignored
-              <Dropdown
-                ariaLabel="Model"
-                value={draft.model || hostedModels[0] || ""}
-                onChange={(m) => edit({ model: m })}
-                className="w-full"
-                mono
-                options={hostedModels.map((m, i) => ({
-                  value: m,
-                  label: i === 0 ? `${m} · default` : m,
-                  text: m,
-                }))}
-              />
-            ) : mode === "claude" ? (
-              <Dropdown
-                ariaLabel="Model"
-                value={draft.model || "default"}
-                onChange={(m) => edit({ model: m === "default" ? "" : m })}
-                className="w-full"
-                options={claudeModels(draft.model).map((m) => ({
-                  value: m.value || "default",
-                  label: `${m.label} · ${m.hint}`,
-                  text: m.label,
-                }))}
-              />
-            ) : (
-              <Input
-                aria-label="Model"
-                value={draft.model}
-                onChange={(e) => edit({ model: e.target.value })}
-                placeholder={PROVIDERS[draft.kind].model}
-                spellCheck={false}
-                className="w-full font-mono text-[12px]"
-              />
-            )}
-          </Row>
-          {mode !== "claude" && mode !== "dort" && (
+          {mode !== "none" && (
+            <Row label="Model">
+              {mode === "dort" ? (
+                // a list, never a free field: the route honours only what the operator offers,
+                // so typing a model here would just be silently ignored
+                <Dropdown
+                  ariaLabel="Model"
+                  value={draft.model || hostedModels[0] || ""}
+                  onChange={(m) => edit({ model: m })}
+                  className="w-full"
+                  mono
+                  options={hostedModels.map((m, i) => ({
+                    value: m,
+                    label: i === 0 ? `${m} · default` : m,
+                    text: m,
+                  }))}
+                />
+              ) : mode === "claude" ? (
+                <Dropdown
+                  ariaLabel="Model"
+                  value={draft.model || "default"}
+                  onChange={(m) => edit({ model: m === "default" ? "" : m })}
+                  className="w-full"
+                  options={claudeModels(draft.model).map((m) => ({
+                    value: m.value || "default",
+                    label: `${m.label} · ${m.hint}`,
+                    text: m.label,
+                  }))}
+                />
+              ) : (
+                <Input
+                  aria-label="Model"
+                  value={draft.model}
+                  onChange={(e) => edit({ model: e.target.value })}
+                  placeholder={PROVIDERS[draft.kind].model}
+                  spellCheck={false}
+                  className="w-full font-mono text-[12px]"
+                />
+              )}
+            </Row>
+          )}
+          {mode !== "claude" && mode !== "dort" && mode !== "none" && (
             <Row label={mode === "local" ? "Key (optional)" : "API key"}>
               <Input
                 type="password"
@@ -316,34 +483,99 @@ export function AiSettings({ asPage = false }: { asPage?: boolean } = {}) {
               />
             </Row>
           )}
-          <div className="flex items-center gap-1.5 pt-0.5">
-            <Button
-              size="sm"
-              disabled={
-                !ready ||
-                test.state === "busy" ||
-                (mode === "claude" && !claude?.loggedIn)
-              }
-              onClick={run}
-            >
-              {test.state === "busy" ? "Testing…" : "Test connection"}
-            </Button>
-            {(draft.key || saved.key) && (
-              <Button size="sm" variant="ghost" onClick={forget}>
-                Forget key
+
+          {mode !== "none" && (
+            <div className="flex items-center gap-1.5 pt-0.5">
+              <Button
+                size="sm"
+                disabled={
+                  !ready ||
+                  phase === "busy" ||
+                  (mode === "claude" && !claude?.loggedIn)
+                }
+                onClick={test}
+              >
+                {phase === "busy" ? "Asking…" : "Test connection"}
               </Button>
-            )}
-          </div>
-          {test.text && (
-            <output className="flex items-start gap-2 break-words text-[12.5px] text-body">
-              <span
-                className={`mt-1.5 size-1.5 flex-none rounded-full ${test.state === "ok" ? "bg-green" : "bg-red"}`}
-              />
-              {test.text}
-            </output>
+              {phase === "busy" && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    run.current?.abort();
+                    setPhase("idle");
+                    say("dim", "stopped");
+                  }}
+                >
+                  Stop
+                </Button>
+              )}
+              {(draft.key || saved.key) && phase !== "busy" && (
+                <Button size="sm" variant="ghost" onClick={forget}>
+                  Forget key
+                </Button>
+              )}
+            </div>
           )}
+
+          {/* the round trip as it happens, and the answer it came back with. A reentrancy bug
+              read correctly is the proof; the timings are how you tell a slow provider from a
+              broken one. */}
+          {lines.length > 0 && (
+            <div className="rounded-tile border border-border bg-inset p-2.5">
+              <div className="mb-1.5 text-[11px] text-dim uppercase tracking-wide">
+                Connection log
+              </div>
+              <ol className="flex flex-col gap-1">
+                {lines.map((l) => (
+                  <li
+                    key={l.id}
+                    className="flex items-start gap-2 font-mono text-[11.5px] text-body"
+                  >
+                    <span
+                      className={`mt-[5px] size-1.5 flex-none rounded-full ${l.tone === "ok" ? "bg-green" : l.tone === "bad" ? "bg-red" : "bg-dim"}`}
+                    />
+                    <span className="flex-none text-dim">{l.at}</span>
+                    <span className="min-w-0 break-words">{l.text}</span>
+                  </li>
+                ))}
+              </ol>
+              {(reply || phase === "busy") && (
+                <output className="mt-2 block border-t border-border pt-2 text-[12.5px] text-body leading-normal">
+                  <span className="text-dim">
+                    asked what is wrong with a function that pays out before it
+                    writes down the payment —{" "}
+                  </span>
+                  {reply}
+                  {phase === "busy" && (
+                    <span
+                      aria-hidden="true"
+                      className="ml-px inline-block h-[13px] w-[2px] translate-y-[2px] animate-pulse bg-fg"
+                    />
+                  )}
+                </output>
+              )}
+            </div>
+          )}
+
+          {/* where the request goes. One line, drawn as the wire it is. */}
+          <div className="rounded-tile border border-border bg-inset p-2.5">
+            <div className="mb-1.5 text-[11px] text-dim uppercase tracking-wide">
+              Where it goes
+            </div>
+            <p className="flex min-w-0 items-center gap-1.5 font-mono text-[11.5px]">
+              <span className="flex-none text-dim">you</span>
+              <PhIcon d={PH.caretRight} className="size-3 flex-none text-dim" />
+              <span className="flex-none text-dim">browser</span>
+              <PhIcon d={PH.caretRight} className="size-3 flex-none text-dim" />
+              <span className="min-w-0 truncate text-fg">
+                {destination(draft)}
+              </span>
+            </p>
+          </div>
         </div>
-      )}
+      </div>
+
       <p className="text-[12.5px] text-muted leading-normal">
         {KIND_NOTE[draft.kind] ?? NOTE[mode]}
       </p>
@@ -361,7 +593,7 @@ export function AiSettings({ asPage = false }: { asPage?: boolean } = {}) {
             onClick={() => {
               saveAiConfig(NO_AI);
               setDraft(NO_AI);
-              setTest({ state: "idle" });
+              clear();
               dialog.current?.close();
             }}
           >
@@ -427,13 +659,20 @@ export function AiSettings({ asPage = false }: { asPage?: boolean } = {}) {
         aria-label="AI provider"
         onClick={(e) => e.target === dialog.current && dialog.current?.close()}
         onKeyDown={(e) => e.key === "Escape" && e.stopPropagation()}
-        className="ai-dialog m-auto w-[min(480px,calc(100vw-32px))] rounded-card border border-border bg-card-grad p-0 text-fg shadow-float"
+        className="ai-dialog m-auto w-[min(660px,calc(100vw-32px))] rounded-card border border-border bg-card-grad p-0 text-fg shadow-float"
       >
         {body}
       </dialog>
     </>
   );
 }
+
+/** Whether the provider on screen is the one Ask is actually using. */
+const live = (saved: AiConfig, draft: AiConfig) =>
+  saved.kind !== "none" &&
+  saved.kind === draft.kind &&
+  saved.model === draft.model &&
+  saved.baseUrl === draft.baseUrl;
 
 /**
  * Claude Code on this machine: found and signed in (with which plan), or what to do, plus its own
@@ -565,7 +804,7 @@ function Row({
   children: React.ReactNode;
 }) {
   return (
-    <div className="grid grid-cols-[108px_1fr] items-center gap-2 text-[13px] text-muted">
+    <div className="grid grid-cols-[88px_1fr] items-center gap-2 text-[13px] text-muted">
       <span>{label}</span>
       {children}
     </div>

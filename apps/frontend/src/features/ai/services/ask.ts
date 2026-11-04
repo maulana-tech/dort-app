@@ -46,6 +46,12 @@ export type StreamMeta = {
   wallet?: WalletClaim;
   /** what the server said is left, and in whose terms */
   onAllowance?: (left: number, note: string) => void;
+  /**
+   * Cap the answer. The connection test asks one small question and wants a sentence back, not
+   * the 2048 tokens chatRequest allows by default — and on this Dort's own model that ceiling is
+   * the operator's money, spent to prove a key works.
+   */
+  maxTokens?: number;
 };
 
 /** Streams the answer text, browser → provider directly (your Claude: through this app's own local bridge). */
@@ -55,7 +61,10 @@ export async function* askStream(
   signal?: AbortSignal,
   meta?: StreamMeta,
 ): AsyncGenerator<string> {
-  const { url, init } = chatRequest(cfg, user, { wallet: meta?.wallet });
+  const { url, init } = chatRequest(cfg, user, {
+    wallet: meta?.wallet,
+    maxTokens: meta?.maxTokens,
+  });
   let res: Response;
   try {
     res = await fetch(url, { ...init, signal });

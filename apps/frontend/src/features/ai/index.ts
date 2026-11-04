@@ -5,6 +5,7 @@ export type * from "./types";
 export {
   aiReady,
   askPrompt,
+  bedrockBase,
   type ChatMessage,
   CLAUDE_HERE,
   CLAUDE_MODELS,
