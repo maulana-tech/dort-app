@@ -15,7 +15,7 @@
 # bridge-local-demo.sh uses the same port, so run one demo at a time.
 
 set -e
-export PATH="$PATH:/Users/lana/.foundry/bin"
+export PATH="$PATH:$HOME/.foundry/bin"
 cd "$(dirname "$0")/.."
 K=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 A=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
