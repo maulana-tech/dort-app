@@ -1,0 +1,36 @@
+{
+  "name": "dort-skill",
+  "version": "0.1.0",
+  "description": "Install the Dort agent skill: teaches a coding agent to read a Solidity contract through a Dort run — decoded Foundry traces, the contract map, findings and coverage. Defensive only.",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "agent-skill",
+    "skill",
+    "mcp",
+    "solidity",
+    "foundry",
+    "forge",
+    "smart-contract",
+    "audit",
+    "security"
+  ],
+  "homepage": "https://dort-app.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maulana-tech/dort-app.git",
+    "directory": "packages/dort-skill"
+  },
+  "bugs": "https://github.com/maulana-tech/dort-app/issues",
+  "type": "module",
+  "bin": {
+    "dort-skill": "cli.mjs"
+  },
+  "files": [
+    "cli.mjs",
+    "SKILL.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -10,3 +10,11 @@ video/
 
 # Local writing (submission answers, builder updates, preview images); docs already tracked stay tracked
 /docs/
+
+# The MCP servers this machine lets Dort's Ask panel use (app/api/mcp). Machine-local, like
+# .env.local: it holds absolute paths, and may hold a server's own credentials in `env`.
+# .mcp.json.example is the one that is committed.
+.mcp.json
+
+# npm pack output: built on demand, never committed
+packages/*/*.tgz
