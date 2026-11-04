@@ -23,7 +23,7 @@ import {
 export const metadata = {
   title: { absolute: SITE_TITLE },
   description:
-    "Defensive tooling for smart contract auditors: decoded Foundry traces, a contract graph that exports Foundry tests, deduplicated Slither and Aderyn findings, and forge coverage.",
+    "Defensive tooling for smart contract auditors: paste a transaction hash and see what it actually did, decoded call by call from the chain's own tracer, with an AI that explains and never hands down a verdict.",
   alternates: { canonical: "/" },
 };
 

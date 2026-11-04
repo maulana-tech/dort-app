@@ -1,8 +1,8 @@
 /**
  * Where this Dort lives. Canonical links, the sitemap, robots.txt and the social cards point
- * here. There is no public deploy to fall back to, so a build that does not set NEXT_PUBLIC_URL
- * is a local one and says so — better a canonical that names localhost than one that points at
- * a site this project does not control.
+ * here. The deploy sets NEXT_PUBLIC_URL; a build that does not is a local one and says so, which
+ * is why the fallback is localhost rather than the public URL — better a canonical that names
+ * this machine than one that tells search engines a local build is the real site.
  */
 export const SITE_URL = (
   process.env.NEXT_PUBLIC_URL || "http://localhost:3000"
@@ -11,6 +11,6 @@ export const SITE_URL = (
 export const SITE_NAME = "Dort";
 export const SITE_TITLE = "Dort: See what your smart contract actually does";
 export const SITE_DESCRIPTION =
-  "Dort is a defensive tool for smart contract auditors and bug bounty hunters: decoded Foundry traces, your contract as a graph, scenario tests exported as .t.sol, and Slither and Aderyn findings merged in one place.";
+  "Dort is a defensive tool for smart contract auditors and bug bounty hunters: hand it a transaction hash, a contract address or a Solidity file and it reads the chain's own call tree, decoded call by call, with an AI that explains and never decides.";
 
 export { LOCAL_APP } from "@/features/ai/utils/provider";
