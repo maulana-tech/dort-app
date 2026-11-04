@@ -23,7 +23,7 @@ export function SettingsWorkspace() {
   const { ready: hostedAi } = useHostedAi();
   return (
     <div className="dot-grid min-h-[calc(100dvh-64px)] w-full overflow-y-auto p-4 md:p-6">
-      <div className="mx-auto grid w-full max-w-2xl grid-cols-[minmax(0,1fr)] items-start gap-4">
+      <div className="mx-auto grid w-full max-w-4xl grid-cols-[minmax(0,1fr)] items-start gap-4">
         <Panel
           label="AI provider"
           aside={
