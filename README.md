@@ -459,11 +459,21 @@ PolkaVM blob), so `anvil` can fork it and execute the real contracts:
 bash script/portaldot-fork-demo.sh 0xyour-address
 ```
 
-That starts a fork on the port the app already looks for, swaps 1 POT for pUSDT through the
-genuine router, and funds your address with 100 POT. Press **Use a local fork** on `/swap` and
-point your wallet at `127.0.0.1:8546`, chain id `420420777`. The router, the factory, the pools
-and their reserves are the live ones, copied the moment the fork started — only the funds are
-local, and nothing is broadcast to the public chain.
+That starts a fork on the port the app already looks for, swaps through the genuine router, runs
+`DeployPortaldot.s.sol` to completion, and funds your address with 100 POT **and** some pUSDT — so
+both directions are demonstrable, and the token→native one still shows the approve step.
+
+Both sides have to move: press **Use a local fork** on `/swap`, and repoint your wallet's
+Portaldot RPC at `127.0.0.1:8546`. Do not *add* a network — chain id `420420777` collides with the
+one already there. If you move only one side, the page says so: it compares the balance its node
+reports against the balance your wallet's node reports, and warns before anything is signed.
+
+For a take you want to rehearse, pin the block with `DORT_FORK_BLOCK=…` and every run sees the
+same reserves and the same quote.
+
+The router, the factory, the pools and their reserves are the live ones, copied the moment the
+fork started — the page's own arithmetic reproduces `getAmountsOut` to the wei on it. Only the
+funds are local, and nothing is broadcast to the public chain.
 
 ---
 

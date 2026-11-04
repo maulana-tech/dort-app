@@ -95,6 +95,15 @@ export type Wallet = {
   /** switch, adding the chain first when the wallet has never heard of it */
   switchTo: (id: BridgeChainId) => Promise<void>;
   /**
+   * The native balance according to the WALLET's node, not the page's.
+   *
+   * codeAt settles the question for a contract that exists on one node and not the other. It
+   * cannot settle it for `swap`, whose router exists on both — a fork copies it. What differs
+   * there is the money: a forked account is funded and the live one is not. So compare the two
+   * answers and the mismatch becomes visible before a transaction is signed into the wrong node.
+   */
+  balanceAt: (address: Address) => Promise<bigint | null>;
+  /**
    * Sign a line of text — personal_sign, which can move nothing and which a wallet shows as
    * words. The one thing Dort asks a wallet to sign with no transaction behind it.
    */
@@ -312,6 +321,24 @@ export function useWalletState(): Wallet {
     [chosen],
   );
 
+  /** eth_getBalance against the wallet's own node — see `balanceAt` on Wallet for why. */
+  const balanceAt = useCallback(
+    async (address: Address): Promise<bigint | null> => {
+      const p = chosen?.provider;
+      if (!p) return null;
+      try {
+        const hex = (await p.request({
+          method: "eth_getBalance",
+          params: [address, "latest"],
+        } as never)) as string;
+        return BigInt(hex);
+      } catch {
+        return null;
+      }
+    },
+    [chosen],
+  );
+
   /**
    * Sign a line of text with the connected wallet.
    *
@@ -368,6 +395,7 @@ export function useWalletState(): Wallet {
     connect,
     disconnect,
     codeAt,
+    balanceAt,
     switchTo,
     send,
     sign,

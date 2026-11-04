@@ -35,9 +35,15 @@ WPOT=0xf67cE92096E4E171060B71bF0cca0DA9f9548c03
 USDT=0xe0114Adc0a2072B602C645f5a07EeFA1eaDBDbc2
 MINE="${1:-}"
 
+# DORT_FORK_BLOCK pins the fork to one block, so every rehearsal of a demo sees the same
+# reserves and therefore the same quote. Without it the fork follows the chain's head and the
+# numbers move between takes.
+PIN=""
+if [ -n "${DORT_FORK_BLOCK:-}" ]; then PIN="--fork-block-number $DORT_FORK_BLOCK"; fi
+
 pkill -f "anvil --port 8546" 2>/dev/null || true; sleep 1
-echo "--- memfork Portaldot V3 dari $UP ---"
-(anvil --port 8546 --fork-url "$UP" --silent >/dev/null 2>&1 &)
+echo "--- memfork Portaldot V3 dari $UP ${PIN:+(dipaku di blok $DORT_FORK_BLOCK)} ---"
+(anvil --port 8546 --fork-url "$UP" $PIN --silent >/dev/null 2>&1 &)
 
 for i in $(seq 1 40); do
   ID=$(cast chain-id --rpc-url $R 2>/dev/null || true)
@@ -98,18 +104,41 @@ fi
 
 if [ -n "$MINE" ]; then
   cast rpc anvil_setBalance "$MINE" 0x56BC75E2D63100000 --rpc-url $R >/dev/null
+  # pUSDT too, so the page can be demonstrated in both directions — and the other direction is
+  # the one that shows the approve step, which native POT never needs. It is bought through the
+  # pool rather than conjured, so it moves the price a little: that is why the reserves are
+  # printed again below, and why DORT_FORK_BLOCK exists for a take you want repeatable.
+  cast send $ROUTER "swapExactPOTForTokens(uint256,address[],address,uint256)" \
+    0 "[$WPOT,$USDT]" $A $(( $(date +%s) + 3600 )) \
+    --value 2ether --private-key $K --rpc-url $R >/dev/null
+  GOT=$(cast call $USDT "balanceOf(address)(uint256)" $A --rpc-url $R | awk '{print $1}')
+  cast send $USDT "transfer(address,uint256)" "$MINE" "$GOT" \
+    --private-key $K --rpc-url $R >/dev/null
   echo
-  echo "$MINE sekarang punya $(cast balance "$MINE" --rpc-url $R | cast from-wei) POT di fork ini"
+  echo "$MINE di fork ini:"
+  echo "  POT   : $(cast balance "$MINE" --rpc-url $R | cast from-wei)"
+  echo "  pUSDT : $(cast call $USDT 'balanceOf(address)(uint256)' "$MINE" --rpc-url $R | awk '{print $1}') (6 desimal)"
+  echo "reserve pool setelah pembelian itu: $(cast call $PAIR 'getReserves()(uint112,uint112,uint32)' --rpc-url $R | tr '\n' ' ')"
 fi
 
 cat <<EOF
 
 anvil masih jalan di $R.
 
-  1. buka http://localhost:3000/swap dan tekan "Use a local fork"
-  2. di wallet, tambahkan jaringan: RPC $R, chain id 420420777, simbol POT
-  3. jalankan ulang skrip ini dengan alamatmu untuk mengisinya:
-       bash script/portaldot-fork-demo.sh 0x...
+Untuk demo, DUA sisi harus menunjuk ke fork ini — halaman DAN wallet:
+
+  1. di wallet: Portaldot V3 kemungkinan sudah ada di sana dengan RPC publik. JANGAN
+     menambahkan jaringan baru — chain id 420420777 akan bentrok dan wallet menolak atau
+     diam-diam memakai yang lama. Edit jaringan Portaldot yang sudah ada dan ganti RPC-nya
+     ke $R (MetaMask baru bisa menyimpan beberapa RPC per chain; pilih yang localhost).
+  2. buka http://localhost:3000/swap dan tekan "Use a local fork".
+
+Kalau hanya satu sisi yang dipindah, halaman itu akan memberitahu: saldo dari dua node berbeda
+tidak sama, dan peringatannya muncul sebelum ada yang ditandatangani.
+
+Untuk take yang bisa diulang dengan angka identik, paku bloknya:
+
+  DORT_FORK_BLOCK=$(cast block-number --rpc-url $R) bash script/portaldot-fork-demo.sh 0x...
 
 Tidak ada apa pun di sini yang berada di chain publik. Kalau submission mewajibkan deploy
 publik, fork ini bukan penggantinya.

@@ -86,8 +86,10 @@ export function SwapWorkspace() {
   const tooMuch =
     amount !== null && s.balanceIn !== null && amount > s.balanceIn;
   // why a native balance reads a tenth below what the wallet says: the chain keeps that much
-  // in every account and eth_getBalance has already taken it off
-  const deposit = depositNote(!!from.native);
+  // in every account and eth_getBalance has already taken it off. Not on a fork, though —
+  // anvil does not implement the existential deposit, so the balance shown there is whole and
+  // saying otherwise would describe a rule that is not being applied.
+  const deposit = depositNote(!!from.native && !useLocal);
 
   const act = swapAction({
     connected: Boolean(wallet.account),
@@ -276,6 +278,16 @@ export function SwapWorkspace() {
             </ActionButton>
 
             <div className="grid gap-2">
+              {s.nodeMismatch && (
+                <Note tone="bad">
+                  Your wallet and this page are looking at different nodes —
+                  they report the same chain id but not the same balance. One is
+                  the fork and the other is the live chain:{" "}
+                  {useLocal
+                    ? "point your wallet's Portaldot RPC at 127.0.0.1:8546, or switch this page back to the live chain."
+                    : "press \u201cUse a local fork\u201d below, or point your wallet back at the public RPC."}
+                </Note>
+              )}
               {act.why && <p className="text-ui-xs text-dim">{act.why}</p>}
               {!act.why && impact >= IMPACT_WARN_BPS && quote !== null && (
                 <Note tone="warn">

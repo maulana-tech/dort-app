@@ -9,6 +9,7 @@ import {
   asErc20,
   deadline,
   FACTORY,
+  GAS_RESERVE,
   minOut,
   pathFor,
   ROUTER,
@@ -37,6 +38,11 @@ export type SwapState = {
   balanceOut: bigint | null;
   allowance: bigint | null;
   step: SwapStep;
+  /**
+   * True when the wallet's node and this page's node disagree about the account's money, which
+   * means one of them is the fork and the other is not. Null while unknown or not applicable.
+   */
+  nodeMismatch: boolean | null;
   error: string | null;
   txHash: `0x${string}` | null;
   refresh: () => void;
@@ -72,6 +78,7 @@ export function useSwap(
   const [balanceOut, setBalanceOut] = useState<bigint | null>(null);
   const [allowance, setAllowance] = useState<bigint | null>(null);
   const [step, setStep] = useState<SwapStep>("idle");
+  const [nodeMismatch, setNodeMismatch] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
   /** bumped on every load; a reply from an older one is dropped instead of overwriting state */
@@ -173,6 +180,41 @@ export function useSwap(
     };
   }, [refresh]);
 
+  /**
+   * Whether the wallet is looking at the same node as the page.
+   *
+   * Both report chain 420420777 — a fork keeps the id — so the chain id cannot answer this, and
+   * neither can codeAt: the router exists on the fork too, because the fork copied it. The money
+   * is what differs. Forget to flip the switch (or to repoint the wallet) and the page would
+   * otherwise show a balance from one node while the transaction is signed against the other:
+   * either a confusing "insufficient funds" from the wallet, or a disabled button with no reason
+   * given. Both are worst at exactly the moment someone is recording a demo.
+   */
+  const { balanceAt, chainId: walletChain } = wallet;
+  useEffect(() => {
+    if (!account || walletChain !== SWAP_CHAIN) {
+      setNodeMismatch(null);
+      return;
+    }
+    let live = true;
+    void (async () => {
+      const [page, inWallet] = await Promise.all([
+        publicClient(SWAP_CHAIN, local)
+          .getBalance({ address: account })
+          .catch(() => null),
+        balanceAt(account),
+      ]);
+      if (!live || page === null || inWallet === null) return;
+      // A block can arrive between the two reads, so a little drift is honest; a different node
+      // is never a little. GAS_RESERVE is the smallest amount this page already treats as real.
+      const gap = page > inWallet ? page - inWallet : inWallet - page;
+      setNodeMismatch(gap > GAS_RESERVE);
+    })();
+    return () => {
+      live = false;
+    };
+  }, [account, walletChain, local, balanceAt]);
+
   const approve = useCallback(async () => {
     if (!inAddr || from.native) return;
     setError(null);
@@ -263,6 +305,7 @@ export function useSwap(
     balanceOut,
     allowance,
     step,
+    nodeMismatch,
     error,
     txHash,
     refresh,
