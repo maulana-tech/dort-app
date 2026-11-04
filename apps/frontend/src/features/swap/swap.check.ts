@@ -309,7 +309,7 @@ assert.match(
 );
 assert.ok(
   forkSh.includes(String(SWAP_CHAIN)),
-  "the script must verify it really is on chain " + SWAP_CHAIN,
+  `the script must verify it really is on chain ${SWAP_CHAIN}`,
 );
 
 console.log("swap ok");
