@@ -655,7 +655,18 @@ export const GROUPS: DocGroup[] = [
           {
             p: "MCP (Model Context Protocol) is a standard plug that gives an AI client tools. `dort-mcp.mjs` gives Claude Code, Claude Desktop or Cursor Dort's view of your run: decoded traces, the contract map, findings. Without it, the AI reads raw forge output or a large JSON; with it, it asks Dort for exactly what it needs.",
           },
-          { h2: "Set it up" },
+          { h2: "The skill" },
+          {
+            p: "Tools let an agent ask; the skill tells it what to ask for. One markdown file teaches it where a run is, how to walk a decoded trace, what each `atlas` field means, which `jq` projection answers which question, and the rule Dort keeps — explain the code, never write the exploit. Install it with `npx dort-skill`, or `--global` for every project and `--print` to pipe it into an agent that keeps its skills elsewhere.",
+          },
+          { code: "npx dort-skill" },
+          {
+            p: "Writes `.claude/skills/dort/SKILL.md` and nothing else: no postinstall, no dependencies, no network call of its own. Without npm, the same file is served by any running Dort:",
+          },
+          {
+            code: `mkdir -p .claude/skills/dort\ncurl -fsSL "${SITE}/skill/dort/SKILL.md" -o .claude/skills/dort/SKILL.md`,
+          },
+          { h2: "The MCP server" },
           {
             code: `curl -fsSLO "${SITE}/exporter/dort-mcp.mjs"\nclaude mcp add dort -- node /abs/path/dort-mcp.mjs --data=/abs/path/dort-data.json`,
           },

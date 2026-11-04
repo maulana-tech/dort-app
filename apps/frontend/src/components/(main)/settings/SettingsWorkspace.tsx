@@ -3,6 +3,7 @@
 import { Chip, Panel } from "@/components/ui";
 import { useHostedAi } from "@/features/ai";
 import { AiSettings } from "../shell/AiSettings";
+import { AgentConnect } from "./AgentConnect";
 
 /**
  * AI settings, as a page of its own.
@@ -12,6 +13,11 @@ import { AiSettings } from "../shell/AiSettings";
  * settings moved here, where there is space to say what each provider costs you in privacy
  * rather than hiding that behind a tooltip. The same form answers in both places: one body,
  * reused, so a provider added to one cannot be missing from the other.
+ *
+ * Two panels, because there are two directions and they kept being confused for one. The first
+ * is an AI inside Dort, answering in the Ask panel. The second is Dort inside your own agent —
+ * the skill and the MCP server — which had existed for as long as dort-mcp.mjs and was named
+ * nowhere but a docs page.
  */
 export function SettingsWorkspace() {
   const { ready: hostedAi } = useHostedAi();
@@ -29,6 +35,9 @@ export function SettingsWorkspace() {
           <div className="px-1 pb-1">
             <AiSettings asPage />
           </div>
+        </Panel>
+        <Panel label="Connect your own agent" aside={<Chip>Skill · MCP</Chip>}>
+          <AgentConnect />
         </Panel>
       </div>
     </div>
