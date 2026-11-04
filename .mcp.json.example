@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "dort": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/foundry/dort-mcp.mjs",
+        "--data=/absolute/path/to/foundry/dort-data.json"
+      ]
+    }
+  }
+}
