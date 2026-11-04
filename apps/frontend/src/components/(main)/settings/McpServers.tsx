@@ -62,7 +62,7 @@ export function McpServers() {
   const total = data?.servers.reduce((n, s) => n + s.tools.length, 0) ?? 0;
 
   return (
-    <section className="flex flex-col gap-2">
+    <section className="flex flex-col gap-2.5 border-border border-t pt-4">
       <div className="flex items-center gap-2">
         <h3 className="text-[13px] text-fg">
           Servers this machine offers Dort
@@ -87,7 +87,7 @@ export function McpServers() {
 
       {data?.error ? (
         // the route refuses on a hosted deploy, and that is the answer, not a failure
-        <p className="flex items-start gap-2 text-[12.5px] text-muted leading-normal">
+        <p className="flex max-w-[68ch] items-start gap-2 text-[12.5px] text-muted leading-normal">
           <span className="mt-1.5 size-1.5 flex-none rounded-full bg-dim" />
           {data.error} Dort starts these as child processes, so it only does it
           on your own machine — run it locally (
@@ -95,7 +95,7 @@ export function McpServers() {
         </p>
       ) : (
         <>
-          <p className="text-[12.5px] text-muted leading-normal">
+          <p className="max-w-[68ch] text-[12.5px] text-muted leading-normal">
             Read from{" "}
             <code className="font-mono text-body">{data?.config || "…"}</code>
             {data && !data.explicit && (
@@ -112,7 +112,7 @@ export function McpServers() {
           </p>
 
           {data?.missing && (
-            <p className="flex items-start gap-2 text-[12.5px] text-muted leading-normal">
+            <p className="flex max-w-[68ch] items-start gap-2 text-[12.5px] text-muted leading-normal">
               <span className="mt-1.5 size-1.5 flex-none rounded-full bg-dim" />
               No config there yet. Copy{" "}
               <code className="font-mono text-body">.mcp.json.example</code> to{" "}

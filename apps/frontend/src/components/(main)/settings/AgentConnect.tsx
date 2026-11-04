@@ -77,10 +77,10 @@ claude mcp add dort -- node "$PWD/dort-mcp.mjs" --data="$PWD/dort-data.json"`,
   };
 
   return (
-    <div className="flex flex-col gap-4 px-1 pb-1">
-      <section className="flex flex-col gap-2">
-        <h3 className="text-[13px] text-fg">Skill</h3>
-        <p className="text-[12.5px] text-muted leading-normal">
+    <div className="flex flex-col gap-5 px-1 pb-1">
+      <section className="flex flex-col gap-2.5">
+        <h3 className="font-medium text-[13px] text-fg">Skill</h3>
+        <p className="max-w-[68ch] text-[12.5px] text-muted leading-normal">
           One markdown file that teaches your agent what a Dort run is: where to
           find <code className="font-mono text-body">dort-data.json</code>, how
           to read a decoded trace out of it, which atlas field means what, and
@@ -89,7 +89,7 @@ claude mcp add dort -- node "$PWD/dort-mcp.mjs" --data="$PWD/dort-data.json"`,
           instructions, so any agent that can read a file can use it.
         </p>
         <CodeBlock text={viaNpx} />
-        <p className="text-[12.5px] text-muted leading-normal">
+        <p className="max-w-[68ch] text-[12.5px] text-muted leading-normal">
           Writes{" "}
           <code className="font-mono text-body">
             .claude/skills/dort/SKILL.md
@@ -102,9 +102,9 @@ claude mcp add dort -- node "$PWD/dort-mcp.mjs" --data="$PWD/dort-data.json"`,
         <CodeBlock text={viaCurl} />
       </section>
 
-      <section className="flex flex-col gap-2">
-        <h3 className="text-[13px] text-fg">MCP server</h3>
-        <p className="text-[12.5px] text-muted leading-normal">
+      <section className="flex flex-col gap-2.5 border-border border-t pt-4">
+        <h3 className="font-medium text-[13px] text-fg">MCP server</h3>
+        <p className="max-w-[68ch] text-[12.5px] text-muted leading-normal">
           The skill tells an agent what to look for;{" "}
           <code className="font-mono text-body">dort-mcp.mjs</code> is how it
           asks. Six read-only tools over stdio — the run's overview, one test's
@@ -122,7 +122,7 @@ claude mcp add dort -- node "$PWD/dort-mcp.mjs" --data="$PWD/dort-data.json"`,
             { value: "cursor", label: "Cursor" },
           ]}
         />
-        <p className="text-[12.5px] text-muted leading-normal">
+        <p className="max-w-[68ch] text-[12.5px] text-muted leading-normal">
           {CMD[client].where}
         </p>
         <CodeBlock text={CMD[client].code} />

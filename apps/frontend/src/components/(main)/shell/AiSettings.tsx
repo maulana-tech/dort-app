@@ -338,7 +338,7 @@ export function AiSettings({ asPage = false }: { asPage?: boolean } = {}) {
         </header>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-[172px_minmax(0,1fr)]">
+      <div className="grid items-start gap-3 sm:grid-cols-[172px_minmax(0,1fr)]">
         {/* which AI. The dot is the saved one, so the list says what is in use even while you
             look at something else; white is the one you are looking at (DESIGN.md: white =
             active). */}
