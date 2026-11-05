@@ -22,7 +22,7 @@ export function PillTabs<T extends string>({
   disabled = false,
 }: {
   value: T;
-  options: { value: T; label: ReactNode }[];
+  options: { value: T; label: ReactNode; title?: string; quiet?: boolean }[];
   onChange: (v: T) => void;
   label: string;
   disabled?: boolean;
@@ -42,11 +42,17 @@ export function PillTabs<T extends string>({
             role="tab"
             aria-selected={on}
             disabled={disabled}
+            title={o.title}
             onClick={() => onChange(o.value)}
+            // `quiet` is a tab that leads somewhere empty. It stays clickable — the view behind
+            // it explains what is missing, and a disabled pill explains nothing — but it must
+            // not look like the ones that work, or the reader finds out by clicking.
             className={`inline-flex h-9 items-center gap-2 rounded-chip px-4 text-ui-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-white/25 disabled:pointer-events-none disabled:opacity-40 ${
               on
                 ? "bg-primary text-primary-fg"
-                : "bg-raised text-muted hover:bg-hover hover:text-fg"
+                : o.quiet
+                  ? "bg-raised/60 text-dim hover:bg-hover hover:text-muted"
+                  : "bg-raised text-muted hover:bg-hover hover:text-fg"
             }`}
           >
             {o.label}

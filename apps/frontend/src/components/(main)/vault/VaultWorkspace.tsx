@@ -200,17 +200,30 @@ export function VaultWorkspace() {
                   setChain(Number(x) as BridgeChainId);
                   setInput("");
                 }}
-                options={VAULT_CHAINS.map((c) => ({
-                  value: String(c.id),
-                  label: (
-                    <>
-                      <ChainLogo family={c.family} className="size-4" />
-                      {c.name
-                        .replace(" Testnet", "")
-                        .replace(" (Moderato)", "")}
-                    </>
-                  ),
-                }))}
+                // a chain with no vault still gets a pill — the view behind it says what is
+                // missing and offers the local demo — but it is drawn quiet and carries a dot,
+                // so nobody has to click to find out that there is nothing there
+                options={VAULT_CHAINS.map((c) => {
+                  const live = vaultsFor(c.id, false).some(vaultReady);
+                  return {
+                    value: String(c.id),
+                    quiet: !live,
+                    title: live
+                      ? undefined
+                      : `No vault deployed on ${c.name} yet`,
+                    label: (
+                      <>
+                        <ChainLogo family={c.family} className="size-4" />
+                        {c.name
+                          .replace(" Testnet", "")
+                          .replace(" (Moderato)", "")}
+                        <span
+                          className={`size-1.5 flex-none rounded-full ${live ? "bg-green" : "bg-dim/50"}`}
+                        />
+                      </>
+                    ),
+                  };
+                })}
               />
             </div>
 
@@ -304,7 +317,15 @@ export function VaultWorkspace() {
             </ActionButton>
 
             <div className="grid gap-2">
-              {!wallet.account && (
+              {!deployed && (
+                <Note tone="warn">
+                  There is no vault on {chainName(chain)} yet, so this form has
+                  nothing to talk to. Pick a chain with a green dot, or press
+                  \u201cUse the local demo\u201d on the right to run one on your
+                  own machine.
+                </Note>
+              )}
+              {deployed && !wallet.account && (
                 <Primer
                   title="This vault is deployed and funded on Base Sepolia. The numbers above are read straight off that chain and need no wallet. To deposit or withdraw:"
                   steps={[
