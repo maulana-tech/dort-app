@@ -198,11 +198,74 @@ Portaldot Hacker House 2026.
 | **Track** | Node Operations & Tooling — network security analysis tooling for the Portaldot ecosystem |
 | **Chain** | Portaldot V3 Testnet, chain id `420420777`, EVM RPC `https://test-evm-rpc-v3.portaldot.dev` |
 | **Other chains** | Ethereum, Arbitrum, Base, Robinhood Chain, Hyperliquid, Tempo (testnet forks) |
-| **Contract address** | `DortSafeVault` on Base Sepolia: [`0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8`](https://sepolia.basescan.org/address/0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8) — over Circle's USDC, block 53482026, holding 20 USDC |
-| **Transaction hash** | [`0x2aafcfaa81d24ed15d4c5412da0458f952c2288351467a161184d27d69904e8d`](https://sepolia.basescan.org/tx/0x2aafcfaa81d24ed15d4c5412da0458f952c2288351467a161184d27d69904e8d) |
-| **On Portaldot V3** | **Live.** [`DortSafeVault`](foundry/src/DortSafeVault.sol) at `0x75ef70Ea33994a16751ff0b4f7DCF0F94DF1351F`, block 336632, over the chain's own pUSDT — holding **19.976522 pUSDT**, bought on PortalSwapRouter itself with 5 POT and deposited at block 336651. It mints 19,976,522,000 shares and `previewRedeem` on all of them returns exactly 19,976,522 back. Getting it there needed the optimiser, not just gas: Portaldot reserves balance for `gas_limit x gas_price` and that gas figure carries the **storage deposit for the code**, so on this chain bytecode size is the price of deploying. Unoptimised the vault wanted ~821 POT; the `[profile.portaldot]` build (optimizer, `runs = 1`, via-IR) took it from 11,760 bytes to 5,176 and the price to 356.4 POT, which the 500 tPOT grant covered. `DeployPortaldot.s.sol` — DortVault plus four mocks — is still ~614 POT all told and stays on the fork ([`script/portaldot-fork-demo.sh`](foundry/script/portaldot-fork-demo.sh)). `/swap` needs no deploy and trades on the real router._ |
+| **Contract address** | `DortSafeVault`, live and funded on three chains — Portaldot V3 [`0x75ef70Ea33994a16751ff0b4f7DCF0F94DF1351F`](https://node-console.portaldot.dev), Base Sepolia [`0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8`](https://sepolia.basescan.org/address/0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8), Ethereum Sepolia [`0x6E818cAF7177C144E9da7DA6Ed78eFF394bCF0e8`](https://sepolia.etherscan.io/address/0x6E818cAF7177C144E9da7DA6Ed78eFF394bCF0e8). Every address, hash and figure is in [Deployment proof](#deployment-proof) below, with the commands to check them |
+| **Transaction hash** | Portaldot V3 deploy: `0x1cd61c77b72da2158d8c6ef9bcbe0aebeabf90311c758c1734e075b14dec87ae` (block 336632) |
 | **Website** | [dort-app.vercel.app](https://dort-app.vercel.app) — Chat, Explore and the wallet pages. Running `forge` against your own project still needs Dort on your machine, which is what lets it read your source |
 | **Source** | [github.com/maulana-tech/dort-app](https://github.com/maulana-tech/dort-app) |
+
+### Deployment proof
+
+Everything below was read back off its chain on 2026-11-05, after the fact — not copied from a
+deploy script's output. The last column is the command to check it yourself; none of it requires
+trusting this file.
+
+| Chain | `DortSafeVault` | Asset | Holds | Shares | `previewRedeem` of all shares |
+|---|---|---|---|---|---|
+| Portaldot V3 (`420420777`) | `0x75ef70Ea33994a16751ff0b4f7DCF0F94DF1351F` | pUSDT `0xe011…dbc2` | **19.976522 pUSDT** | 19,976,522,000 `dpUSDT` | exactly 19,976,522 |
+| Base Sepolia (`84532`) | `0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8` | USDC `0x036C…cf7e` | **20 USDC** | 20,000,000,000 `dUSDC` | exactly 20,000,000 |
+| Ethereum Sepolia (`11155111`) | `0x6E818cAF7177C144E9da7DA6Ed78eFF394bCF0e8` | USDC `0x1c7D…7238` | **5 USDC** | 5,000,000,000 `dUSDC` | exactly 5,000,000 |
+
+That `previewRedeem` column is the point of the vault, not a formality: redeeming every share
+returns exactly what went in, so the first deposit into an empty vault lost nothing to rounding —
+which is what the 10³ virtual offset against the first-depositor attack is there for, and why the
+share counts are a thousand times the asset counts.
+
+**The transactions.**
+
+| What | Chain | Hash | Block |
+|---|---|---|---|
+| Deploy | Portaldot V3 | `0x1cd61c77b72da2158d8c6ef9bcbe0aebeabf90311c758c1734e075b14dec87ae` | 336632 |
+| Buy pUSDT on PortalSwapRouter (5 POT → 19.976522 pUSDT) | Portaldot V3 | `0x4dc45a4840578a54213e9e3f5d22584d5dbc721d122380ffec9a5088f2923a5f` | 336647 |
+| Deposit | Portaldot V3 | `0xbbf5769e5ab17bbc61e89248d100213b54617b03291a7fb4f529875c4fa10434` | 336651 |
+| Deploy | Base Sepolia | [`0x2aafcfaa…04e8d`](https://sepolia.basescan.org/tx/0x2aafcfaa81d24ed15d4c5412da0458f952c2288351467a161184d27d69904e8d) | 53482026 |
+| Deposit 20 USDC | Base Sepolia | [`0xa89a75c3…c5a44`](https://sepolia.basescan.org/tx/0xa89a75c364ac9a2d201bbfac93951295acfca4aac974c3267318b9b307ec5a44) | 54377074 |
+| Deploy | Ethereum Sepolia | [`0x132a38c3…c5a56`](https://sepolia.etherscan.io/tx/0x132a38c3acf483a150f70e2645f551207cca1f3b32e825d2cc45dadf1a7c5a56) | 12069831 |
+| Deposit 5 USDC | Ethereum Sepolia | [`0x81d26b69…4c9e0`](https://sepolia.etherscan.io/tx/0x81d26b690b170d6d24fd32acbe6f5c9d63326af0a4a44f582519dfdda9d4c9e0) | 12069885 |
+
+Portaldot's node console has no per-transaction page, so those three have no link. Read them
+directly instead:
+
+```sh
+R=https://test-evm-rpc-v3.portaldot.dev
+V=0x75ef70Ea33994a16751ff0b4f7DCF0F94DF1351F
+
+cast code $V --rpc-url $R | head -c 12          # 0x6080604052 — it is really there
+cast call $V 'asset()(address)'      --rpc-url $R   # 0xe0114Adc…dbc2, the chain's own pUSDT
+cast call $V 'totalAssets()(uint256)' --rpc-url $R  # 19976522
+cast call $V 'totalSupply()(uint256)' --rpc-url $R  # 19976522000
+cast receipt 0x1cd61c77b72da2158d8c6ef9bcbe0aebeabf90311c758c1734e075b14dec87ae --rpc-url $R
+```
+
+**Why the Portaldot deploy needed the optimiser.** Portaldot reserves balance for
+`gas_limit × gas_price` at validation, and its gas figure carries the **storage deposit for the
+contract's code** — so on this chain bytecode size *is* the price of deploying. Unoptimised,
+`DortSafeVault` wanted ~821 POT against a 500 tPOT grant. The `[profile.portaldot]` build
+(optimizer, `runs = 1`, via-IR) took it from 11,760 bytes to 5,176 and the price to 356.4 POT.
+The default profile stays unoptimised, because that is what every test and every decoded trace
+here is built against.
+
+Two other things that cost time and are written down so they do not have to again: Foundry's
+EIP-1559 path is rejected outright by Portaldot (`1010 Invalid Transaction`) and `--legacy` is
+required; and `forge script`'s fork simulation needs one node to answer every call, which
+Sepolia's load-balanced public endpoints do not, so the Sepolia vault went up with `forge create`.
+
+**What is not deployed, and why.** `DeployPortaldot.s.sol` — `DortVault` plus four mocks — is
+~614 POT even optimised, against 132 POT left after the vault, so it stays on the fork
+([`script/portaldot-fork-demo.sh`](foundry/script/portaldot-fork-demo.sh)). The bridge is the
+same story: `PortalBridgeMinter` measures 477.9 POT on Portaldot, so `DEPLOYMENTS` in
+`features/bridge/bridge.ts` is still all `null` and the page says so rather than pretending.
+`/swap` needs no deploy at all — it drives Portaldot's own PortalSwapRouter, and the pUSDT in the
+vault above was bought through it.
 
 ### What Portaldot gives this project, and what it gives back
 
