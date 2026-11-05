@@ -35,7 +35,12 @@ export type VaultState = {
   error: string | null;
   txHash: `0x${string}` | null;
   refresh: () => void;
-  approve: () => Promise<void>;
+  /**
+   * Put the allowance in place. Resolves true when it is actually there, so the caller can go
+   * on to the thing the reader asked for — the button says "Approve, then …", and it has to
+   * mean it.
+   */
+  approve: () => Promise<boolean>;
   /** `unit` only matters on a withdraw: "shares" burns an exact number of them (redeem) */
   submit: (side: Side, amount: bigint, unit?: Unit) => Promise<void>;
 };
@@ -159,8 +164,8 @@ export function useVault(
     };
   }, [vault, account, codeAt, walletChain]);
 
-  const approve = useCallback(async () => {
-    if (!vault || !asset) return;
+  const approve = useCallback(async (): Promise<boolean> => {
+    if (!vault || !asset) return false;
     setError(null);
     setStep("approve");
     try {
@@ -177,9 +182,11 @@ export function useVault(
       await publicClient(chain, local).waitForTransactionReceipt({ hash });
       setStep("idle");
       refresh();
+      return true;
     } catch (e) {
       setError(reason(e));
       setStep("error");
+      return false;
     }
   }, [vault, asset, wallet, chain, local, refresh]);
 

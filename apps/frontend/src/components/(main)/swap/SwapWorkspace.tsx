@@ -122,7 +122,8 @@ export function SwapWorkspace() {
   async function onPress() {
     if (!wallet.account) return wallet.connect();
     if (wallet.chainId !== SWAP_CHAIN) return wallet.switchTo(SWAP_CHAIN);
-    if (needsApproval) return s.approve();
+    // same contract as the vault's button: "Approve, then swap" performs both, or it is a lie
+    if (needsApproval && !(await s.approve())) return;
     if (amount !== null && quote !== null)
       return s.swap(amount, quote, slippage);
   }

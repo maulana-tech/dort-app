@@ -46,7 +46,12 @@ export type SwapState = {
   error: string | null;
   txHash: `0x${string}` | null;
   refresh: () => void;
-  approve: () => Promise<void>;
+  /**
+   * Put the allowance in place. Resolves true when it is actually there, so the caller can go
+   * on to the thing the reader asked for — the button says "Approve, then …", and it has to
+   * mean it.
+   */
+  approve: () => Promise<boolean>;
   /** confirms the local quote against the router, then sends */
   swap: (
     amount: bigint,
@@ -215,8 +220,8 @@ export function useSwap(
     };
   }, [account, walletChain, local, balanceAt]);
 
-  const approve = useCallback(async () => {
-    if (!inAddr || from.native) return;
+  const approve = useCallback(async (): Promise<boolean> => {
+    if (!inAddr || from.native) return false;
     setError(null);
     setStep("approve");
     try {
@@ -233,9 +238,11 @@ export function useSwap(
       await publicClient(SWAP_CHAIN, local).waitForTransactionReceipt({ hash });
       setStep("idle");
       refresh();
+      return true;
     } catch (e) {
       setError(reason(e));
       setStep("error");
+      return false;
     }
   }, [inAddr, from.native, wallet, refresh, local]);
 

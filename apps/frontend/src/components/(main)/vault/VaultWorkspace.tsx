@@ -178,7 +178,10 @@ export function VaultWorkspace() {
   async function onPress() {
     if (!wallet.account) return wallet.connect();
     if (wallet.chainId !== chain) return wallet.switchTo(chain);
-    if (side === "deposit" && needsApproval) return v.approve();
+    // the button says "Approve, then deposit" and has to mean it. It used to return here, so
+    // one press spent the approve and stopped: the allowance landed on chain, the deposit never
+    // left, and the reader was told a two-step action had happened.
+    if (side === "deposit" && needsApproval && !(await v.approve())) return;
     if (amount !== null) return v.submit(side, amount, unit);
   }
 
