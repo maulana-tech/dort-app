@@ -313,7 +313,29 @@ export function VaultWorkspace() {
                       Switch it to Base Sepolia, chain id{" "}
                       <span className="font-mono text-text">84532</span>.
                     </>,
-                    "Get a little Sepolia ETH for gas and some test USDC from a Base Sepolia faucet — this is a testnet, so none of it is worth anything.",
+                    <>
+                      Fund it from a faucet — gas from{" "}
+                      <a
+                        href="https://www.alchemy.com/faucets/base-sepolia"
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="text-text underline-offset-2 hover:text-fg hover:underline"
+                      >
+                        Alchemy
+                      </a>{" "}
+                      and USDC from{" "}
+                      <a
+                        href="https://faucet.circle.com"
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="text-text underline-offset-2 hover:text-fg hover:underline"
+                      >
+                        Circle
+                      </a>
+                      . Both ask which chain: pick Base Sepolia, not Ethereum
+                      Sepolia — they are different chains and money on one is
+                      invisible here.
+                    </>,
                   ]}
                 />
               )}

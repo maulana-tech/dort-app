@@ -112,3 +112,27 @@ export const INSTALL = [
  */
 export const codeMissing = (code: string | null): boolean =>
   code !== null && (code === "0x" || code === "0x0");
+
+/**
+ * "This wallet has never heard of that chain."
+ *
+ * EIP-3326 says a wallet answers 4902 when asked to switch to a chain it does not hold, and the
+ * caller is then meant to add it. MetaMask does answer 4902 — but not always where you look for
+ * it: it wraps provider errors, so the real code often arrives as `data.originalError.code` while
+ * the top-level code is -32603. Reading only `e.code` therefore skips the add entirely and leaves
+ * the reader staring at MetaMask's own "Unrecognized chain ID" text, which tells them to do
+ * something they cannot do from the page.
+ *
+ * That is not hypothetical: it is what Base Sepolia (0x14a34) did on a fresh MetaMask, which does
+ * not ship testnets. The message is the last resort, for wallets that send neither code.
+ */
+export function unknownChain(e: unknown): boolean {
+  const err = e as {
+    code?: unknown;
+    message?: unknown;
+    data?: { originalError?: { code?: unknown } };
+  };
+  if (err?.code === 4902 || err?.data?.originalError?.code === 4902)
+    return true;
+  return /unrecognized chain/i.test(String(err?.message ?? ""));
+}

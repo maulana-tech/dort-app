@@ -1,14 +1,26 @@
 /* biome-ignore-all lint/performance/noImgElement: tiny static brand assets, no next/image optimisation needed */
 
-/** Brand mark: the Dort starburst on its white rounded tile (public/brand/mark-tile.png). */
-export function LogoMark({ size = 36 }: { size?: number }) {
+/**
+ * Brand mark: the white Dort "D" on its brand-blue rounded tile (public/brand/mark-tile.png).
+ *
+ * `className` carries the shape, because the corner radius has to follow the size: rounded-tile
+ * is 10px, which reads as a tile at 36 and as a circle at 16. A caller drawing it small passes
+ * its own radius.
+ */
+export function LogoMark({
+  size = 36,
+  className = "rounded-tile shadow-soft",
+}: {
+  size?: number;
+  className?: string;
+}) {
   return (
     <img
       src="/brand/mark-tile.png"
       alt=""
       width={size}
       height={size}
-      className="shrink-0 rounded-tile shadow-soft"
+      className={`shrink-0 ${className}`}
     />
   );
 }

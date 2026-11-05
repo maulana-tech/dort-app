@@ -10,6 +10,7 @@ import {
   mergeWallet,
   orderWallets,
   pickWallet,
+  unknownChain,
 } from "./wallet.ts";
 
 const w = (rdns: string, name = rdns): DiscoveredWallet => ({
@@ -125,3 +126,30 @@ assert.equal(
 );
 
 console.log("wallet ok");
+
+// unknownChain: a wallet that has never heard of the chain. MetaMask answers 4902, but wraps it,
+// and the wrapped form is the one that was missed in the field (Base Sepolia on a fresh install).
+assert.equal(unknownChain({ code: 4902 }), true);
+assert.equal(
+  unknownChain({ code: -32603, data: { originalError: { code: 4902 } } }),
+  true,
+  "MetaMask wraps the provider error; the real code is under data.originalError",
+);
+assert.equal(
+  unknownChain({ message: 'Unrecognized chain ID "0x14a34".' }),
+  true,
+  "last resort: a wallet that sends neither code",
+);
+assert.equal(
+  unknownChain({ code: 4001 }),
+  false,
+  "user rejected is not a missing chain",
+);
+assert.equal(
+  unknownChain({ code: -32603 }),
+  false,
+  "a bare internal error is not a missing chain",
+);
+assert.equal(unknownChain(null), false);
+assert.equal(unknownChain(undefined), false);
+assert.equal(unknownChain({ message: "insufficient funds" }), false);

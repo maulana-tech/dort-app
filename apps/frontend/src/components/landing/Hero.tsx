@@ -11,7 +11,14 @@
  */
 import Image from "next/image";
 import Link from "next/link";
-import { ChainLogo, LogoText, PH, PhIcon, SOLIDITY } from "@/components/ui";
+import {
+  ChainLogo,
+  LogoMark,
+  LogoText,
+  PH,
+  PhIcon,
+  SOLIDITY,
+} from "@/components/ui";
 import { GitHubMark } from "./GitHubMark";
 import { HeroExit } from "./Haze";
 import { HeroChat } from "./HeroChat";
@@ -92,20 +99,14 @@ export function Nav({ active = "product" }: { active?: "product" | "docs" }) {
               </a>
             </span>
           )}
-          {/* the app header's Connect AI capsule (header.css .hdr-pill.lit): the Dort starburst
-            where it has its sparkle, a caret pointing on */}
+          {/* the app header's Connect AI capsule (header.css .hdr-pill.lit), carrying the brand
+            mark itself and a caret pointing on. It used to draw a starburst inline, which was
+            the mark a redesign ago: the brand is the "D" tile now, and a hand-drawn copy of an
+            old logo is exactly the thing that goes stale without anyone noticing. */}
           <Link href="/chat" className="lh-nav-cta group hdr-pill">
-            <svg
-              aria-hidden="true"
-              viewBox="-40 -40 80 80"
-              className="size-[15px] flex-none transition-transform duration-500 group-hover:rotate-[20deg] group-hover:scale-110 motion-reduce:transition-none"
-              stroke="currentColor"
-              strokeWidth="6"
-              strokeLinecap="round"
-            >
-              <path d="M0-9V-34M0 9V34M-9 0H-34M9 0H34" />
-              <path d="M8-8L21-21M-8 8L-21 21M-8-8L-21-21M8 8L21 21" />
-            </svg>
+            <span className="flex-none transition-transform duration-500 group-hover:scale-110 motion-reduce:transition-none">
+              <LogoMark size={16} className="rounded-[5px]" />
+            </span>
             Launch app
             <PhIcon d={PH.caretRight} className="size-3 opacity-70" />
           </Link>

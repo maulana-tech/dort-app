@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes } from "react";
 
 const VARIANTS = {
-  primary: "bg-primary text-primary-fg shadow-soft hover:bg-white",
+  primary: "bg-primary text-primary-fg shadow-soft hover:bg-brand-lit",
   /** pastel green pill for the ONE main action of a view (Run) */
   accent: "rounded-chip! bg-mint text-[#06331f] hover:bg-[#2bbf8a]",
   secondary: "bg-raised text-fg hover:bg-hover",

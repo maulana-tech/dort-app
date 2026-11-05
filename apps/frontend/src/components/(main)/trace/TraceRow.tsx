@@ -134,7 +134,7 @@ export function TraceRow({
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.16, ease: EASE }}
             title="Ask AI about the selected calls  A"
-            className="pointer-events-auto relative z-10 flex h-6 flex-none items-center rounded-full bg-primary px-2.5 font-medium text-[11.5px] text-primary-fg transition-colors hover:bg-white"
+            className="pointer-events-auto relative z-10 flex h-6 flex-none items-center rounded-full bg-primary px-2.5 font-medium text-[11.5px] text-primary-fg transition-colors hover:bg-brand-lit"
           >
             {ask}
           </motion.button>

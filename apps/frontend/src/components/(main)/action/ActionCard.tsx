@@ -195,7 +195,7 @@ export function ActionButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="h-12 w-full rounded-chip bg-primary text-[15px] text-primary-fg outline-none transition-colors hover:bg-white focus-visible:ring-2 focus-visible:ring-white/25 disabled:pointer-events-none disabled:bg-raised disabled:text-dim"
+      className="h-12 w-full rounded-chip bg-primary text-[15px] text-primary-fg outline-none transition-colors hover:bg-brand-lit focus-visible:ring-2 focus-visible:ring-white/25 disabled:pointer-events-none disabled:bg-raised disabled:text-dim"
     >
       {children}
     </button>

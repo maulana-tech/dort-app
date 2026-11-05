@@ -580,7 +580,7 @@ export function AskCarousel({ atlas }: { atlas: AtlasData }) {
                     type="button"
                     aria-pressed={x.q === q}
                     onClick={() => ask(x.q)}
-                    className="flex h-[clamp(32px,4.4svh,40px)] cursor-pointer items-center gap-1.5 rounded-full bg-primary px-4 text-[14px] text-primary-fg transition-colors hover:bg-white"
+                    className="flex h-[clamp(32px,4.4svh,40px)] cursor-pointer items-center gap-1.5 rounded-full bg-primary px-4 text-[14px] text-primary-fg transition-colors hover:bg-brand-lit"
                   >
                     <span aria-hidden="true">✦</span>
                     {x.label}

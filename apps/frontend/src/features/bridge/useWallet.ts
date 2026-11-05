@@ -23,6 +23,7 @@ import {
   mergeWallet,
   orderWallets,
   pickWallet,
+  unknownChain,
   WALLET_KEY,
 } from "./wallet";
 
@@ -274,8 +275,9 @@ export function useWalletState(): Wallet {
           params: [{ chainId: hex }],
         });
       } catch (e) {
-        // 4902: the wallet does not know this chain yet — Portaldot is new to every wallet
-        if ((e as { code?: number }).code === 4902) {
+        // the wallet does not know this chain yet — Portaldot is new to every wallet, and a
+        // fresh MetaMask does not ship Base Sepolia either
+        if (unknownChain(e)) {
           try {
             await p.request({
               method: "wallet_addEthereumChain",
