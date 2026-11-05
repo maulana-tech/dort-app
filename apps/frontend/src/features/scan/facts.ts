@@ -64,7 +64,16 @@ export async function gatherFacts(
   input: ScanInput,
 ): Promise<Gathered> {
   const facts: ScanFacts = { chain: chainName(chainId) };
-  if (input.kind === "source") return { facts, traceNote: null };
+  // Source that was handed in has not run anywhere, so there is no execution to trace. Saying so
+  // here rather than leaving the panel blank: the reader has just given Dort a contract and is
+  // entitled to know why the trace beside it is empty, and the fallback text that used to show
+  // explained a different case — an address with no call tree of its own.
+  if (input.kind === "source")
+    return {
+      facts,
+      traceNote:
+        "No call tree: this is source, and source has not run. Paste a transaction hash to trace a real execution, or load a Foundry run (node dort-export.mjs) for traces with the source lines beside them.",
+    };
 
   // where to see it, or failing that what to run. Portaldot has no browsable explorer, so on
   // that chain the honest "check it yourself" is the call Dort itself made, not a dead link.

@@ -1044,7 +1044,7 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
                         <p className="px-1 text-[12.5px] text-dim leading-normal">
                           {subject
                             ? (traceNote ??
-                              "Nothing to trace: a contract address has no call tree of its own, only a transaction does.")
+                              "Nothing to trace here: only a transaction has a call tree of its own.")
                             : "This test has no recorded frames — only unit tests are traced step by step."}
                         </p>
                       ) : (
