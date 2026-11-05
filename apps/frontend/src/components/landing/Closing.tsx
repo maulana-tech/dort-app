@@ -32,6 +32,7 @@ const CATS = [
   ["all", "All questions"],
   ["setup", "Setup"],
   ["findings", "Findings & Lab"],
+  ["chain", "On-chain"],
   ["privacy", "Privacy"],
 ] as const;
 type Cat = Exclude<(typeof CATS)[number][0], "all">;
@@ -66,6 +67,26 @@ const FAQ: [Cat, string, string][] = [
     "setup",
     "Which contract does the atlas map?",
     "One per export. Set DORT_ATLAS=<Contract> to pick it when a project has several.",
+  ],
+  [
+    "chain",
+    "Do I need a wallet?",
+    "Only to move something. The Vault and Portfolio pages read the chains directly, so the balances and share prices you see need no wallet at all. One is asked for when you deposit, withdraw or swap.",
+  ],
+  [
+    "chain",
+    "What is actually deployed?",
+    "DortSafeVault, on Base Sepolia and Ethereum Sepolia, both holding real test USDC. Nothing is deployed on Portaldot V3: creating a contract there needs a balance covering gas_limit x gas_price, and that gas figure carries the code's storage deposit - about 614 POT for this vault, measured on the chain - while Portaldot has no official faucet. Swap runs its real router, factory and pools on a local fork instead, and says so.",
+  ],
+  [
+    "setup",
+    "Can my own coding agent use this?",
+    "Yes. npx dort-skill writes one skill file into any agent that reads them, and does nothing else - no postinstall, no network call of its own. The exporter also ships an MCP server (node dort-mcp.mjs), and Dort is an MCP client itself, so servers already on your machine appear in its settings.",
+  ],
+  [
+    "privacy",
+    "Which AI answers?",
+    "Yours, by default: Claude Code over localhost, a local model, or your own key - and only the piece you selected is sent. One hosted option exists so a visitor with no key can still ask something, and the page says plainly that those answers go through the operator's AWS account.",
   ],
 ];
 
@@ -159,14 +180,16 @@ export function Faq() {
 
         {/* F1: 'Got questions?' at the foot of the left column */}
         <div className="rounded-[16px] border border-white/[.07] bg-[#0647b3] p-5 md:col-start-1 md:row-start-2 md:self-end">
-          <p className="text-[17px] text-fg">Not answered here?</p>
-          <p className="mt-2 text-[13.5px] text-dim leading-relaxed">
+          {/* on-canvas tokens, not fg/dim: this card is brand blue, and the ramp in globals.css
+              is measured on white — #142745 on #0647b3 is a dark grey on a dark blue */}
+          <p className="text-[17px] text-on-canvas">Not answered here?</p>
+          <p className="mt-2 text-[13.5px] text-on-canvas-dim leading-relaxed">
             Open an issue on the repository with the run and the contract you
             are looking at.
           </p>
           <a
             href={`${GITHUB}/issues`}
-            className="mt-4 inline-flex items-center gap-1.5 text-[13.5px] text-fg transition-colors hover:text-white"
+            className="mt-4 inline-flex items-center gap-1.5 text-[13.5px] text-on-canvas transition-colors hover:text-white"
           >
             Open an issue
             <span aria-hidden="true">→</span>

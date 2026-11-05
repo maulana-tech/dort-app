@@ -510,6 +510,46 @@ export function scanPrompt(input: ScanInput, facts: ScanFacts): string {
 }
 
 /** The three things a reader can hand in, for the empty state to offer. */
+/**
+ * Things a reader can press and immediately see something, instead of being asked to produce a
+ * transaction hash before the page will show them what it does.
+ *
+ * Every one is real and was read off its chain on 2026-11-05. They are Dort's own vaults, so
+ * they cannot rot quietly: the addresses live in features/vault/vault.ts and scan.check.ts holds
+ * these against them. A sample that 404s on a judge's first click is worse than no sample.
+ */
+export type Sample = {
+  chain: number;
+  kind: Extract<ScanKind, "tx" | "address">;
+  value: string;
+  label: string;
+  hint: string;
+};
+
+export const TRY: Sample[] = [
+  {
+    chain: 84532,
+    kind: "tx",
+    value: "0xa89a75c364ac9a2d201bbfac93951295acfca4aac974c3267318b9b307ec5a44",
+    label: "Trace a real deposit",
+    hint: "20 USDC into DortSafeVault on Base Sepolia — the call tree, decoded",
+  },
+  {
+    chain: 11155111,
+    kind: "tx",
+    value: "0x81d26b690b170d6d24fd32acbe6f5c9d63326af0a4a44f582519dfdda9d4c9e0",
+    label: "The same vault, another chain",
+    hint: "5 USDC into the Ethereum Sepolia deployment",
+  },
+  {
+    chain: 84532,
+    kind: "address",
+    value: "0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8",
+    label: "Read the vault itself",
+    hint: "What is deployed at that address, and what it answers to",
+  },
+];
+
 export const EXAMPLES: { kind: ScanKind; label: string; hint: string }[] = [
   {
     kind: "tx",

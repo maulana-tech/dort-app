@@ -15,6 +15,7 @@ import {
   type ScanInput,
   scanPrompt,
   shortHex,
+  TRY,
   traceSummary,
   whyNot,
 } from "./scan.ts";
@@ -666,3 +667,30 @@ assert.doesNotMatch(
 );
 
 console.log("scan ok");
+
+// The clickable samples must actually be what they claim, and must point at vaults this repo
+// really deployed — a sample that fails on a first click is worse than no sample at all.
+{
+  const { VAULTS, vaultReady } = await import("../../vault/vault.ts");
+  assert.ok(TRY.length > 0, "the panel offers nothing to press");
+  for (const t of TRY) {
+    const got = detect(t.value);
+    assert.equal(
+      got?.kind,
+      t.kind,
+      `${t.label}: detect disagrees with its own kind`,
+    );
+    assert.equal(got?.value.toLowerCase(), t.value.toLowerCase());
+    assert.ok(t.label && t.hint, `${t.label}: a sample needs both lines`);
+    const live = (VAULTS[t.chain] ?? []).filter(vaultReady);
+    assert.ok(
+      live.length > 0,
+      `sample on chain ${t.chain}, where no vault is deployed`,
+    );
+    if (t.kind === "address")
+      assert.ok(
+        live.some((v) => v.vault?.toLowerCase() === t.value.toLowerCase()),
+        `${t.value} is offered as a contract to read but is not one of this chain's vaults`,
+      );
+  }
+}

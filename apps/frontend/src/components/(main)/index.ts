@@ -3,6 +3,7 @@ export { ChatWorkspace } from "./chat/ChatWorkspace";
 export { ExploreGallery } from "./explore/ExploreGallery";
 export { ProtocolWorkspace } from "./explore/ProtocolWorkspace";
 export { CallGraph } from "./graph/CallGraph";
+export { PortfolioWorkspace } from "./portfolio/PortfolioWorkspace";
 export { SettingsWorkspace } from "./settings/SettingsWorkspace";
 export { MainShell } from "./shell/MainShell";
 export {

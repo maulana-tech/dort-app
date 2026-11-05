@@ -59,6 +59,13 @@ export type VaultDeployment = {
    * deployed chain when none is marked, so forgetting it costs nothing.
    */
   featured?: boolean;
+  /**
+   * The block it was deployed in. The Portfolio reads its history from here rather than from
+   * genesis, because every public RPC caps `eth_getLogs`: Base Sepolia's own endpoint at 200
+   * blocks, publicnode at 50,000, drpc at 10,000 (all measured 2026-11-05). Without a floor the
+   * scan is unbounded; with one it is a known number of windows.
+   */
+  block?: number;
   symbol: string;
   shareSymbol: string;
   decimals: number;
@@ -101,6 +108,7 @@ export const VAULTS: Record<number, VaultDeployment[]> = {
       // behind load balancers that answer from several ("block not found", "failed to get block
       // hash"). The constructor arguments are the script's own.
       vault: "0x6E818cAF7177C144E9da7DA6Ed78eFF394bCF0e8",
+      block: 12069831,
       asset: SEPOLIA_USDC,
       symbol: "USDC",
       shareSymbol: "dUSDC",
@@ -119,6 +127,7 @@ export const VAULTS: Record<number, VaultDeployment[]> = {
       // exactly 20,000,000 back, so the first deposit into an empty vault lost nothing to
       // rounding. Gas for both: 0.00000107 ETH.
       vault: "0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8",
+      block: 53482026,
       featured: true,
       asset: BASE_SEPOLIA_USDC,
       symbol: "USDC",

@@ -15,7 +15,7 @@ export function Sidebar({
   /** beside Reload run: Test all */
   action?: ReactNode;
 }) {
-  const { bridge, bridgeError, reloadBridge } = useRun();
+  const { bridge, bridgeError, reloadBridge, origin } = useRun();
   // forge runs here only in a local Dort, or on the auditor's machine through the bridge
   const live = LOCAL_APP || !!bridge;
   return (
@@ -31,22 +31,27 @@ export function Sidebar({
         </div>
       )}
       <div className="min-h-0 flex-1 overflow-auto">{children}</div>
-      {/* Re-run, in the header's family: a card whose commands are split capsules (command | Copy) */}
-      <section className="mt-4 flex-none rounded-inner border border-border bg-inner-grad p-3">
-        <p className="mb-1 flex items-center gap-2 text-[13px] text-fg">
-          <PhIcon d={PH.terminal} className="size-[15px] text-muted" />
-          Re-run
-        </p>
-        <p className="mb-3 text-[12.5px] text-dim leading-normal">
-          {live
-            ? "In your Foundry project, then press Reload run."
-            : "In your Foundry project, then drop the new dort-data.json from Get started."}
-        </p>
-        <div className="flex flex-col gap-1.5">
-          <CopyPill text="node dort-export.mjs" />
-          <CopyPill text="node dort-export.mjs --mt test_x" />
-        </div>
-      </section>
+      {/* Re-run, in the header's family: a card whose commands are split capsules (command |
+          Copy). Only once something HAS run: with nothing loaded it is instructions for
+          repeating a thing that never happened, pinned to the foot of a column whose scarce
+          room belongs to getting the first run in. */}
+      {origin && origin !== "none" && (
+        <section className="mt-4 flex-none rounded-inner border border-border bg-inner-grad p-3">
+          <p className="mb-1 flex items-center gap-2 text-[13px] text-fg">
+            <PhIcon d={PH.terminal} className="size-[15px] text-muted" />
+            Re-run
+          </p>
+          <p className="mb-3 text-[12.5px] text-dim leading-normal">
+            {live
+              ? "In your Foundry project, then press Reload run."
+              : "In your Foundry project, then drop the new dort-data.json from Get started."}
+          </p>
+          <div className="flex flex-col gap-1.5">
+            <CopyPill text="node dort-export.mjs" />
+            <CopyPill text="node dort-export.mjs --mt test_x" />
+          </div>
+        </section>
+      )}
       {/* the hosted site without a bridge: how to get Start test, Test all and Reload here */}
       {!live && (
         <section className="mt-2 flex-none rounded-inner border border-border bg-inner-grad p-3">

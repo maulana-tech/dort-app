@@ -33,7 +33,6 @@ import {
   addressesIn,
   detect,
   displayFrames,
-  EXAMPLES,
   gatherFacts,
   hasChildren,
   hiddenByFold,
@@ -46,6 +45,7 @@ import {
   scanPrompt,
   shortHex,
   subjectLabel,
+  TRY,
   traceSummary,
   whyNot,
 } from "@/features/scan";
@@ -315,7 +315,9 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
           />
 
           {left === "run" ? (
-            <>
+            // a flex column, only so the order below can change: with nothing loaded the panel
+            // should open on the thing a reader can press, not on an empty set of counts
+            <div className="flex flex-col">
               <p className="mb-1 flex items-center gap-2 text-[13px] text-fg">
                 <PhIcon d={PH.sparkle} className="size-[15px] text-muted" />
                 {modeBadge(digest)}
@@ -368,7 +370,9 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
 
               {/* hand something in: the chain an address or hash is looked up on, and what the
                   three doors take. Source needs no chain — it is read in this tab. */}
-              <section className="mb-3 rounded-inner border border-border bg-inner-grad p-3">
+              <section
+                className={`mb-3 rounded-inner border border-border bg-inner-grad p-3 ${digest.loaded ? "" : "order-first"}`}
+              >
                 <p className="mb-2 flex items-center gap-2 text-[13px] text-fg">
                   <PhIcon d={PH.search} className="size-[15px] text-muted" />
                   Review a contract
@@ -384,15 +388,32 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
                     hint: String(c.id),
                   }))}
                 />
-                <ul className="mt-2.5 flex flex-col gap-2">
-                  {EXAMPLES.map((e) => (
-                    <li key={e.kind}>
-                      <span className="block text-[12.5px] text-body">
-                        {e.label}
-                      </span>
-                      <span className="block text-[11.5px] text-dim leading-normal">
-                        {e.hint}
-                      </span>
+                {/* the three kinds in one line, then things that can actually be pressed. The
+                    list used to be three stanzas of prose describing what a hash and an address
+                    look like, which asked the reader to go and find one before the page would
+                    show them anything. */}
+                <p className="mt-2 text-[11.5px] text-dim leading-normal">
+                  A transaction hash, a contract address, or a .sol file.
+                </p>
+                <ul className="mt-2.5 flex flex-col gap-1.5">
+                  {TRY.map((t) => (
+                    <li key={t.value}>
+                      <button
+                        type="button"
+                        disabled={!chat.ready || reading || chat.busy}
+                        onClick={() => {
+                          setChain(t.chain);
+                          void handIn({ kind: t.kind, value: t.value });
+                        }}
+                        className="w-full rounded-tile bg-raised px-3 py-2 text-left transition-colors hover:bg-hover disabled:pointer-events-none disabled:opacity-40"
+                      >
+                        <span className="block text-[12.5px] text-text">
+                          {t.label}
+                        </span>
+                        <span className="block text-[11.5px] text-dim leading-normal">
+                          {t.hint}
+                        </span>
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -424,7 +445,7 @@ export function ChatWorkspace({ source }: { source: TraceSource }) {
                   </button>
                 ))}
               </div>
-            </>
+            </div>
           ) : (
             <>
               <div className="mb-2 flex items-center gap-2">
