@@ -310,6 +310,19 @@
  *     ring → Faq (Closing.tsx): the same layout, tabs as radios filtered in CSS (no JS), the
  *     foot card pointing at the repository's issues.
  *
+ * Twentieth pass (2026-11-05, "tambahin 1 section diatas hero section ... bikin UI yang bagus
+ * dan sesuai"), user screenshot of a travel site's opening screen:
+ *  O1 user ref — a small grey eyebrow centred over one enormous headline; under it a pale
+ *     isometric model of a city seen from above whose far edge dissolves into the page, small
+ *     white pills floating over single buildings each carrying one number, and one object in
+ *     the model picked out in colour while the rest stays neutral.
+ *     → `Opening` (Opening.tsx + opening.css): the eyebrow and headline read as one sentence
+ *       ("Know what it" / "actually did."), the model is the sample run drawn as isometric
+ *       blocks, the pills carry that run's real numbers (frames, findings, tests, coverage)
+ *       and the one lit block is the piece a finding sits in. The ref's heavy uppercase is not
+ *       copied: DESIGN.md forbids uppercase and anything above 500, so size carries it and the
+ *       weight stays light. The old hero keeps its place, one screen further down.
+ *
  * No screenshots: every product view on the page is the app's own component rendered live on the
  * sample run (built near the screen only, Lazy). Colour stays per DESIGN.md: grey/white, red only
  * on findings.
@@ -321,4 +334,5 @@ export { Features } from "./Features";
 export { Hero, Product } from "./Hero";
 export { SmoothScroll } from "./motion";
 export { OnChain } from "./OnChain";
+export { Opening } from "./Opening";
 export { Tests, Words } from "./Stages";

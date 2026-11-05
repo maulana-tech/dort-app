@@ -98,6 +98,8 @@ const TONES: Record<
   string,
   { bg: number[]; glow: number; x: number; y: number }
 > = {
+  // the page now opens here; the glow sits high, behind the headline
+  opening: { bg: [9, 74, 180], glow: 0.1, x: 50, y: 0 },
   hero: { bg: [9, 74, 180], glow: 0.09, x: 50, y: 0 },
   product: { bg: [11, 82, 201], glow: 0.07, x: 50, y: 18 },
   run: { bg: [11, 85, 207], glow: 0.06, x: 50, y: 50 },

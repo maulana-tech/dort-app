@@ -6,6 +6,7 @@ import {
   Finale,
   Hero,
   OnChain,
+  Opening,
   Product,
   SmoothScroll,
   Tests,
@@ -79,6 +80,8 @@ export default async function Home() {
         {/* above the sections, not inside the hero: a sticky bar is held by the nearest
             ancestor that clips, and the hero's own header does */}
         <Nav />
+        {/* the first screen since the twentieth pass; the old hero follows it */}
+        <Opening />
         <Hero />
         <Product />
         <Words />

@@ -1,0 +1,126 @@
+/*
+ * The opening screen (Opening.tsx). The model's faces are painted in the component, not here:
+ * each one is lerped toward the page colour by how far back it stands, which no static class can
+ * express. What is left here is the box they sit in, the floating pills and the entrance.
+ * The only colour in the whole section is the red finding dot.
+ */
+
+.lo-model svg {
+  /* the far edge of the model dissolves into the page instead of ending on a straight line, so
+     the headline sits in air rather than on a block of texture. On the SVG and not on the stage:
+     the stage also holds the pills, and masking those erased every one of them. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 24%,
+    #000 100%
+  );
+  mask-image: linear-gradient(to bottom, transparent, #000 24%, #000 100%);
+}
+
+.lo-model {
+  position: relative;
+  margin: 0 auto;
+  width: min(1240px, 126%);
+  /* an explicit box: the pills are hung at percentages of it, so it must not depend on how tall
+     the stage happens to be */
+  aspect-ratio: 860 / 600;
+  /* wider than the reading column, running off both sides as the reference's city does; the
+     stage clips it, and the negative top lets the towers rise behind the headline */
+  margin-left: 50%;
+  margin-top: clamp(-150px, -7vw, -40px);
+  translate: -50% 0;
+}
+
+/* O1's floating labels: a white pill carrying one number, over a single building. */
+.lo-pill {
+  position: absolute;
+  translate: -50% -50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 11px 0 9px;
+  border-radius: 8px;
+  background: #fff;
+  /* --fg, not --primary-fg: the ramp in globals.css is measured on white, and --primary-fg is
+     white itself — it would vanish here */
+  color: var(--fg);
+  white-space: nowrap;
+  box-shadow: 0 8px 22px rgba(1, 12, 32, 0.28);
+}
+
+.lo-dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--green);
+}
+.lo-dot-bad {
+  background: var(--red);
+}
+
+@keyframes lo-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+@keyframes lo-settle {
+  from {
+    opacity: 0;
+    transform: translateY(42px) scale(0.985);
+  }
+}
+@keyframes lo-pill-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* Phones: the model would be a smear at this width, so it is pulled wider and pushed down, and
+   the pills that sat over its edges are dropped rather than stacked on top of each other. */
+@media (max-width: 767px) {
+  .lo-model {
+    /* 190% put the outer pills past the screen edge, where they were cut in half */
+    width: 148%;
+    margin-top: -16px;
+  }
+  /* one label, on the subject. Four of them at this width are either stacked on each other or
+     hanging off the edge, and the reference shows its pills on a wide screen. */
+  .lo-pill:not(:nth-of-type(2)) {
+    display: none;
+  }
+}
+
+/*
+ * The entrance. Everything above renders visible on its own and this only adds movement, which is
+ * the way round it has to be: the first version animated with `backwards` and a delay, so any
+ * clock that failed to advance left the pills at opacity 0 with nothing on screen to say why.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .lo-head {
+    animation: lo-rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  }
+  .lo-model {
+    animation: lo-settle 1.4s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  }
+  .lo-pill {
+    animation: lo-pill-in 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  }
+  /* they land one after another, once the model has settled */
+  .lo-pill:nth-of-type(1) {
+    animation-delay: 0.9s;
+  }
+  .lo-pill:nth-of-type(2) {
+    animation-delay: 1.02s;
+  }
+  .lo-pill:nth-of-type(3) {
+    animation-delay: 1.14s;
+  }
+  .lo-pill:nth-of-type(4) {
+    animation-delay: 1.26s;
+  }
+}
