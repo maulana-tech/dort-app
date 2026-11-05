@@ -14,3 +14,8 @@ libs = ["lib"]
 optimizer = true
 optimizer_runs = 1
 via_ir = true
+# every byte is storage deposit here, so the parts that only help a human reading a failed
+# transaction are the first to go: the revert strings and the trailing metadata hash
+revert_strings = "strip"
+bytecode_hash = "none"
+cbor_metadata = false
