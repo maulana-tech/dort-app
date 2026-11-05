@@ -359,3 +359,19 @@ assert.equal(
 );
 
 console.log("vault ok");
+
+// firstDeployedChain prefers a vault that holds something: a deployed but empty one reads 0/0/—
+// on the first screen, which is how Ethereum Sepolia took the page over the moment it existed.
+{
+  const order = [VAULT_PORTALDOT, 11155111, 84532];
+  assert.equal(
+    firstDeployedChain(order),
+    84532,
+    "the funded vault wins, even though Sepolia is deployed and comes first",
+  );
+  assert.ok(
+    VAULTS[84532]?.some((v) => v.featured),
+    "something has to carry the flag, or the preference above proves nothing",
+  );
+  assert.equal(firstDeployedChain([VAULT_PORTALDOT]), null, "none deployed");
+}

@@ -40,9 +40,25 @@ export const PORTALDOT_USDT =
 export const BASE_SEPOLIA_USDC =
   "0x036CbD53842c5426634e7929541eC2318f3dCF7e" as const;
 
+/**
+ * Circle's USDC on Ethereum Sepolia. A third chain, for one plain reason: Sepolia is where
+ * Circle's faucet sends you first — its chain picker opens on it — so somebody who claims test
+ * USDC without reading the dropdown ends up holding it here. They had, and the page offered
+ * them a chain with nothing on it.
+ */
+export const SEPOLIA_USDC =
+  "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238" as const;
+
 export type VaultDeployment = {
   vault: `0x${string}` | null;
   asset: `0x${string}` | null;
+  /**
+   * The one the page should open on. Deployed is not the same as worth looking at: an empty
+   * vault reads 0 / 0 / — and teaches nothing, so the first screen goes to one that holds
+   * something. Set it on whichever is funded; `firstDeployedChain` falls back to the first
+   * deployed chain when none is marked, so forgetting it costs nothing.
+   */
+  featured?: boolean;
   symbol: string;
   shareSymbol: string;
   decimals: number;
@@ -75,6 +91,22 @@ export const VAULTS: Record<number, VaultDeployment[]> = {
       decimals: 6,
     },
   ],
+  11155111: [
+    {
+      // deployed 2026-11-05, block 12069831,
+      // tx 0x132a38c3acf483a150f70e2645f551207cca1f3b32e825d2cc45dadf1a7c5a56.
+      // Empty so far: asset(), name(), symbol() and decimals() were read back off the chain,
+      // totalSupply() is 0. Deployed with `forge create`, not DeployVault.s.sol — the script's
+      // fork simulation needs one node to answer every call, and Sepolia's public endpoints sit
+      // behind load balancers that answer from several ("block not found", "failed to get block
+      // hash"). The constructor arguments are the script's own.
+      vault: "0x6E818cAF7177C144E9da7DA6Ed78eFF394bCF0e8",
+      asset: SEPOLIA_USDC,
+      symbol: "USDC",
+      shareSymbol: "dUSDC",
+      decimals: 6,
+    },
+  ],
   84532: [
     {
       // deployed 2026-11-02, block 53482026, tx 0x2aafcfaa…04e8d
@@ -87,6 +119,7 @@ export const VAULTS: Record<number, VaultDeployment[]> = {
       // exactly 20,000,000 back, so the first deposit into an empty vault lost nothing to
       // rounding. Gas for both: 0.00000107 ETH.
       vault: "0x162Dcf95Eb9df70F314CD4648565E6eb24f85aF8",
+      featured: true,
       asset: BASE_SEPOLIA_USDC,
       symbol: "USDC",
       shareSymbol: "dUSDC",
@@ -150,7 +183,11 @@ export const vaultReady = (d: VaultDeployment): boolean =>
  * cannot import the chain list.
  */
 export const firstDeployedChain = (order: number[]): number | null =>
-  order.find((id) => (VAULTS[id] ?? []).some(vaultReady)) ?? null;
+  order.find((id) =>
+    (VAULTS[id] ?? []).some((v) => vaultReady(v) && v.featured),
+  ) ??
+  order.find((id) => (VAULTS[id] ?? []).some(vaultReady)) ??
+  null;
 
 /** DortSafeVault._toShares, rounding down (a deposit) or up (a withdraw). */
 export function toShares(
