@@ -8,6 +8,7 @@ import {
   FlowArrow,
   Note,
   PillTabs,
+  Primer,
   SourceRow,
 } from "@/components/(main)/action/ActionCard";
 import { TokenSelect } from "@/components/(main)/action/TokenSelect";
@@ -303,6 +304,19 @@ export function VaultWorkspace() {
             </ActionButton>
 
             <div className="grid gap-2">
+              {!wallet.account && (
+                <Primer
+                  title="This vault is deployed and funded on Base Sepolia. The numbers above are read straight off that chain and need no wallet. To deposit or withdraw:"
+                  steps={[
+                    "Install a wallet extension — MetaMask, Rabby, or any other. Dort lists every wallet it finds and lets you pick.",
+                    <>
+                      Switch it to Base Sepolia, chain id{" "}
+                      <span className="font-mono text-text">84532</span>.
+                    </>,
+                    "Get a little Sepolia ETH for gas and some test USDC from a Base Sepolia faucet — this is a testnet, so none of it is worth anything.",
+                  ]}
+                />
+              )}
               {act.why && <p className="text-ui-xs text-dim">{act.why}</p>}
               {wallet.error && <Note tone="bad">{wallet.error}</Note>}
               {!wallet.error && v.error && (

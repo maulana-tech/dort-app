@@ -6,6 +6,7 @@ import {
   AmountField,
   DestinationRow,
   Note,
+  Primer,
 } from "@/components/(main)/action/ActionCard";
 import { TokenSelect } from "@/components/(main)/action/TokenSelect";
 import { WalletButton } from "@/components/(main)/action/WalletButton";
@@ -278,6 +279,19 @@ export function SwapWorkspace() {
             </ActionButton>
 
             <div className="grid gap-2">
+              {!wallet.account && (
+                <Primer
+                  title="This page trades on PortalSwapRouter, Portaldot V3's own DEX. To use it:"
+                  steps={[
+                    "Install a wallet extension — MetaMask, Rabby, or any other. Dort lists every wallet it finds and lets you pick, so having more than one is fine.",
+                    <>
+                      Add Portaldot V3 to it: chain id{" "}
+                      <span className="font-mono text-text">420420777</span>.
+                    </>,
+                    "Portaldot has no public faucet, so a new wallet has nothing to trade. Press \u201cUse a local fork\u201d below to run the real router, factory and pools against funds that exist only on your machine.",
+                  ]}
+                />
+              )}
               {s.nodeMismatch && (
                 <Note tone="bad">
                   Your wallet and this page are looking at different nodes —

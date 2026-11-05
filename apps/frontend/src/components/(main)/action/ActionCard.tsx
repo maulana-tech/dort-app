@@ -256,3 +256,42 @@ export function Note({
     </p>
   );
 }
+
+/**
+ * What a reader has to do before this card can do anything, shown only while no wallet is
+ * connected.
+ *
+ * The button alone says "Connect wallet", which is honest and useless: it does not say what to
+ * connect with, which chain the card is on, or — on a chain with no faucet — where the money is
+ * meant to come from. Somebody who has never seen this page reads a disabled-looking form and a
+ * balance of zero and concludes the thing is broken.
+ *
+ * It disappears the moment a wallet is connected, because by then it is noise.
+ */
+export function Primer({
+  title,
+  steps,
+}: {
+  title: string;
+  steps: ReactNode[];
+}) {
+  return (
+    <div className="grid gap-2 rounded-tile bg-inset p-3">
+      <p className="text-ui-xs text-muted">{title}</p>
+      <ol className="grid gap-1.5">
+        {steps.map((s, i) => (
+          <li
+            // the steps are fixed copy in source order, so the index is their identity
+            // biome-ignore lint/suspicious/noArrayIndexKey: static list, never reordered
+            key={i}
+            className="flex items-start gap-2 text-ui-xs text-body leading-normal"
+          >
+            <span className="mt-px flex-none font-mono text-dim">{i + 1}</span>
+            {/* one span: a bare <code> beside the text would become its own flex column */}
+            <span>{s}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
