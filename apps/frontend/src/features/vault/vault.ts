@@ -91,7 +91,23 @@ const NOT_DEPLOYED: VaultDeployment = {
 export const VAULTS: Record<number, VaultDeployment[]> = {
   [VAULT_PORTALDOT]: [
     {
-      vault: null,
+      // Live on Portaldot V3, 2026-11-05, block 336632,
+      // tx 0x1cd61c77b72da2158d8c6ef9bcbe0aebeabf90311c758c1734e075b14dec87ae.
+      //
+      // It is here at all because of the optimiser. Portaldot reserves balance for
+      // gas_limit x gas_price, and that gas figure carries the storage deposit for the code, so
+      // on this chain bytecode size IS the price of deploying: unoptimised, DortSafeVault wanted
+      // 821 POT and the grant was 500. The [profile.portaldot] build in foundry.toml
+      // (optimizer, runs = 1, via-IR) took it from 11,760 bytes to 5,176 and the price to 356.4.
+      // The default profile stays unoptimised - that is what every test and trace here is built
+      // against - so a deploy to this chain must set FOUNDRY_PROFILE=portaldot.
+      //
+      // Funded the same day with pUSDT bought on PortalSwapRouter itself: 5 POT in at block
+      // 336647 for 19.976522 pUSDT, deposited at block 336651
+      // (tx 0xbbf5769e5ab17bbc61e89248d100213b54617b03291a7fb4f529875c4fa10434). It minted
+      // 19,976,522,000 shares and previewRedeem on all of them returns exactly 19,976,522 back.
+      vault: "0x75ef70Ea33994a16751ff0b4f7DCF0F94DF1351F",
+      block: 336632,
       asset: PORTALDOT_USDT,
       symbol: "pUSDT",
       shareSymbol: "dpUSDT",

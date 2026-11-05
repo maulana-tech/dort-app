@@ -18,6 +18,7 @@ export async function Compare() {
   const data = await compareData();
   return (
     <section
+      id="compare"
       data-tone="compare"
       className="mx-auto max-w-[1240px] px-4 pb-32 md:px-6"
     >

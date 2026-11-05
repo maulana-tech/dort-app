@@ -4,3 +4,13 @@ out = "out"
 libs = ["lib"]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+
+# Deploying to Portaldot V3 only. The chain reserves balance for gas_limit x gas_price, and that
+# gas figure carries the storage deposit for the code — so on that one chain the size of the
+# bytecode is the price of getting it there at all. Measured 2026-11-05: unoptimised DortVault
+# wanted ~614 POT and the grant was 500. The default profile stays unoptimised, because that is
+# what every test and every trace in this repo is built and decoded against.
+[profile.portaldot]
+optimizer = true
+optimizer_runs = 1
+via_ir = true

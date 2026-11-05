@@ -217,11 +217,23 @@ if (openOn === null) {
     (VAULTS[openOn] ?? []).some(vaultReady),
     "the default chain has a vault",
   );
-  for (const id of order.slice(0, order.indexOf(openOn)))
-    assert.ok(
-      !(VAULTS[id] ?? []).some(vaultReady),
-      "and it is the first such chain in the picker's order",
-    );
+  // The rule is "the one marked as worth opening on, else the first deployed one in the
+  // picker's order" — deployed is not the same as worth looking at, and an empty vault on the
+  // first chain reads 0 / 0 / — while a funded one sits two pills away. This assertion used to
+  // encode only the second half of that rule, and said so loudly the moment Portaldot was
+  // deployed to: it comes first in the picker and is not the featured one.
+  const featured = order.find((id) =>
+    (VAULTS[id] ?? []).some((v) => vaultReady(v) && v.featured),
+  );
+  if (featured !== undefined) {
+    assert.equal(openOn, featured, "a featured vault wins wherever it sits");
+  } else {
+    for (const id of order.slice(0, order.indexOf(openOn)))
+      assert.ok(
+        !(VAULTS[id] ?? []).some(vaultReady),
+        "with none featured, it is the first deployed chain in the picker's order",
+      );
+  }
 }
 assert.equal(firstDeployedChain([]), null, "no chains, no default");
 assert.equal(
@@ -373,5 +385,14 @@ console.log("vault ok");
     VAULTS[84532]?.some((v) => v.featured),
     "something has to carry the flag, or the preference above proves nothing",
   );
-  assert.equal(firstDeployedChain([VAULT_PORTALDOT]), null, "none deployed");
+  // a chain with no vault at all. Not Portaldot: it had none when this was written and has one
+  // now, which is exactly the kind of fact a check should not hard-code.
+  const bare = [421614, 46630].filter(
+    (id) => !(VAULTS[id] ?? []).some(vaultReady),
+  );
+  assert.ok(
+    bare.length > 0,
+    "no undeployed chain left to test the empty case with",
+  );
+  assert.equal(firstDeployedChain(bare), null, "none deployed");
 }
