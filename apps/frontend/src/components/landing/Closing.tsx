@@ -284,7 +284,6 @@ export function Footer() {
       title: "Product",
       links: [
         ["Chat", "/chat"],
-        ["Explore", "/explore"],
         ["Docs", "/docs"],
       ],
     },

@@ -11,7 +11,6 @@ const ROUTES = [
   { href: "/portfolio", label: "Portfolio" },
   { href: "/bridge", label: "Bridge" },
   { href: "/swap", label: "Swap" },
-  { href: "/explore", label: "Explore" },
 ] as const;
 
 export function RouteTabs() {
