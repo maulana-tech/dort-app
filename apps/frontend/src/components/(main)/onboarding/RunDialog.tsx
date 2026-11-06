@@ -258,14 +258,14 @@ function Look() {
       "Ask about the run in your own words. The answer is grounded in it: the tests, the failures and their reasons, the contracts the calls went through.",
     ],
     [
-      "/explore",
-      "Explore",
-      "How well-known protocols are meant to work: their contracts, how they connect, and their main flows as sequence diagrams.",
+      "/vault",
+      "Vault",
+      "A vault deployed and funded on three live chains, Portaldot V3 among them. Deposit, withdraw, and watch the share maths as you do.",
     ],
     [
-      "/exploits",
-      "Exploits",
-      "Past incidents as reports: what was intended, what happened, and how a reviewer catches that class of mistake.",
+      "/swap",
+      "Swap",
+      "Portaldot's own DEX, PortalSwapRouter: its real factory and its real pools, quoted here and priced again by the router before you sign.",
     ],
   ];
   return (
